@@ -70,17 +70,17 @@ for op in (:dropfirst, :droplast)
     end
 end
 
-otimes(x::TensorIndices{m}, y::TensorIndices{n}) where {m, n} = TensorIndices{m + n}((x.tup..., y.tup...))
+@pure otimes(x::TensorIndices{m}, y::TensorIndices{n}) where {m, n} = TensorIndices{m + n}((x.tup..., y.tup...))
 
-function contract(x::TensorIndices, y::TensorIndices, ::Val{N}) where {N}
+@pure function contract(x::TensorIndices, y::TensorIndices, ::Val{N}) where {N}
     if !(0 ≤ N ≤ ndims(x) && 0 ≤ N ≤ ndims(y) && size(x)[end-N+1:end] === size(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
     end
     otimes(droplast(x, Val(N)), dropfirst(y, Val(N)))
 end
 
-_size(x::LinearIndices{1}) = size(x)
-_size(x::SymmetricIndices) = Symmetry{Tuple{size(x)...}}
-function tensortype(x::TensorIndices)
+@pure _size(x::LinearIndices{1}) = length(x)
+@pure _size(x::SymmetricIndices) = Symmetry{Tuple{size(x)...}}
+@pure function tensortype(x::TensorIndices)
     Tensor{Tuple{map(_size, x.tup)...}, T, ndims(x), length(unique(x))} where {T}
 end

@@ -1,6 +1,8 @@
 module Tensorial
 
-using Base: @pure
+using StaticArrays
+
+using Base: @pure, @_inline_meta
 
 export
     Symmetry,
@@ -9,5 +11,6 @@ export
 include("utils.jl")
 include("symmetry.jl")
 include("indexing.jl")
+include("tensor.jl")
 
 end # module
