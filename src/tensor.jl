@@ -43,6 +43,14 @@ end
 @inline function (::Type{TT})(data::Vararg{Real}) where {TT <: Tensor}
     TT(data)
 end
+@generated function (::Type{TT})(f::Function) where {S, TT <: Tensor{S}}
+    tocartesian = CartesianIndices(TensorIndices(S))
+    exps = [:(f($(Tuple(tocartesian[i])...))) for i in uniqueindices(S)]
+    quote
+        @_inline_meta
+        TT($(exps...))
+    end
+end
 
 ## for aliases
 @inline function Tensor{S, T, N}(data::Tuple{Vararg{Any, L}}) where {S, T, N, L}
