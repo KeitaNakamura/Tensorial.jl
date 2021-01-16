@@ -57,6 +57,7 @@ end
     tovoigt(x, offdiagscale = eltype(x)(√2))
 end
 
+# TODO: fix type instability when element type is not given
 @inline function fromvoigt(TT::Type{<: SecondOrderTensor{dim}}, v::AbstractVector) where {dim}
     @_propagate_inbounds_meta
     TT(function (i, j); v[VOIGT_ORDER[dim][i, j]]; end)
@@ -67,21 +68,21 @@ end
 end
 @inline function fromvoigt(TT::Type{<: SymmetricSecondOrderTensor{dim}}, v::AbstractVector{T}; offdiagscale::T = T(1)) where {dim, T}
     @_propagate_inbounds_meta
-    return TT(function (i, j)
-                  i > j && ((i, j) = (j, i))
-                  i == j ? (return v[VOIGT_ORDER[dim][i, j]]) :
-                           (return v[VOIGT_ORDER[dim][i, j]] / offdiagscale)
-              end)
+    TT(function (i, j)
+           i > j && ((i, j) = (j, i))
+           i == j ? (return v[VOIGT_ORDER[dim][i, j]]) :
+                    (return v[VOIGT_ORDER[dim][i, j]] / offdiagscale)
+       end)
 end
 @inline function fromvoigt(TT::Type{<: SymmetricFourthOrderTensor{dim}}, v::AbstractMatrix{T}; offdiagscale::T = T(1)) where {dim, T}
     @_propagate_inbounds_meta
-    return TT(function (i, j, k, l)
-                  i > j && ((i, j) = (j, i))
-                  k > l && ((k, l) = (l, k))
-                  i == j && k == l ? (return v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]]) :
-                  i == j || k == l ? (return v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]] / offdiagscale) :
-                                     (return v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]] / (offdiagscale * offdiagscale))
-              end)
+    TT(function (i, j, k, l)
+           i > j && ((i, j) = (j, i))
+           k > l && ((k, l) = (l, k))
+           i == j && k == l ? (return v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]]) :
+           i == j || k == l ? (return v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]] / offdiagscale) :
+                              (return v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]] / (offdiagscale * offdiagscale))
+       end)
 end
 
 @inline function frommandel(TT::Type{<: Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor}}, v::AbstractArray{T}) where T

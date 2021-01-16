@@ -4,7 +4,8 @@
         vals = [:(xs[$j][$i]) for j in 1:N]
         :(f($(vals...)))
     end
-    TT = tensortype(inds)
+    T = promote_type(map(eltype, xs)...)
+    TT = tensortype(inds){T}
     return quote
         @_inline_meta
         @inbounds $TT($(exps...))
@@ -170,10 +171,12 @@ end
     typeof(x)(inv(Matrix(x)))
 end
 @inline function inv(x::FourthOrderTensor{dim}) where {dim}
-    fromvoigt(FourthOrderTensor{dim}, inv(tovoigt(x)))
+    @assert dim < 4
+    fromvoigt(typeof(x), inv(tovoigt(x)))
 end
 @inline function inv(x::SymmetricFourthOrderTensor{dim}) where {dim}
-    frommandel(SymmetricFourthOrderTensor{dim}, inv(tomandel(x)))
+    @assert dim < 4
+    frommandel(typeof(x), inv(tomandel(x)))
 end
 
 # cross
