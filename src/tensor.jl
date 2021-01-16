@@ -83,10 +83,7 @@ end
     Tensor{S, T, N}(data)
 end
 @inline Vec(data::Tuple{Vararg{Any, dim}}) where {dim} = Vec{dim}(data)
-@inline function Vec{dim}(data::Tuple) where {dim}
-    T = promote_type(map(eltype, data)...)
-    Vec{dim, T}(data)
-end
+@inline Vec{dim}(data::Tuple) where {dim} = (T = promote_type(map(eltype, data)...); Vec{dim, T}(data))
 
 # special constructors
 for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
