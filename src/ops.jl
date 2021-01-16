@@ -30,11 +30,15 @@ end
     end
     s = reshape(s′, size(s1)[1:end-N]..., size(s2)[N+1:end]...)
     exps = map(_reduce, s[unique(t)])
-    TT = tensortype(t)
+    T = promote_type(eltype(x1), eltype(x2))
+    if ndims(t) == 0
+        TT = T
+    else
+        TT = tensortype(t){T}
+    end
     quote
         @_inline_meta
-        T = promote_type(eltype(x1), eltype(x2))
-        @inbounds $TT{T}(($(exps...),))
+        @inbounds $TT($(exps...))
     end
 end
 
