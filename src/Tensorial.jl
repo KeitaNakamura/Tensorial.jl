@@ -5,7 +5,7 @@ using LinearAlgebra, Statistics
 export ⋅, ×, dot, tr, det, norm, mean
 
 using StaticArrays
-using Base: @pure, @_inline_meta
+using Base: @pure, @_inline_meta, @_propagate_inbounds_meta
 
 import Base: transpose, inv
 import LinearAlgebra: dot, norm, tr, adjoint, det, cross
@@ -37,6 +37,7 @@ include("symmetry.jl")
 include("indexing.jl")
 include("tensor.jl")
 include("ops.jl")
+include("voigt.jl")
 
 const ⊗ = otimes
 const ⊡ = dcontract

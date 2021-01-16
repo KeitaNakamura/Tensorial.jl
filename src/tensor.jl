@@ -133,6 +133,7 @@ Base.size(x::Tensor) = size(serialindices(x))
 # helpers
 Base.Tuple(x::Tensor) = x.data
 ncomponents(x::Tensor) = length(Tuple(x))
+ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
 
 # indices
 ## TensorIndices
