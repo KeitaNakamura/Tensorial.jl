@@ -62,7 +62,7 @@ function dups(inds::TensorIndices)
             dups[i] += 1
         end
     end
-    collect(values(sort(dups)))
+    map(x -> x.second, sort(collect(dups), by = x->x[1]))
 end
 
 
