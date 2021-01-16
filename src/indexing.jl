@@ -25,8 +25,9 @@ end
 TensorIndices{order}(tup) where {order} = TensorIndices{order, typeof(tup)}(tup)
 
 _indices(x::Int) = LinearIndices((x,))
-@pure _indices(::Type{Symmetry{S}}) where {S} = SymmetricIndices(S.parameters...)
+@pure _indices(::Type{Symmetry{S}}) where {S} = (check_symmetry_parameters(S); SymmetricIndices(S.parameters...))
 @pure function TensorIndices(::Type{Size}) where {Size <: Tuple}
+    check_size_parameters(Size)
     tup = map(_indices, tuple(Size.parameters...))
     order = length(flatten_tuple(map(size, tup)))
     TensorIndices{order}(tup)
