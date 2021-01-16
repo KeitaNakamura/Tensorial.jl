@@ -20,24 +20,52 @@ end
     end
 end
 
+# aliases
+const SecondOrderTensor{dim, T <: Real, L} = Tensor{NTuple{2, dim}, T, 2, L}
+const ThirdOrderTensor{dim, T <: Real, L} = Tensor{NTuple{3, dim}, T, 3, L}
+const FourthOrderTensor{dim, T <: Real, L} = Tensor{NTuple{4, dim}, T, 4, L}
+const SymmetricSecondOrderTensor{dim, T <: Real, L} = Tensor{Tuple{@Symmetry{dim, dim}}, T, 2, L}
+const SymmetricThirdOrderTensor{dim, T <: Real, L} = Tensor{Tuple{@Symmetry{dim, dim, dim}}, T, 3, L}
+const SymmetricFourthOrderTensor{dim, T <: Real, L} = Tensor{NTuple{2, @Symmetry{dim, dim}}, T, 4, L}
+const Vec{dim, T <: Real} = Tensor{Tuple{dim}, T, 1, dim}
+const Mat{m, n, T <: Real, L} = Tensor{Tuple{m, n}, T, 2, L}
+
 # constructors
-@inline function Tensor{S, T}(data::Tuple) where {S, T}
-    tensortype(TensorIndices(S)){T}(data)
+@inline function Tensor{S, T}(data::Tuple{Vararg{Any, L}}) where {S, T, L}
+    N = ndims(TensorIndices(S))
+    Tensor{S, T, N, L}(data)
 end
-@inline function Tensor{S}(data::Tuple) where {S}
+@inline function Tensor{S}(data::Tuple{Vararg{Any, L}}) where {S, L}
+    N = ndims(TensorIndices(S))
     T = promote_type(map(eltype, data)...)
-    tensortype(TensorIndices(S)){T}(data)
+    Tensor{S, T, N, L}(data)
 end
 @inline function (::Type{TT})(data::Vararg{Real}) where {TT <: Tensor}
     TT(data)
 end
 
+## for aliases
+@inline function Tensor{S, T, N}(data::Tuple{Vararg{Any, L}}) where {S, T, N, L}
+    Tensor{S, T, N, L}(data)
+end
+@inline function (::Type{Tensor{S, T, N} where {T <: Real}})(data::Tuple) where {S, N}
+    T = promote_type(map(eltype, data)...)
+    Tensor{S, T, N}(data)
+end
+@inline Vec(data::Tuple{Vararg{Any, dim}}) where {dim} = Vec{dim}(data)
+@inline function Vec{dim}(data::Tuple) where {dim}
+    T = promote_type(map(eltype, data)...)
+    Vec{dim, T}(data)
+end
 
 # special constructors
 for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
     @eval begin
         @inline Base.$op(::Type{Tensor{S}}) where {S} = $op(Tensor{S, Float64})
         @inline Base.$op(::Type{Tensor{S, T}}) where {S, T} = Tensor{S, T}(fill_tuple($el, Val(length(uniqueindices(S)))))
+        # for aliases
+        @inline Base.$op(::Type{Tensor{S, T, N}}) where {S, T, N} = $op(Tensor{S, T})
+        @inline Base.$op(::Type{Tensor{S, T, N} where {T <: Real}}) where {S, N} = $op(Tensor{S, Float64})
     end
 end
 
