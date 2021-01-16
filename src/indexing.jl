@@ -53,6 +53,18 @@ function serial(inds::TensorIndices)
     end
 end
 
+function dups(inds::TensorIndices)
+    dups = Dict{Int, Int}()
+    for i in inds
+        if !haskey(dups, i)
+            dups[i] = 1
+        else
+            dups[i] += 1
+        end
+    end
+    collect(values(sort(dups)))
+end
+
 
 # dropfirst/droplast
 ## helper functions

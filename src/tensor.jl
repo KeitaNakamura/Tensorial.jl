@@ -157,12 +157,24 @@ end
 uniqueindices(::Tensor{S}) where {S} = uniqueindices(S)
 @pure uniqueindices(::Type{<: Tensor{S}}) where {S} = uniqueindices(S)
 @pure uniqueindices(inds::TensorIndices) = uniqueindices(tensortype(inds))
+## dupsindices
+@pure function dupsindices(::Type{S}) where {S}
+    inds = dups(TensorIndices(S))
+    dims = size(inds)
+    SArray{Tuple{dims...}, Int}(inds)
+end
+dupsindices(::Tensor{S}) where {S} = dupsindices(S)
+@pure dupsindices(::Type{<: Tensor{S}}) where {S} = dupsindices(S)
+@pure dupsindices(inds::TensorIndices) = dupsindices(tensortype(inds))
 
 # getindex
 @inline function Base.getindex(x::Tensor, i::Int)
     @boundscheck checkbounds(x, i)
     @inbounds Tuple(x)[serialindices(x)[i]]
 end
+
+# broadcast
+Broadcast.broadcastable(x::Tensor) = Ref(x)
 
 # getindex_expr
 function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: Tensor}, i...)
