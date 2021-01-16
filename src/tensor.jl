@@ -162,3 +162,9 @@ uniqueindices(::Tensor{S}) where {S} = uniqueindices(S)
     @boundscheck checkbounds(x, i)
     @inbounds Tuple(x)[serialindices(x)[i]]
 end
+
+# getindex_expr
+function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: Tensor}, i...)
+    inds = serialindices(x)
+    :(Tuple($ex)[$(inds[i...])])
+end

@@ -130,11 +130,10 @@ end
     typeof(x)(1/det(x))
 end
 @generated function inv(x::SquareTensor{2})
-    inds = serialindices(x)
-    x_11 = :(Tuple(x)[$(inds[1,1])])
-    x_21 = :(Tuple(x)[$(inds[2,1])])
-    x_12 = :(Tuple(x)[$(inds[1,2])])
-    x_22 = :(Tuple(x)[$(inds[2,2])])
+    x_11 = getindex_expr(:x, x, 1, 1)
+    x_21 = getindex_expr(:x, x, 2, 1)
+    x_12 = getindex_expr(:x, x, 1, 2)
+    x_22 = getindex_expr(:x, x, 2, 2)
     exps = [:($x_22 * detinv), :(-$x_21 * detinv), :(-$x_12 * detinv), :($x_11 * detinv)]
     return quote
         @_inline_meta
@@ -143,16 +142,15 @@ end
     end
 end
 @generated function inv(x::SquareTensor{3})
-    inds = serialindices(x)
-    x_11 = :(Tuple(x)[$(inds[1,1])])
-    x_21 = :(Tuple(x)[$(inds[2,1])])
-    x_31 = :(Tuple(x)[$(inds[3,1])])
-    x_12 = :(Tuple(x)[$(inds[1,2])])
-    x_22 = :(Tuple(x)[$(inds[2,2])])
-    x_32 = :(Tuple(x)[$(inds[3,2])])
-    x_13 = :(Tuple(x)[$(inds[1,3])])
-    x_23 = :(Tuple(x)[$(inds[2,3])])
-    x_33 = :(Tuple(x)[$(inds[3,3])])
+    x_11 = getindex_expr(:x, x, 1, 1)
+    x_21 = getindex_expr(:x, x, 2, 1)
+    x_31 = getindex_expr(:x, x, 3, 1)
+    x_12 = getindex_expr(:x, x, 1, 2)
+    x_22 = getindex_expr(:x, x, 2, 2)
+    x_32 = getindex_expr(:x, x, 3, 2)
+    x_13 = getindex_expr(:x, x, 1, 3)
+    x_23 = getindex_expr(:x, x, 2, 3)
+    x_33 = getindex_expr(:x, x, 3, 3)
     exps = [:(($x_22*$x_33 - $x_23*$x_32) * detinv),
             :(($x_23*$x_31 - $x_21*$x_33) * detinv),
             :(($x_21*$x_32 - $x_22*$x_31) * detinv),
