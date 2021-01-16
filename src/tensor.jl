@@ -40,9 +40,16 @@ end
     T = promote_type(map(eltype, data)...)
     Tensor{S, T, N, L}(data)
 end
+## for `tensortype` function
+@inline function (::Type{Tensor{S, T, N, L} where {T <: Real}})(data::Tuple) where {S, N, L}
+    T = promote_type(map(eltype, data)...)
+    Tensor{S, T, N, L}(data)
+end
+## from Vararg
 @inline function (::Type{TT})(data::Vararg{Real}) where {TT <: Tensor}
     TT(data)
 end
+## from Function
 @generated function (::Type{TT})(f::Function) where {S, TT <: Tensor{S}}
     tocartesian = CartesianIndices(TensorIndices(S))
     exps = [:(f($(Tuple(tocartesian[i])...))) for i in uniqueindices(S)]
@@ -51,6 +58,7 @@ end
         TT($(exps...))
     end
 end
+## from AbstractArray
 @generated function (::Type{TT})(A::AbstractArray) where {S, TT <: Tensor{S}}
     inds = TensorIndices(S)
     if IndexStyle(A) isa IndexLinear
@@ -87,7 +95,9 @@ for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))
         @inline Base.$op(::Type{Tensor{S, T}}) where {S, T} = Tensor{S, T}(fill_tuple($el, Val(length(uniqueindices(S)))))
         # for aliases
         @inline Base.$op(::Type{Tensor{S, T, N}}) where {S, T, N} = $op(Tensor{S, T})
+        @inline Base.$op(::Type{Tensor{S, T, N, L}}) where {S, T, N, L} = $op(Tensor{S, T})
         @inline Base.$op(::Type{Tensor{S, T, N} where {T <: Real}}) where {S, N} = $op(Tensor{S, Float64})
+        @inline Base.$op(::Type{Tensor{S, T, N, L} where {T <: Real}}) where {S, N, L} = $op(Tensor{S, Float64})
     end
 end
 
@@ -97,6 +107,7 @@ for TensorType in (SecondOrderTensor,
                    SymmetricSecondOrderTensor,
                    SymmetricFourthOrderTensor)
     @eval Base.one(::Type{$TensorType{dim}}) where {dim} = one($TensorType{dim, Float64})
+    @eval Base.one(x::$TensorType) = one(typeof(x))
 end
 @inline function Base.one(TT::Type{<: Union{SecondOrderTensor{dim, T}, SymmetricSecondOrderTensor{dim, T}}}) where {dim, T}
     o = one(T)
@@ -124,6 +135,9 @@ Base.Tuple(x::Tensor) = x.data
 ncomponents(x::Tensor) = length(Tuple(x))
 
 # indices
+## TensorIndices
+TensorIndices(::Tensor{S}) where {S} = TensorIndices(S)
+TensorIndices(::Type{<: Tensor{S}}) where {S} = TensorIndices(S)
 ## serialindices
 @pure function serialindices(::Type{S}) where {S}
     inds = serial(TensorIndices(S))
@@ -131,6 +145,8 @@ ncomponents(x::Tensor) = length(Tuple(x))
     SArray{Tuple{dims...}, Int}(inds)
 end
 serialindices(::Tensor{S}) where {S} = serialindices(S)
+@pure serialindices(::Type{<: Tensor{S}}) where {S} = serialindices(S)
+@pure serialindices(inds::TensorIndices) = serialindices(tensortype(inds))
 ## uniqueindices
 @pure function uniqueindices(::Type{S}) where {S}
     inds = unique(TensorIndices(S))
@@ -138,6 +154,8 @@ serialindices(::Tensor{S}) where {S} = serialindices(S)
     SArray{Tuple{dims...}, Int}(inds)
 end
 uniqueindices(::Tensor{S}) where {S} = uniqueindices(S)
+@pure uniqueindices(::Type{<: Tensor{S}}) where {S} = uniqueindices(S)
+@pure uniqueindices(inds::TensorIndices) = uniqueindices(tensortype(inds))
 
 # getindex
 @inline function Base.getindex(x::Tensor, i::Int)

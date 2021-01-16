@@ -1,13 +1,15 @@
 module Tensorial
 
-using LinearAlgebra
-# re-exports from LinearAlgebra
-export ⋅, dot
+using LinearAlgebra, Statistics
+# re-exports from LinearAlgebra and Statistics
+export ⋅, ×, dot, tr, det, norm, mean
 
 using StaticArrays
 using Base: @pure, @_inline_meta
 
-import LinearAlgebra: dot
+import Base: transpose, inv
+import LinearAlgebra: dot, norm, tr, adjoint, det, cross
+import Statistics: mean
 
 export
 # Types
@@ -24,6 +26,9 @@ export
     Mat,
 # operations
     contract,
+    vol,
+    dev,
+    symmetric,
     ⊗,
     ⊡
 

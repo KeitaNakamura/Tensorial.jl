@@ -71,8 +71,8 @@ for op in (:dropfirst, :droplast)
     end
 end
 
+# otimes/contract
 @pure otimes(x::TensorIndices{m}, y::TensorIndices{n}) where {m, n} = TensorIndices{m + n}((x.tup..., y.tup...))
-
 @pure function contract(x::TensorIndices, y::TensorIndices, ::Val{N}) where {N}
     if !(0 ≤ N ≤ ndims(x) && 0 ≤ N ≤ ndims(y) && size(x)[end-N+1:end] === size(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
@@ -80,8 +80,25 @@ end
     otimes(droplast(x, Val(N)), dropfirst(y, Val(N)))
 end
 
+# promote_indices
+promote_indices(x::TensorIndices) = x
+function promote_indices(x::TensorIndices{order}, y::TensorIndices{order}) where {order}
+    @assert size(x) == size(y)
+    TensorIndices{order}(_promote_indices(x.tup, y.tup, ()))
+end
+promote_indices(x::TensorIndices, y::TensorIndices, z::TensorIndices...) = promote_indices(promote_indices(x, y), z...)
+## helper functions
+_promote_indices(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
+function _promote_indices(x::Tuple, y::Tuple, promoted::Tuple)
+    if x[1] == y[1]
+        _promote_indices(Base.tail(x), Base.tail(y), (promoted..., x[1]))
+    else
+        _promote_indices(dropfirst(x...), dropfirst(y...), (promoted..., LinearIndices((size(x[1], 1),))))
+    end
+end
+
 @pure _size(x::LinearIndices{1}) = length(x)
 @pure _size(x::SymmetricIndices) = Symmetry{Tuple{size(x)...}}
 @pure function tensortype(x::TensorIndices)
-    Tensor{Tuple{map(_size, x.tup)...}, T, ndims(x), length(unique(x))} where {T}
+    Tensor{Tuple{map(_size, x.tup)...}, T, ndims(x), length(unique(x))} where {T <: Real}
 end
