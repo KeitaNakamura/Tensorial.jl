@@ -77,6 +77,30 @@ for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))
     end
 end
 
+# identity tensors
+for TensorType in (SecondOrderTensor,
+                   FourthOrderTensor,
+                   SymmetricSecondOrderTensor,
+                   SymmetricFourthOrderTensor)
+    @eval Base.one(::Type{$TensorType{dim}}) where {dim} = one($TensorType{dim, Float64})
+end
+@inline function Base.one(TT::Type{<: Union{SecondOrderTensor{dim, T}, SymmetricSecondOrderTensor{dim, T}}}) where {dim, T}
+    o = one(T)
+    z = zero(T)
+    TT((i,j) -> i == j ? o : z)
+end
+@inline function Base.one(TT::Type{<: FourthOrderTensor{dim, T}}) where {dim, T}
+    o = one(T)
+    z = zero(T)
+    TT((i,j,k,l) -> i == k && j == l ? o : z)
+end
+@inline function Base.one(TT::Type{<: SymmetricFourthOrderTensor{dim, T}}) where {dim, T}
+    o = one(T)
+    z = zero(T)
+    δ(i,j) = i == j ? o : z
+    TT((i,j,k,l) -> (δ(i,k)*δ(j,l) + δ(i,l)*δ(j,k))/2)
+end
+
 # for AbstractArray interface
 Base.IndexStyle(::Type{<: Tensor}) = IndexLinear()
 Base.size(x::Tensor) = size(serialindices(x))
