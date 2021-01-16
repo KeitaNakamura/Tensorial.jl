@@ -51,6 +51,20 @@ end
         TT($(exps...))
     end
 end
+@generated function (::Type{TT})(A::AbstractArray) where {S, TT <: Tensor{S}}
+    inds = TensorIndices(S)
+    if IndexStyle(A) isa IndexLinear
+        exps = [:(A[$i]) for i in uniqueindices(S)]
+    else
+        tocartesian = CartesianIndices(inds)
+        exps = [:(A[$(tocartesian[i])]) for i in uniqueindices(S)]
+    end
+    quote
+        @_inline_meta
+        promote_shape($inds, A)
+        @inbounds TT($(exps...))
+    end
+end
 
 ## for aliases
 @inline function Tensor{S, T, N}(data::Tuple{Vararg{Any, L}}) where {S, T, N, L}
