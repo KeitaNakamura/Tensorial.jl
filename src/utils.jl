@@ -8,3 +8,6 @@ end
     exps = [Expr(:..., :(x[$i])) for i in 1:N]
     :(tuple($(exps...)))
 end
+
+@inline fill_tuple(x, ::Val{N}) where {N} = ntuple(i -> x, Val(N))
+@inline fill_tuple(f::Function, ::Val{N}) where {N} = ntuple(i -> f(), Val(N))
