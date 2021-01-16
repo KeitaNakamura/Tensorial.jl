@@ -169,6 +169,12 @@ end
 @inline function inv(x::SquareTensor)
     typeof(x)(inv(Matrix(x)))
 end
+@inline function inv(x::FourthOrderTensor{dim}) where {dim}
+    fromvoigt(FourthOrderTensor{dim}, inv(tovoigt(x)))
+end
+@inline function inv(x::SymmetricFourthOrderTensor{dim}) where {dim}
+    frommandel(SymmetricFourthOrderTensor{dim}, inv(tomandel(x)))
+end
 
 # cross
 @inline cross(x::Vec{1}, y::Vec{1}) =
