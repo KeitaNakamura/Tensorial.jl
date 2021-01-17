@@ -96,24 +96,21 @@ end
 @inline Base.zero(x::Tensor) = zero(typeof(x))
 
 # identity tensors
-for TensorType in (SecondOrderTensor,
-                   FourthOrderTensor,
-                   SymmetricSecondOrderTensor,
-                   SymmetricFourthOrderTensor)
-    @eval Base.one(::Type{$TensorType{dim}}) where {dim} = one($TensorType{dim, Float64})
-    @eval Base.one(x::$TensorType) = one(typeof(x))
-end
-@inline function Base.one(TT::Type{<: Union{SecondOrderTensor{dim, T}, SymmetricSecondOrderTensor{dim, T}}}) where {dim, T}
+Base.one(::Type{Tensor{S}}) where {S <: Tuple} = _one(Tensor{S, Float64})
+Base.one(::Type{Tensor{S, T}}) where {S <: Tuple, T <: Real} = _one(Tensor{S, T})
+Base.one(::Type{TT}) where {TT} = one(basetype(TT))
+Base.one(x::Tensor) = one(typeof(x))
+@inline function _one(TT::Type{<: Union{Tensor{Tuple{dim,dim}, T}, Tensor{Tuple{@Symmetry{dim,dim}}, T}}}) where {dim, T}
     o = one(T)
     z = zero(T)
     TT((i,j) -> i == j ? o : z)
 end
-@inline function Base.one(TT::Type{<: FourthOrderTensor{dim, T}}) where {dim, T}
+@inline function _one(TT::Type{Tensor{NTuple{4,dim}, T}}) where {dim, T}
     o = one(T)
     z = zero(T)
     TT((i,j,k,l) -> i == k && j == l ? o : z)
 end
-@inline function Base.one(TT::Type{<: SymmetricFourthOrderTensor{dim, T}}) where {dim, T}
+@inline function _one(TT::Type{Tensor{NTuple{2,@Symmetry{dim,dim}}, T}}) where {dim, T}
     o = one(T)
     z = zero(T)
     δ(i,j) = i == j ? o : z
