@@ -57,7 +57,6 @@ end
     tovoigt(x, offdiagscale = eltype(x)(√2))
 end
 
-# TODO: fix type instability when element type is not given
 @inline function fromvoigt(TT::Type{<: SecondOrderTensor{dim}}, v::AbstractVector) where {dim}
     @_propagate_inbounds_meta
     TT(function (i, j); v[VOIGT_ORDER[dim][i, j]]; end)

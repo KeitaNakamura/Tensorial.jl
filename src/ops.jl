@@ -172,11 +172,11 @@ end
 end
 @inline function inv(x::FourthOrderTensor{dim}) where {dim}
     @assert dim < 4
-    fromvoigt(typeof(x), inv(tovoigt(x)))
+    fromvoigt(FourthOrderTensor{dim}, inv(tovoigt(x)))
 end
 @inline function inv(x::SymmetricFourthOrderTensor{dim}) where {dim}
     @assert dim < 4
-    frommandel(typeof(x), inv(tomandel(x)))
+    frommandel(SymmetricFourthOrderTensor{dim}, inv(tomandel(x)))
 end
 
 # cross

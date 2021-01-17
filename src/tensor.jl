@@ -1,12 +1,8 @@
 struct Tensor{S <: Tuple, T <: Real, N, L} <: AbstractArray{T, N}
     data::NTuple{L, T}
-    function Tensor{S, T, N, L}(data::NTuple{L, T}) where {S, T, N, L}
-        check_tensor_parameters(S, T, Val(N), Val(L))
-        new{S, T, N, L}(data)
-    end
     function Tensor{S, T, N, L}(data::NTuple{L, Any}) where {S, T, N, L}
         check_tensor_parameters(S, T, Val(N), Val(L))
-        new{S, T, N, L}(map(T, data))
+        new{S, T, N, L}(convert_ntuple(T, data))
     end
 end
 
@@ -37,12 +33,12 @@ const Mat{m, n, T <: Real, L} = Tensor{Tuple{m, n}, T, 2, L}
 end
 @inline function Tensor{S}(data::Tuple{Vararg{Any, L}}) where {S, L}
     N = ndims(TensorIndices(S))
-    T = promote_type(map(eltype, data)...)
+    T = promote_ntuple_eltype(data)
     Tensor{S, T, N, L}(data)
 end
 ## for `tensortype` function
 @inline function (::Type{Tensor{S, T, N, L} where {T <: Real}})(data::Tuple) where {S, N, L}
-    T = promote_type(map(eltype, data)...)
+    T = promote_ntuple_eltype(data)
     Tensor{S, T, N, L}(data)
 end
 ## from Vararg
@@ -79,11 +75,11 @@ end
     Tensor{S, T, N, L}(data)
 end
 @inline function (::Type{Tensor{S, T, N} where {T <: Real}})(data::Tuple) where {S, N}
-    T = promote_type(map(eltype, data)...)
+    T = promote_ntuple_eltype(data)
     Tensor{S, T, N}(data)
 end
 @inline Vec(data::Tuple{Vararg{Any, dim}}) where {dim} = Vec{dim}(data)
-@inline Vec{dim}(data::Tuple) where {dim} = (T = promote_type(map(eltype, data)...); Vec{dim, T}(data))
+@inline Vec{dim}(data::Tuple) where {dim} = (T = promote_ntuple_eltype(data); Vec{dim, T}(data))
 
 # special constructors
 for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
