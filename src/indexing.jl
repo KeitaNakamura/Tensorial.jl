@@ -11,49 +11,69 @@ SymmetricIndices(dims::Vararg{Int, order}) where {order} = SymmetricIndices{orde
 Base.size(x::SymmetricIndices) = x.dims
 
 function Base.getindex(s::SymmetricIndices{order}, I::Vararg{Int, order}) where {order}
+    @boundscheck checkbounds(s, I...)
     sorted = sort!(collect(I), rev = true) # `reverse` is for column-major order
-    LinearIndices(size(s))[CartesianIndex{order}(sorted...)]
+    @inbounds LinearIndices(size(s))[CartesianIndex{order}(sorted...)]
 end
 
 dropfirst(x::SymmetricIndices{2}) = (LinearIndices((x.dims[2],)),)
 dropfirst(x::SymmetricIndices) = (SymmetricIndices(Base.tail(x.dims)...),)
 
+@pure ncomponents(x::SymmetricIndices{order}) where {order} = (dim = size(x, 1); binomial(dim + order - 1, order))
+@pure ncomponents(x::LinearIndices) = length(x)
+
+size_to_indices(x::Int) = LinearIndices((x,))
+@pure size_to_indices(::Type{Symmetry{S}}) where {S} = (check_symmetry_parameters(S); SymmetricIndices(S.parameters...))
 
 struct TensorIndices{order, I <: Tuple{Vararg{Union{LinearIndices{1}, SymmetricIndices}}}} <: AbstractArray{Int, order}
-    tup::I
+    indices::I
+    function TensorIndices{order, I}(indices::I) where {order, I}
+        new{order::Int, I}(indices)
+    end
 end
-TensorIndices{order}(tup) where {order} = TensorIndices{order, typeof(tup)}(tup)
+@pure function TensorIndices(indices::Tuple{Vararg{Union{LinearIndices{1}, SymmetricIndices}}})
+    order = length(flatten_tuple(map(size, indices)))
+    TensorIndices{order, typeof(indices)}(indices)
+end
 
-_indices(x::Int) = LinearIndices((x,))
-@pure _indices(::Type{Symmetry{S}}) where {S} = (check_symmetry_parameters(S); SymmetricIndices(S.parameters...))
 @pure function TensorIndices(::Type{Size}) where {Size <: Tuple}
     check_size_parameters(Size)
-    tup = map(_indices, tuple(Size.parameters...))
-    order = length(flatten_tuple(map(size, tup)))
-    TensorIndices{order}(tup)
+    indices = map(size_to_indices, tuple(Size.parameters...))
+    TensorIndices(indices)
 end
 
-Base.size(x::TensorIndices) = flatten_tuple(map(size, x.tup))
+Base.size(x::TensorIndices) = flatten_tuple(map(size, indices(x)))
+indices(x::TensorIndices) = x.indices
 
-function Base.getindex(indices::TensorIndices{order}, I::Vararg{Int, order}) where {order}
-    tup = indices.tup
+ncomponents(x::TensorIndices) = prod(map(ncomponents, indices(x)))
+
+function Base.getindex(x::TensorIndices{order}, I::Vararg{Int, order}) where {order}
+    @boundscheck checkbounds(x, I...)
     st = 1
-    inds = Vector{Int}(undef, length(tup))
-    for (i,x) in enumerate(tup)
-        n = ndims(x)
-        inds[i] = x[I[st:(st+=n)-1]...]
+    inds = Vector{Int}(undef, length(indices(x)))
+    @inbounds begin
+        for (i,x) in enumerate(indices(x))
+            n = ndims(x)
+            inds[i] = x[I[st:(st+=n)-1]...]
+        end
+        LinearIndices(length.(indices(x)))[inds...]
     end
-    LinearIndices(length.(tup))[inds...]
 end
 
-function serial(inds::TensorIndices)
+@pure function serialindices(inds::TensorIndices)
     dict = Dict{Int, Int}()
-    map(inds) do i
+    arr = map(inds) do i
         get!(dict, i, length(dict) + 1)
     end
+    SArray{Tuple{size(arr)...}, Int}(arr)
 end
 
-function dups(inds::TensorIndices)
+@pure function uniqueindices(inds::TensorIndices)
+    arr = unique(inds)
+    SArray{Tuple{size(arr)...}, Int}(arr)
+end
+
+@pure function dupsindices(inds::TensorIndices)
     dups = Dict{Int, Int}()
     for i in inds
         if !haskey(dups, i)
@@ -62,7 +82,8 @@ function dups(inds::TensorIndices)
             dups[i] += 1
         end
     end
-    map(x -> x.second, sort(collect(dups), by = x->x[1]))
+    arr = map(x -> x.second, sort(collect(dups), by = x->x[1]))
+    SArray{Tuple{size(arr)...}, Int}(arr)
 end
 
 
@@ -74,17 +95,17 @@ dropfirst(x::SymmetricIndices, ys...) = (dropfirst(x)..., ys...)
 ## dropfirst/droplast for TensorIndices
 dropfirst(x::TensorIndices{0}) = error()
 droplast(x::TensorIndices{0}) = error()
-dropfirst(x::TensorIndices{order}) where {order} = TensorIndices{order-1}(dropfirst(x.tup...))
-droplast(x::TensorIndices{order}) where {order} = TensorIndices{order-1}(reverse(dropfirst(reverse(x.tup)...)))
+@pure dropfirst(x::TensorIndices) = TensorIndices(dropfirst(indices(x)...))
+@pure droplast(x::TensorIndices) = TensorIndices(reverse(dropfirst(reverse(indices(x))...)))
 for op in (:dropfirst, :droplast)
     @eval begin
-        $op(x::TensorIndices, ::Val{0}) = x
-        $op(x::TensorIndices, ::Val{N}) where {N} = $op($op(x), Val(N-1))
+        @pure $op(x::TensorIndices, ::Val{0}) = x
+        @pure $op(x::TensorIndices, ::Val{N}) where {N} = $op($op(x), Val(N-1))
     end
 end
 
 # otimes/contract
-@pure otimes(x::TensorIndices{m}, y::TensorIndices{n}) where {m, n} = TensorIndices{m + n}((x.tup..., y.tup...))
+@pure otimes(x::TensorIndices, y::TensorIndices) = TensorIndices((indices(x)..., indices(y)...))
 @pure function contract(x::TensorIndices, y::TensorIndices, ::Val{N}) where {N}
     if !(0 ≤ N ≤ ndims(x) && 0 ≤ N ≤ ndims(y) && size(x)[end-N+1:end] === size(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
@@ -94,14 +115,14 @@ end
 
 # promote_indices
 promote_indices(x::TensorIndices) = x
-function promote_indices(x::TensorIndices{order}, y::TensorIndices{order}) where {order}
+@pure function promote_indices(x::TensorIndices, y::TensorIndices)
     @assert size(x) == size(y)
-    TensorIndices{order}(_promote_indices(x.tup, y.tup, ()))
+    TensorIndices(_promote_indices(indices(x), indices(y), ()))
 end
-promote_indices(x::TensorIndices, y::TensorIndices, z::TensorIndices...) = promote_indices(promote_indices(x, y), z...)
+@pure promote_indices(x::TensorIndices, y::TensorIndices, z::TensorIndices...) = promote_indices(promote_indices(x, y), z...)
 ## helper functions
 _promote_indices(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
-function _promote_indices(x::Tuple, y::Tuple, promoted::Tuple)
+@pure function _promote_indices(x::Tuple, y::Tuple, promoted::Tuple)
     if x[1] == y[1]
         _promote_indices(Base.tail(x), Base.tail(y), (promoted..., x[1]))
     else
@@ -112,5 +133,5 @@ end
 @pure _size(x::LinearIndices{1}) = length(x)
 @pure _size(x::SymmetricIndices) = Symmetry{Tuple{size(x)...}}
 @pure function tensortype(x::TensorIndices)
-    Tensor{Tuple{map(_size, x.tup)...}, T, ndims(x), length(unique(x))} where {T <: Real}
+    Tensor{Tuple{map(_size, indices(x))...}, T, ndims(x), length(unique(x))} where {T <: Real}
 end

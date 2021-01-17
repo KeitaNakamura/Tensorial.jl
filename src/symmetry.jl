@@ -5,6 +5,8 @@ struct Symmetry{Size <: Tuple}
     end
 end
 @pure Symmetry(::Type{S}) where {S} = Symmetry{S}()
+@pure Symmetry(dims::NTuple{N, Int}) where {N} = Symmetry{Tuple{dims...}}()
+@pure Symmetry(dims::Vararg{Int, N}) where {N} = Symmetry{Tuple{dims...}}()
 
 @generated function check_symmetry_parameters(::Type{Size}) where {Size <: Tuple}
     if !all(x -> isa(x, Int), Size.parameters)
@@ -20,4 +22,4 @@ macro Symmetry(ex::Expr)
     esc(:($Symmetry{Tuple{$(ex.args...)}}))
 end
 
-ncomponents(::Symmetry{NTuple{order, dim}}) where {order, dim} = binomial(dim + order - 1, order)
+ncomponents(x::Symmetry) = ncomponents(size_to_indices(typeof(x)))

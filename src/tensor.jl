@@ -133,32 +133,17 @@ ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
 TensorIndices(::Tensor{S}) where {S} = TensorIndices(S)
 TensorIndices(::Type{<: Tensor{S}}) where {S} = TensorIndices(S)
 ## serialindices
-@pure function serialindices(::Type{S}) where {S}
-    inds = serial(TensorIndices(S))
-    dims = size(inds)
-    SArray{Tuple{dims...}, Int}(inds)
-end
+serialindices(::Type{S}) where {S} = serialindices(TensorIndices(S))
 serialindices(::Tensor{S}) where {S} = serialindices(S)
-@pure serialindices(::Type{<: Tensor{S}}) where {S} = serialindices(S)
-@pure serialindices(inds::TensorIndices) = serialindices(tensortype(inds))
+serialindices(::Type{<: Tensor{S}}) where {S} = serialindices(S)
 ## uniqueindices
-@pure function uniqueindices(::Type{S}) where {S}
-    inds = unique(TensorIndices(S))
-    dims = size(inds)
-    SArray{Tuple{dims...}, Int}(inds)
-end
+uniqueindices(::Type{S}) where {S} = uniqueindices(TensorIndices(S))
 uniqueindices(::Tensor{S}) where {S} = uniqueindices(S)
-@pure uniqueindices(::Type{<: Tensor{S}}) where {S} = uniqueindices(S)
-@pure uniqueindices(inds::TensorIndices) = uniqueindices(tensortype(inds))
+uniqueindices(::Type{<: Tensor{S}}) where {S} = uniqueindices(S)
 ## dupsindices
-@pure function dupsindices(::Type{S}) where {S}
-    inds = dups(TensorIndices(S))
-    dims = size(inds)
-    SArray{Tuple{dims...}, Int}(inds)
-end
+dupsindices(::Type{S}) where {S} = dupsindices(TensorIndices(S))
 dupsindices(::Tensor{S}) where {S} = dupsindices(S)
-@pure dupsindices(::Type{<: Tensor{S}}) where {S} = dupsindices(S)
-@pure dupsindices(inds::TensorIndices) = dupsindices(tensortype(inds))
+dupsindices(::Type{<: Tensor{S}}) where {S} = dupsindices(S)
 
 # getindex
 @inline function Base.getindex(x::Tensor, i::Int)
