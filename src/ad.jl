@@ -32,13 +32,13 @@ end
 
 # Real case
 @inline extract_gradient(v::RealOrTensor, ::Real) = zero(v)
-@inline extract_gradient(v::Real, x::Tensor{S}) where {S} = zero(Tensor{S})
+@inline extract_gradient(v::Real, x::Tensor{S}) where {S} = zero(Tensor{S, typeof(v)})
 @generated function extract_gradient(v::Tensor{S}, x::Tensor) where {S}
     inds = otimes(TensorIndices(v), TensorIndices(x))
     TT = tensortype(inds)
     quote
         @_inline_meta
-        zero($TT)
+        zero($TT{eltype(v)})
     end
 end
 
@@ -55,7 +55,7 @@ end
     end
 end
 @generated function extract_gradient(v::Tensor{S, <: Dual}, ::Real) where {S}
-    exps = [:(partials(Tuple(v)[$i], st)) for i in 1:ncomponents(v)]
+    exps = [:(partials(Tuple(v)[$i], 1)) for i in 1:ncomponents(v)]
     return quote
         @_inline_meta
         @inbounds Tensor{S}($(exps...))

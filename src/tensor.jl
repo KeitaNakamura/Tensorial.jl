@@ -93,6 +93,7 @@ for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))
         @inline Base.$op(::Type{Tensor{S, T, N, L} where {T <: Real}}) where {S, N, L} = $op(Tensor{S, Float64})
     end
 end
+@inline Base.zero(x::Tensor) = zero(typeof(x))
 
 # identity tensors
 for TensorType in (SecondOrderTensor,
