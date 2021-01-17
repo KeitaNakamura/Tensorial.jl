@@ -125,28 +125,33 @@ Base.size(x::Tensor) = size(serialindices(x))
 Base.Tuple(x::Tensor) = x.data
 ncomponents(x::Tensor) = length(Tuple(x))
 ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
+@pure basetype(::Type{<: Tensor{S}}) where {S <: Tuple} = Tensor{S}
+@pure basetype(::Type{<: Tensor{S, T}}) where {S <: Tuple, T <: Real} = Tensor{S, T}
 
 # indices
 ## TensorIndices
 TensorIndices(::Tensor{S}) where {S} = TensorIndices(S)
 TensorIndices(::Type{<: Tensor{S}}) where {S} = TensorIndices(S)
 ## serialindices
-serialindices(::Type{S}) where {S} = serialindices(TensorIndices(S))
+@pure serialindices(::Type{S}) where {S} = serialindices(TensorIndices(S))
 serialindices(::Tensor{S}) where {S} = serialindices(S)
-serialindices(::Type{<: Tensor{S}}) where {S} = serialindices(S)
+@pure serialindices(::Type{<: Tensor{S}}) where {S} = serialindices(S)
 ## uniqueindices
-uniqueindices(::Type{S}) where {S} = uniqueindices(TensorIndices(S))
+@pure uniqueindices(::Type{S}) where {S} = uniqueindices(TensorIndices(S))
 uniqueindices(::Tensor{S}) where {S} = uniqueindices(S)
-uniqueindices(::Type{<: Tensor{S}}) where {S} = uniqueindices(S)
+@pure uniqueindices(::Type{<: Tensor{S}}) where {S} = uniqueindices(S)
 ## dupsindices
-dupsindices(::Type{S}) where {S} = dupsindices(TensorIndices(S))
+@pure dupsindices(::Type{S}) where {S} = dupsindices(TensorIndices(S))
 dupsindices(::Tensor{S}) where {S} = dupsindices(S)
-dupsindices(::Type{<: Tensor{S}}) where {S} = dupsindices(S)
+@pure dupsindices(::Type{<: Tensor{S}}) where {S} = dupsindices(S)
 
 # getindex
-@inline function Base.getindex(x::Tensor, i::Int)
-    @boundscheck checkbounds(x, i)
-    @inbounds Tuple(x)[serialindices(x)[i]]
+@generated function Base.getindex(x::Tensor, i::Int)
+    quote
+        @_inline_meta
+        @boundscheck checkbounds(x, i)
+        @inbounds Tuple(x)[$(serialindices(x))[i]]
+    end
 end
 
 # broadcast
