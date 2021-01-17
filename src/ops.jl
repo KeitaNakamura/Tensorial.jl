@@ -53,7 +53,7 @@ function contract_exprs(::Type{S1}, ::Type{S2}, ::Val{N}) where {S1, S2, N}
     s = reshape(s′, size(s1)[1:end-N]..., size(s2)[N+1:end]...)
     map(_reduce, s[uniqueindices(t)])
 end
-contract_exprs(::Type{<: Tensor{S1}}, ::Type{Tensor{S2}}, ::Val{N}) where {S1, S2, N} = contract_exprs(S1, S2, Val(N))
+contract_exprs(::Type{<: Tensor{S1}}, ::Type{<: Tensor{S2}}, ::Val{N}) where {S1, S2, N} = contract_exprs(S1, S2, Val(N))
 
 @generated function contract(x::Tensor, y::Tensor, ::Val{N}) where {N}
     t = contract(TensorIndices(x), TensorIndices(y), Val(N))

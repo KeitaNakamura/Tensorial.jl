@@ -18,7 +18,7 @@ end
      end
  end
 
-const RealOrTensor{T <: Real} = Union{T, Tensor{S, T} where {S}}
+const RealOrTensor = Union{Real, Tensor}
 
 @inline extract_value(v::RealOrTensor, ::RealOrTensor) = v
 @inline extract_value(v::Dual, ::RealOrTensor) = value(v)

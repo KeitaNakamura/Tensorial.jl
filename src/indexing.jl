@@ -133,5 +133,5 @@ end
 @pure _size(x::LinearIndices{1}) = length(x)
 @pure _size(x::SymmetricIndices) = Symmetry{Tuple{size(x)...}}
 @pure function tensortype(x::TensorIndices)
-    Tensor{Tuple{map(_size, indices(x))...}, T, ndims(x), length(unique(x))} where {T <: Real}
+    Tensor{Tuple{map(_size, indices(x))...}, T, ndims(x), length(unique(x))} where {T}
 end

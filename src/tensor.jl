@@ -1,4 +1,6 @@
-struct Tensor{S <: Tuple, T <: Real, N, L} <: AbstractArray{T, N}
+abstract type AbstractTensor{S <: Tuple, T <: Real, N} <: AbstractArray{T, N} end
+
+struct Tensor{S, T, N, L} <: AbstractTensor{S, T, N}
     data::NTuple{L, T}
     function Tensor{S, T, N, L}(data::NTuple{L, Any}) where {S, T, N, L}
         check_tensor_parameters(S, T, Val(N), Val(L))
@@ -17,14 +19,14 @@ end
 end
 
 # aliases
-const SecondOrderTensor{dim, T <: Real, L} = Tensor{NTuple{2, dim}, T, 2, L}
-const ThirdOrderTensor{dim, T <: Real, L} = Tensor{NTuple{3, dim}, T, 3, L}
-const FourthOrderTensor{dim, T <: Real, L} = Tensor{NTuple{4, dim}, T, 4, L}
-const SymmetricSecondOrderTensor{dim, T <: Real, L} = Tensor{Tuple{@Symmetry{dim, dim}}, T, 2, L}
-const SymmetricThirdOrderTensor{dim, T <: Real, L} = Tensor{Tuple{@Symmetry{dim, dim, dim}}, T, 3, L}
-const SymmetricFourthOrderTensor{dim, T <: Real, L} = Tensor{NTuple{2, @Symmetry{dim, dim}}, T, 4, L}
-const Vec{dim, T <: Real} = Tensor{Tuple{dim}, T, 1, dim}
-const Mat{m, n, T <: Real, L} = Tensor{Tuple{m, n}, T, 2, L}
+const SecondOrderTensor{dim, T, L} = Tensor{NTuple{2, dim}, T, 2, L}
+const ThirdOrderTensor{dim, T, L} = Tensor{NTuple{3, dim}, T, 3, L}
+const FourthOrderTensor{dim, T, L} = Tensor{NTuple{4, dim}, T, 4, L}
+const SymmetricSecondOrderTensor{dim, T, L} = Tensor{Tuple{@Symmetry{dim, dim}}, T, 2, L}
+const SymmetricThirdOrderTensor{dim, T, L} = Tensor{Tuple{@Symmetry{dim, dim, dim}}, T, 3, L}
+const SymmetricFourthOrderTensor{dim, T, L} = Tensor{NTuple{2, @Symmetry{dim, dim}}, T, 4, L}
+const Mat{m, n, T, L} = Tensor{Tuple{m, n}, T, 2, L}
+const Vec{dim, T} = Tensor{Tuple{dim}, T, 1, dim}
 
 # constructors
 @inline function Tensor{S, T}(data::Tuple{Vararg{Any, L}}) where {S, T, L}
@@ -37,7 +39,7 @@ end
     Tensor{S, T, N, L}(data)
 end
 ## for `tensortype` function
-@inline function (::Type{Tensor{S, T, N, L} where {T <: Real}})(data::Tuple) where {S, N, L}
+@inline function (::Type{Tensor{S, T, N, L} where {T}})(data::Tuple) where {S, N, L}
     T = promote_ntuple_eltype(data)
     Tensor{S, T, N, L}(data)
 end
@@ -74,7 +76,7 @@ end
 @inline function Tensor{S, T, N}(data::Tuple{Vararg{Any, L}}) where {S, T, N, L}
     Tensor{S, T, N, L}(data)
 end
-@inline function (::Type{Tensor{S, T, N} where {T <: Real}})(data::Tuple) where {S, N}
+@inline function (::Type{Tensor{S, T, N} where {T}})(data::Tuple) where {S, N}
     T = promote_ntuple_eltype(data)
     Tensor{S, T, N}(data)
 end
@@ -89,15 +91,15 @@ for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))
         # for aliases
         @inline Base.$op(::Type{Tensor{S, T, N}}) where {S, T, N} = $op(Tensor{S, T})
         @inline Base.$op(::Type{Tensor{S, T, N, L}}) where {S, T, N, L} = $op(Tensor{S, T})
-        @inline Base.$op(::Type{Tensor{S, T, N} where {T <: Real}}) where {S, N} = $op(Tensor{S, Float64})
-        @inline Base.$op(::Type{Tensor{S, T, N, L} where {T <: Real}}) where {S, N, L} = $op(Tensor{S, Float64})
+        @inline Base.$op(::Type{Tensor{S, T, N} where {T}}) where {S, N} = $op(Tensor{S, Float64})
+        @inline Base.$op(::Type{Tensor{S, T, N, L} where {T}}) where {S, N, L} = $op(Tensor{S, Float64})
     end
 end
 @inline Base.zero(x::Tensor) = zero(typeof(x))
 
 # identity tensors
-Base.one(::Type{Tensor{S}}) where {S <: Tuple} = _one(Tensor{S, Float64})
-Base.one(::Type{Tensor{S, T}}) where {S <: Tuple, T <: Real} = _one(Tensor{S, T})
+Base.one(::Type{Tensor{S}}) where {S} = _one(Tensor{S, Float64})
+Base.one(::Type{Tensor{S, T}}) where {S, T} = _one(Tensor{S, T})
 Base.one(::Type{TT}) where {TT} = one(basetype(TT))
 Base.one(x::Tensor) = one(typeof(x))
 @inline function _one(TT::Type{<: Union{Tensor{Tuple{dim,dim}, T}, Tensor{Tuple{@Symmetry{dim,dim}}, T}}}) where {dim, T}
@@ -125,8 +127,8 @@ Base.size(x::Tensor) = size(serialindices(x))
 Base.Tuple(x::Tensor) = x.data
 ncomponents(x::Tensor) = length(Tuple(x))
 ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
-@pure basetype(::Type{<: Tensor{S}}) where {S <: Tuple} = Tensor{S}
-@pure basetype(::Type{<: Tensor{S, T}}) where {S <: Tuple, T <: Real} = Tensor{S, T}
+@pure basetype(::Type{<: Tensor{S}}) where {S} = Tensor{S}
+@pure basetype(::Type{<: Tensor{S, T}}) where {S, T} = Tensor{S, T}
 
 # indices
 ## TensorIndices
