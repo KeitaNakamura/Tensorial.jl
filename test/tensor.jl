@@ -65,8 +65,8 @@
             @test (@inferred zero(Tensor{Tuple{2,2}, Int, 2}))::Tensor{Tuple{2,2}, Int, 2, 4} |> Tuple == (0,0,0,0)
             @test (@inferred zero(Tensor{Tuple{2,2}, Int}))::Tensor{Tuple{2,2}, Int, 2, 4} |> Tuple == (0,0,0,0)
             @test (@inferred zero(Tensor{Tuple{2,2}}))::Tensor{Tuple{2,2}, Float64, 2, 4} |> Tuple == (0.0,0.0,0.0,0.0)
-            for TensorType in (SecondOrderTensor, ThirdOrderTensor, FourthOrderTensor,
-                               SymmetricSecondOrderTensor, SymmetricThirdOrderTensor, SymmetricFourthOrderTensor,
+            for TensorType in (SecondOrderTensor, FourthOrderTensor,
+                               SymmetricSecondOrderTensor, SymmetricFourthOrderTensor,
                                Vec)
                 @test all(==(0), (@inferred zero(TensorType{2, Int}))::TensorType{2, Int})
                 @test all(==(0), (@inferred zero(TensorType{2}))::TensorType{2, Float64})
@@ -78,8 +78,8 @@
             @test (@inferred ones(Tensor{Tuple{2,2}, Int, 2}))::Tensor{Tuple{2,2}, Int, 2, 4} |> Tuple == (1,1,1,1)
             @test (@inferred ones(Tensor{Tuple{2,2}, Int}))::Tensor{Tuple{2,2}, Int, 2, 4} |> Tuple == (1,1,1,1)
             @test (@inferred ones(Tensor{Tuple{2,2}}))::Tensor{Tuple{2,2}, Float64, 2, 4} |> Tuple == (1.0,1.0,1.0,1.0)
-            for TensorType in (SecondOrderTensor, ThirdOrderTensor, FourthOrderTensor,
-                               SymmetricSecondOrderTensor, SymmetricThirdOrderTensor, SymmetricFourthOrderTensor,
+            for TensorType in (SecondOrderTensor, FourthOrderTensor,
+                               SymmetricSecondOrderTensor, SymmetricFourthOrderTensor,
                                Vec)
                 @test all(==(1), (@inferred ones(TensorType{2, Int}))::TensorType{2, Int})
                 @test all(==(1), (@inferred ones(TensorType{2}))::TensorType{2, Float64})
@@ -92,8 +92,8 @@
                 @test (@inferred op(Tensor{Tuple{2,2}, Float32, 2}))::Tensor{Tuple{2,2}, Float32, 2, 4} |> unique |> length != 1
                 @test (@inferred op(Tensor{Tuple{2,2}, Float32}))::Tensor{Tuple{2,2}, Float32, 2, 4} |> unique |> length != 1
                 @test (@inferred op(Tensor{Tuple{2,2}}))::Tensor{Tuple{2,2}, Float64, 2, 4} |> unique |> length != 1
-                for TensorType in (SecondOrderTensor, ThirdOrderTensor, FourthOrderTensor,
-                                   SymmetricSecondOrderTensor, SymmetricThirdOrderTensor, SymmetricFourthOrderTensor,
+                for TensorType in (SecondOrderTensor, FourthOrderTensor,
+                                   SymmetricSecondOrderTensor, SymmetricFourthOrderTensor,
                                    Vec)
                     @test (@inferred op(TensorType{2, Float32}))::TensorType{2, Float32} |> unique |> length != 1
                     @test (@inferred op(TensorType{2}))::TensorType{2, Float64} |> unique |> length != 1
