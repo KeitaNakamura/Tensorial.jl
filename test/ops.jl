@@ -115,6 +115,7 @@ end
     end
     @testset "det/inv" begin
         for T in (Float32, Float64), dim in 1:4
+            Random.seed!(1234)
             # second order
             x = rand(SecondOrderTensor{dim, T})
             y = rand(SymmetricSecondOrderTensor{dim, T})
