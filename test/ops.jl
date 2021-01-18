@@ -16,6 +16,9 @@
         @test (@inferred +y)::typeof(y) == y
         @test (@inferred -x)::typeof(x) == -Array(x)
         @test (@inferred -y)::typeof(y) == -Array(y)
+        # bad operations
+        @test_throws Exception x * y
+        @test_throws Exception y * x
     end
 end
 

@@ -20,6 +20,11 @@ end
 @inline Base.:+(x::Tensor) = x
 @inline Base.:-(x::Tensor) = _map(-, x)
 
+# error for standard multiplications
+function Base.:*(::Tensor, ::Tensor)
+    error("use `⋅` (`\\cdot`) for single contraction and `⊡` (`\\boxdot`) for double contraction instead of `*`")
+end
+
 function _reduce(x::Vector{Expr})
     out = Expr[]
     ndups = ones(Int, length(x))
