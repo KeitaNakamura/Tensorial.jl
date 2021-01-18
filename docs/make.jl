@@ -27,4 +27,5 @@ makedocs(;
 
 deploydocs(
     repo = "github.com/KeitaNakamura/Tensorial.jl.git",
+    devbranch = "main",
 )
