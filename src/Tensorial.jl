@@ -39,6 +39,7 @@ export
 include("utils.jl")
 include("symmetry.jl")
 include("indexing.jl")
+include("einsum.jl")
 include("tensor.jl")
 include("ops.jl")
 include("voigt.jl")

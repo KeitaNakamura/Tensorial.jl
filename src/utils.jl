@@ -29,3 +29,5 @@ end
         $T
     end
 end
+
+tuple_sort(x::NTuple{N, Any}; kwargs...) where {N} = Tuple(sort(SVector(x); kwargs...))
