@@ -104,9 +104,9 @@ for op in (:dropfirst, :droplast)
     end
 end
 
-# otimes/contract
+# otimes/contraction
 @pure otimes(x::TensorIndices, y::TensorIndices) = TensorIndices((indices(x)..., indices(y)...))
-@pure function contract(x::TensorIndices, y::TensorIndices, ::Val{N}) where {N}
+@pure function contraction(x::TensorIndices, y::TensorIndices, ::Val{N}) where {N}
     if !(0 ≤ N ≤ ndims(x) && 0 ≤ N ≤ ndims(y) && size(x)[end-N+1:end] === size(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
     end

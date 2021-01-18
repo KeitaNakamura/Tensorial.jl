@@ -33,14 +33,14 @@ Tensor{Tuple{@Symmetry{2,2}}}((i,j) -> i == j ? 1 : 0) == one(Tensor{Tuple{@Symm
 x = rand(Tensor{Tuple{2,2}})
 y = rand(Tensor{Tuple{@Symmetry{2,2}}})
 x ⊗ y isa Tensor{Tuple{2,2,@Symmetry{2,2}}} # tensor product
-x ⋅ y isa Tensor{Tuple{2,2}}                # single contraction
-x ⊡ y isa Real                              # double contraction
+x ⋅ y isa Tensor{Tuple{2,2}}                # single contraction (x_ij * y_jk)
+x ⊡ y isa Real                              # double contraction (x_ij * y_ij)
 
 # 3rd-order vs. 1st-order
 A = rand(Tensor{Tuple{@Symmetry{2,2},2}})
 v = rand(Vec{2})
-A ⊗ v isa Tensor{Tuple{@Symmetry{2,2},2,2}}
-A ⋅ v isa Tensor{Tuple{@Symmetry{2,2}}}
+A ⊗ v isa Tensor{Tuple{@Symmetry{2,2},2,2}} # A_ijk * v_l
+A ⋅ v isa Tensor{Tuple{@Symmetry{2,2}}}     # A_ijk * v_k
 A ⊡ v # error
 
 # 4th-order vs. 2nd-order
@@ -49,6 +49,14 @@ A = rand(Tensor{Tuple{2,2}})
 S = rand(Tensor{Tuple{@Symmetry{2,2}}})
 II ⊡ A == (A + A') / 2 == symmetric(A) # symmetrizing A, resulting in Tensor{Tuple{@Symmetry{2,2}}}
 II ⊡ S == S
+
+# contraction
+x = rand(Tensor{Tuple{2,2,2}})
+y = rand(Tensor{Tuple{2,@Symmetry{2,2}}})
+contraction(x, y, Val(1)) isa Tensor{Tuple{2,2, @Symmetry{2,2}}}     # single contraction (== ⋅)
+contraction(x, y, Val(2)) isa Tensor{Tuple{2,2}}                     # double contraction (== ⊡)
+contraction(x, y, Val(3)) isa Real                                   # triple contraction (x_ijk * y_ijk)
+contraction(x, y, Val(0)) isa Tensor{Tuple{2,2,2,2, @Symmetry{2,2}}} # tensor product (== ⊗)
 
 # norm/tr/mean/vol/dev
 x = rand(SecondOrderTensor{3}) # equal to rand(Tensor{Tuple{3,3}})

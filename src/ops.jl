@@ -37,8 +37,8 @@ function _reduce(x::Vector{Expr})
     Expr(:call, :+, out...)
 end
 
-function contract_exprs(::Type{S1}, ::Type{S2}, ::Val{N}) where {S1, S2, N}
-    t = contract(TensorIndices(S1), TensorIndices(S2), Val(N))
+function contraction_exprs(::Type{S1}, ::Type{S2}, ::Val{N}) where {S1, S2, N}
+    t = contraction(TensorIndices(S1), TensorIndices(S2), Val(N))
     s1 = serialindices(S1)
     s2 = serialindices(S2)
     J = prod(size(s2)[1:N])
@@ -53,11 +53,11 @@ function contract_exprs(::Type{S1}, ::Type{S2}, ::Val{N}) where {S1, S2, N}
     s = reshape(s′, size(s1)[1:end-N]..., size(s2)[N+1:end]...)
     map(_reduce, s[uniqueindices(t)])
 end
-contract_exprs(::Type{<: Tensor{S1}}, ::Type{<: Tensor{S2}}, ::Val{N}) where {S1, S2, N} = contract_exprs(S1, S2, Val(N))
+contraction_exprs(::Type{<: Tensor{S1}}, ::Type{<: Tensor{S2}}, ::Val{N}) where {S1, S2, N} = contraction_exprs(S1, S2, Val(N))
 
-@generated function contract(x::Tensor, y::Tensor, ::Val{N}) where {N}
-    t = contract(TensorIndices(x), TensorIndices(y), Val(N))
-    exps = contract_exprs(x, y, Val(N))
+@generated function contraction(x::Tensor, y::Tensor, ::Val{N}) where {N}
+    t = contraction(TensorIndices(x), TensorIndices(y), Val(N))
+    exps = contraction_exprs(x, y, Val(N))
     T = promote_type(eltype(x), eltype(y))
     if ndims(t) == 0
         TT = T
@@ -70,10 +70,10 @@ contract_exprs(::Type{<: Tensor{S1}}, ::Type{<: Tensor{S2}}, ::Val{N}) where {S1
     end
 end
 
-@inline otimes(x1::Tensor, x2::Tensor) = contract(x1, x2, Val(0))
-@inline dot(x1::Tensor, x2::Tensor) = contract(x1, x2, Val(1))
-@inline dcontract(x1::Tensor, x2::Tensor) = contract(x1, x2, Val(2))
-@inline norm(x::Tensor) = sqrt(contract(x, x, Val(ndims(x))))
+@inline otimes(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(0))
+@inline dot(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(1))
+@inline dcontraction(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(2))
+@inline norm(x::Tensor) = sqrt(contraction(x, x, Val(ndims(x))))
 
 const SquareTensor{dim, T} = Union{SecondOrderTensor{dim, T}, SymmetricSecondOrderTensor{dim, T}}
 
@@ -203,7 +203,7 @@ end
 @inline _powdot(x::SecondOrderTensor, y::SecondOrderTensor) = dot(x, y)
 @generated function _powdot(x::SymmetricSecondOrderTensor{dim}, y::SymmetricSecondOrderTensor{dim}) where {dim}
     inds = TensorIndices(x)
-    exps = contract_exprs(x, y, Val(1))
+    exps = contraction_exprs(x, y, Val(1))
     quote
         @_inline_meta
         @inbounds SymmetricSecondOrderTensor{dim}($(exps[uniqueindices(inds)]...))

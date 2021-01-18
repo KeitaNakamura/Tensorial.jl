@@ -26,7 +26,7 @@ export
     Vec,
     Mat,
 # operations
-    contract,
+    contraction,
     vol,
     dev,
     symmetric,
@@ -45,6 +45,6 @@ include("voigt.jl")
 include("ad.jl")
 
 const ⊗ = otimes
-const ⊡ = dcontract
+const ⊡ = dcontraction
 
 end # module

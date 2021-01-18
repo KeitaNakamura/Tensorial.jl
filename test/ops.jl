@@ -20,12 +20,12 @@
 end
 
 @testset "Tensor operations" begin
-    @testset "contract" begin
+    @testset "contraction" begin
         for T in (Float32, Float64)
             x = rand(Tensor{Tuple{3,@Symmetry{3,3}}, T})
             y = rand(Tensor{Tuple{@Symmetry{3,3,3}}, T})
             # single contraction
-            z = (@inferred contract(x, y, Val(1)))::Tensor{Tuple{3,3,@Symmetry{3,3}}, T}
+            z = (@inferred contraction(x, y, Val(1)))::Tensor{Tuple{3,3,@Symmetry{3,3}}, T}
             X = Array(x);
             Y = Array(y);
             Z = zeros(T, 3,3,3,3)
@@ -34,7 +34,7 @@ end
             end
             @test Array(z) ≈ Z
             # double contraction
-            z = (@inferred contract(x, y, Val(2)))::Tensor{Tuple{3,3}, T}
+            z = (@inferred contraction(x, y, Val(2)))::Tensor{Tuple{3,3}, T}
             X = Array(x);
             Y = Array(y);
             Z = zeros(T, 3,3)
@@ -43,7 +43,7 @@ end
             end
             @test Array(z) ≈ Z
             # triple contraction
-            z = (@inferred contract(x, y, Val(3)))::T
+            z = (@inferred contraction(x, y, Val(3)))::T
             X = Array(x);
             Y = Array(y);
             Z = zero(T)
@@ -52,7 +52,7 @@ end
             end
             @test z ≈ Z
             # zero contraction (otimes)
-            z = (@inferred contract(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry{3,3},@Symmetry{3,3,3}}, T}
+            z = (@inferred contraction(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry{3,3},@Symmetry{3,3,3}}, T}
             X = Array(x);
             Y = Array(y);
             Z = zeros(T, 3,3,3,3,3,3)
