@@ -83,6 +83,15 @@ end
             @test (@inferred norm(z)) ≈ norm(Array(z))
         end
     end
+    @testset "dotdot" begin
+        for T in (Float32, Float64)
+            x = rand(Vec{3, T})
+            y = rand(Vec{3, T})
+            S = rand(SymmetricFourthOrderTensor{3, T})
+            A = FourthOrderTensor{3, T}((i,j,k,l) -> S[i,k,j,l])
+            @test (@inferred dotdot(x, S, y))::Tensor{Tuple{3,3}, T} ≈ A ⊡ (x ⊗ y)
+        end
+    end
     @testset "tr/mean/vol/dev" begin
         for T in (Float32, Float64)
             x = rand(SecondOrderTensor{3, T})

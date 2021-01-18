@@ -63,6 +63,22 @@ end
 @inline dcontraction(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(2))
 @inline norm(x::Tensor) = sqrt(contraction(x, x, Val(ndims(x))))
 
+# v_k * S_ikjl * u_l
+@generated function dotdot(v1::Vec{dim}, S::SymmetricFourthOrderTensor{dim}, v2::Vec{dim}) where {dim}
+    v1inds = map(i -> EinsumIndex(:(Tuple(v1)), i), serialindices(v1))
+    v2inds = map(i -> EinsumIndex(:(Tuple(v2)), i), serialindices(v2))
+    Sinds = map(i -> EinsumIndex(:(Tuple(S)), i), serialindices(S))
+    exps = Array{EinsumIndexSum{3}}(undef, dim, dim)
+    for j in 1:dim, i in 1:dim
+        exps[i,j] = sum(v1inds[k] * Sinds[i,k,j,l] * v2inds[l] for k in 1:dim, l in 1:dim)
+    end
+    TT = Tensor{Tuple{dim, dim}}
+    quote
+        @_inline_meta
+        @inbounds $TT($(map(construct_expr, exps)...))
+    end
+end
+
 const SquareTensor{dim, T} = Union{SecondOrderTensor{dim, T}, SymmetricSecondOrderTensor{dim, T}}
 
 # tr/mean

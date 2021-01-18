@@ -27,6 +27,7 @@ export
     Mat,
 # operations
     contraction,
+    dotdot,
     vol,
     dev,
     symmetric,
