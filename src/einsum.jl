@@ -1,3 +1,4 @@
+# convert to `name[index]`
 struct EinsumIndex
     name::Union{Symbol, Expr}
     index::Int
@@ -54,4 +55,55 @@ end
 
 function construct_expr(x::EinsumIndexSum)
     Expr(:call, :+, map(construct_expr, x)...)
+end
+
+
+# NOTE: only multiplication is supported
+macro einsum(ex)
+    freeinds, code = anonymous_args_body(ex)
+    allinds = Dict{Symbol, Expr}()
+    dummyinds = Set{Symbol}()
+    _findindices!(allinds, dummyinds, ex)
+    @assert Set(keys(allinds)) == union(Set(freeinds), (dummyinds))
+    if !isempty(dummyinds)
+        code = Expr(:call, :sum, Expr(:generator, code, [allinds[i] for i in dummyinds]...))
+    end
+    if !isempty(freeinds)
+        code = Expr(:comprehension, Expr(:generator, code, [allinds[i] for i in freeinds]...))
+    end
+    esc(code)
+end
+
+function anonymous_args_body(func::Expr)
+    @assert Meta.isexpr(func, :->)
+    lhs = func.args[1]
+    body = func.args[2]
+    if Meta.isexpr(lhs, :tuple)
+        args = lhs.args
+    elseif fargs isa Symbol
+        args = [lhs]
+    else
+        throw(ArgumentError("wrong arguments in anonymous function expression"))
+    end
+    args, body
+end
+
+_findindices!(allinds::Dict{Symbol, Expr}, dummyinds::Set{Symbol}, ::Any) = nothing
+function _findindices!(allinds::Dict{Symbol, Expr}, dummyinds::Set{Symbol}, expr::Expr)
+    if Meta.isexpr(expr, :ref)
+        name = expr.args[1] # name of array `name[index]`
+        for (j, index) in enumerate(expr.args[2:end])
+            isa(index, Symbol) || throw(ArgumentError("@einsum: index must be symbol"))
+            if haskey(allinds, index) # `index` is already in `allinds`
+                push!(dummyinds, index)
+            else
+                allinds[index] = :($index = axes($name, $j))
+            end
+        end
+    else
+        for ex in expr.args
+            _findindices!(allinds, dummyinds, ex)
+        end
+    end
+    nothing
 end

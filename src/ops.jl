@@ -34,10 +34,7 @@ function contraction_exprs(::Type{S1}, ::Type{S2}, ::Val{N}) where {S1, S2, N}
     K = length(s2) ÷ J
     s1′ = reshape(s1, I, J)
     s2′ = reshape(s2, J, K)
-    s′ = Array{EinsumIndexSum{2}}(undef, I, K)
-    for k in 1:K, i in 1:I
-        s′[i,k] = sum(s1′[i,j] * s2′[j,k] for j in 1:J)
-    end
+    s′ = @einsum (i,k) -> s1′[i,j] * s2′[j,k]
     s = reshape(s′, size(s1)[1:end-N]..., size(s2)[N+1:end]...)
     map(construct_expr, s[uniqueindices(t)])
 end
@@ -68,10 +65,7 @@ end
     v1inds = map(i -> EinsumIndex(:(Tuple(v1)), i), serialindices(v1))
     v2inds = map(i -> EinsumIndex(:(Tuple(v2)), i), serialindices(v2))
     Sinds = map(i -> EinsumIndex(:(Tuple(S)), i), serialindices(S))
-    exps = Array{EinsumIndexSum{3}}(undef, dim, dim)
-    for j in 1:dim, i in 1:dim
-        exps[i,j] = sum(v1inds[k] * Sinds[i,k,j,l] * v2inds[l] for k in 1:dim, l in 1:dim)
-    end
+    exps = @einsum (i,j) -> v1inds[k] * Sinds[i,k,j,l] * v2inds[l]
     TT = Tensor{Tuple{dim, dim}}
     quote
         @_inline_meta
