@@ -16,6 +16,15 @@
         @test (@inferred +y)::typeof(y) == y
         @test (@inferred -x)::typeof(x) == -Array(x)
         @test (@inferred -y)::typeof(y) == -Array(y)
+        # check eltype promotion
+        x = Vec(1, 0)
+        y = Vec(T(1), 0)
+        a = T(0.5)
+        @test (@inferred x + y)::Vec{2, T} == Array(x) + Array(y)
+        @test (@inferred x - y)::Vec{2, T} == Array(x) - Array(y)
+        @test (@inferred a * x)::Vec{2, T} == a * Array(x)
+        @test (@inferred x * a)::Vec{2, T} == Array(x) * a
+        @test (@inferred x / a)::Vec{2, T} == Array(x) / a
         # bad operations
         @test_throws Exception x * y
         @test_throws Exception y * x

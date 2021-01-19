@@ -4,8 +4,7 @@
         vals = [:(xs[$j][$i]) for j in 1:N]
         :(f($(vals...)))
     end
-    T = promote_type(map(eltype, xs)...)
-    TT = tensortype(inds){T}
+    TT = tensortype(inds)
     return quote
         @_inline_meta
         @inbounds $TT($(exps...))
