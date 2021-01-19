@@ -25,6 +25,10 @@ export
     SymmetricFourthOrderTensor,
     Vec,
     Mat,
+# macros
+    @Vec,
+    @Mat,
+    @Tensor,
 # operations
     contraction,
     dotdot,

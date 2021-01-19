@@ -46,6 +46,14 @@ Tensor{Tuple{@Symmetry{2,2}}}([1 2; 3 4]) == [1 3; 3 4] # lower triangular part 
 # from functions
 Tensor{Tuple{2,2}}((i,j) -> i == j ? 1 : 0) == one(Tensor{Tuple{2,2}})
 Tensor{Tuple{@Symmetry{2,2}}}((i,j) -> i == j ? 1 : 0) == one(Tensor{Tuple{@Symmetry{2,2}}})
+
+# macros (same interface as StaticArrays.jl)
+@Vec [1,2,3]
+@Vec rand(4)
+@Mat [1 2
+      3 4]
+@Mat rand(4,4)
+@Tensor rand(2,2,2)
 ```
 
 ### Tensor Operations

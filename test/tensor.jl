@@ -61,6 +61,14 @@
             @test (@inferred Tensor{Tuple{2,2}, Float64, 2}(A))::Tensor{Tuple{2,2}, Float64, 2, 4} |> Tuple == (1.0,2.0,3.0,4.0)
             @test (@inferred Tensor{Tuple{2,2}, Float64}(A))::Tensor{Tuple{2,2}, Float64, 2, 4} |> Tuple == (1.0,2.0,3.0,4.0)
         end
+        @testset "Macro" begin
+            a = 2 # check escaping
+            @test (@Vec [1,a,3])::Vec{3,Int} == [1,a,3]
+            @test (@Vec ones(a))::Vec{a,Float64} == ones(a)
+            @test (@Mat [1 a; 3 4])::Mat{2,2,Int} == [1 a; 3 4]
+            @test (@Mat ones(a,2))::Mat{a,2,Float64} == ones(a,2)
+            @test (@Tensor ones(a,3,3))::Tensor{Tuple{a,3,3},Float64} == ones(a,3,3)
+        end
         @testset "zero" begin
             @test (@inferred zero(Tensor{Tuple{2,2}, Int, 2}))::Tensor{Tuple{2,2}, Int, 2, 4} |> Tuple == (0,0,0,0)
             @test (@inferred zero(Tensor{Tuple{2,2}, Int}))::Tensor{Tuple{2,2}, Int, 2, 4} |> Tuple == (0,0,0,0)

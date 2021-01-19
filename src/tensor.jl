@@ -69,6 +69,10 @@ end
         @inbounds TT($(exps...))
     end
 end
+## from StaticArray
+@inline function Tensor(A::StaticArray{S}) where {S}
+    Tensor{S}(Tuple(A))
+end
 
 ## for aliases
 @inline function Tensor{S, T, N}(data::Tuple{Vararg{Any, L}}) where {S, T, N, L}
@@ -80,6 +84,17 @@ end
 end
 @inline Vec(data::Tuple{Vararg{Any, dim}}) where {dim} = Vec{dim}(data)
 @inline Vec{dim}(data::Tuple) where {dim} = (T = promote_ntuple_eltype(data); Vec{dim, T}(data))
+
+# macros
+macro Vec(ex)
+    esc(:(Tensor(Tensorial.@SVector $ex)))
+end
+macro Mat(ex)
+    esc(:(Tensor(Tensorial.@SMatrix $ex)))
+end
+macro Tensor(ex)
+    esc(:(Tensor(Tensorial.@SArray $ex)))
+end
 
 # special constructors
 for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
