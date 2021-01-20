@@ -149,16 +149,16 @@ TensorIndices(::Tensor{S}) where {S} = TensorIndices(S)
 TensorIndices(::Type{<: Tensor{S}}) where {S} = TensorIndices(S)
 ## serialindices
 @pure serialindices(::Type{S}) where {S} = serialindices(TensorIndices(S))
-serialindices(::Tensor{S}) where {S} = serialindices(S)
 @pure serialindices(::Type{<: Tensor{S}}) where {S} = serialindices(S)
+serialindices(::Tensor{S}) where {S} = serialindices(S)
 ## uniqueindices
 @pure uniqueindices(::Type{S}) where {S} = uniqueindices(TensorIndices(S))
-uniqueindices(::Tensor{S}) where {S} = uniqueindices(S)
 @pure uniqueindices(::Type{<: Tensor{S}}) where {S} = uniqueindices(S)
+uniqueindices(::Tensor{S}) where {S} = uniqueindices(S)
 ## dupsindices
 @pure dupsindices(::Type{S}) where {S} = dupsindices(TensorIndices(S))
-dupsindices(::Tensor{S}) where {S} = dupsindices(S)
 @pure dupsindices(::Type{<: Tensor{S}}) where {S} = dupsindices(S)
+dupsindices(::Tensor{S}) where {S} = dupsindices(S)
 
 # getindex
 @generated function Base.getindex(x::Tensor, i::Int)

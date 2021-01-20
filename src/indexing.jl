@@ -19,8 +19,8 @@ end
 dropfirst(x::SymmetricIndices{2}) = (LinearIndices((x.dims[2],)),)
 dropfirst(x::SymmetricIndices) = (SymmetricIndices(Base.tail(x.dims)...),)
 
-@pure ncomponents(x::SymmetricIndices{order}) where {order} = (dim = size(x, 1); binomial(dim + order - 1, order))
-@pure ncomponents(x::LinearIndices) = length(x)
+ncomponents(x::SymmetricIndices{order}) where {order} = (dim = size(x, 1); binomial(dim + order - 1, order))
+ncomponents(x::LinearIndices) = length(x)
 
 size_to_indices(x::Int) = LinearIndices((x,))
 @pure size_to_indices(::Type{Symmetry{S}}) where {S} = (check_symmetry_parameters(S); SymmetricIndices(S.parameters...))
@@ -95,18 +95,18 @@ dropfirst(x::SymmetricIndices, ys...) = (dropfirst(x)..., ys...)
 ## dropfirst/droplast for TensorIndices
 dropfirst(x::TensorIndices{0}) = error()
 droplast(x::TensorIndices{0}) = error()
-@pure dropfirst(x::TensorIndices) = TensorIndices(dropfirst(indices(x)...))
-@pure droplast(x::TensorIndices) = TensorIndices(reverse(dropfirst(reverse(indices(x))...)))
+dropfirst(x::TensorIndices) = TensorIndices(dropfirst(indices(x)...))
+droplast(x::TensorIndices) = TensorIndices(reverse(dropfirst(reverse(indices(x))...)))
 for op in (:dropfirst, :droplast)
     @eval begin
-        @pure $op(x::TensorIndices, ::Val{0}) = x
-        @pure $op(x::TensorIndices, ::Val{N}) where {N} = $op($op(x), Val(N-1))
+        $op(x::TensorIndices, ::Val{0}) = x
+        $op(x::TensorIndices, ::Val{N}) where {N} = $op($op(x), Val(N-1))
     end
 end
 
 # otimes/contraction
-@pure otimes(x::TensorIndices, y::TensorIndices) = TensorIndices((indices(x)..., indices(y)...))
-@pure function contraction(x::TensorIndices, y::TensorIndices, ::Val{N}) where {N}
+otimes(x::TensorIndices, y::TensorIndices) = TensorIndices((indices(x)..., indices(y)...))
+function contraction(x::TensorIndices, y::TensorIndices, ::Val{N}) where {N}
     if !(0 ≤ N ≤ ndims(x) && 0 ≤ N ≤ ndims(y) && size(x)[end-N+1:end] === size(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
     end
@@ -115,14 +115,14 @@ end
 
 # promote_indices
 promote_indices(x::TensorIndices) = x
-@pure function promote_indices(x::TensorIndices, y::TensorIndices)
+function promote_indices(x::TensorIndices, y::TensorIndices)
     @assert size(x) == size(y)
     TensorIndices(_promote_indices(indices(x), indices(y), ()))
 end
-@pure promote_indices(x::TensorIndices, y::TensorIndices, z::TensorIndices...) = promote_indices(promote_indices(x, y), z...)
+promote_indices(x::TensorIndices, y::TensorIndices, z::TensorIndices...) = promote_indices(promote_indices(x, y), z...)
 ## helper functions
 _promote_indices(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
-@pure function _promote_indices(x::Tuple, y::Tuple, promoted::Tuple)
+function _promote_indices(x::Tuple, y::Tuple, promoted::Tuple)
     if x[1] == y[1]
         _promote_indices(Base.tail(x), Base.tail(y), (promoted..., x[1]))
     else
@@ -130,7 +130,7 @@ _promote_indices(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
     end
 end
 
-@pure _size(x::LinearIndices{1}) = length(x)
+_size(x::LinearIndices{1}) = length(x)
 @pure _size(x::SymmetricIndices) = Symmetry{Tuple{size(x)...}}
 @pure function tensortype(x::TensorIndices)
     Tensor{Tuple{map(_size, indices(x))...}, T, ndims(x), length(unique(x))} where {T}
