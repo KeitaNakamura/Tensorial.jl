@@ -168,3 +168,11 @@ end
         @test count(==(v), x) == dups[i]
     end
 end
+
+@testset "Tensor misc" begin
+    # size
+    TT = Tensor{Tuple{2, 3}}
+    @test (@inferred size(TT))::Tuple{Int, Int} == (2,3)
+    TT = Tensor{Tuple{2, 3, @Symmetry{3, 3}}}
+    @test (@inferred size(TT))::Tuple{Int, Int, Int, Int} == (2,3,3,3)
+end

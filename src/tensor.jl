@@ -134,7 +134,8 @@ end
 
 # for AbstractArray interface
 Base.IndexStyle(::Type{<: Tensor}) = IndexLinear()
-Base.size(x::Tensor) = size(serialindices(x))
+@generated Base.size(::Type{TT}) where {TT <: Tensor}= :(size($(TensorIndices(TT))))
+Base.size(x::Tensor) = size(typeof(x))
 
 # helpers
 Base.Tuple(x::Tensor) = x.data
