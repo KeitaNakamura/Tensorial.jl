@@ -17,7 +17,7 @@ All of these tensors can also be used in provided automatic differentiation func
 ## Installation
 
 ```julia
-pkg> add https://github.com/KeitaNakamura/Tensorial.jl.git
+pkg> add Tensorial
 ```
 
 ## Cheat Sheet
