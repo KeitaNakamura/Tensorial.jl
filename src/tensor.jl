@@ -178,3 +178,8 @@ function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: Tensor}, i...)
     inds = serialindices(x)
     :(Tuple($ex)[$(inds[i...])])
 end
+
+# convert
+Base.convert(::Type{TT}, x::TT) where {TT <: Tensor} = x
+Base.convert(::Type{TT}, x::Tensor) where {TT <: Tensor} = TT(Tuple(x))
+Base.convert(::Type{TT}, x::AbstractArray) where {TT <: Tensor} = TT(x)
