@@ -110,6 +110,20 @@
                 @test (@inferred op(Mat{2, 3}))::Mat{2, 3, Float64} |> unique |> length != 1
             end
         end
+        @testset "aliases" begin
+            for T in (Float32, Float64), dim in 1:3
+                for TT in (SecondOrderTensor{dim, T},
+                           FourthOrderTensor{dim, T},
+                           SymmetricSecondOrderTensor{dim, T},
+                           SymmetricFourthOrderTensor{dim, T},
+                           Mat{dim, dim, T},
+                           Vec{dim, T})
+                    data = ntuple(i -> T(1), Tensorial.ncomponents(Tensorial.TensorIndices(TT)))
+                    @test (@inferred TT(data))::TT |> Tuple == data
+                    @test (@inferred TT(data...))::TT |> Tuple == data
+                end
+            end
+        end
         @testset "Identity tensor" begin
             # second order tensor
             for TensorType in (SecondOrderTensor, SymmetricSecondOrderTensor)
@@ -166,6 +180,40 @@ end
     for i in eachindex(inds)
         v = x[inds[i]]
         @test count(==(v), x) == dups[i]
+    end
+end
+
+@testset "Conversion" begin
+    @testset "Tensor -> Tensor" begin
+        A = Tensor{Tuple{3,3}}(1:9...)
+        S = Tensor{Tuple{@Symmetry{3,3}}}(1:6...)
+        v = Vec(1:3...)
+        for T in (Float32, Float64)
+            Adata = map(T, (1:9...,))
+            @test (@inferred convert(Tensor{Tuple{3,3}, T}, A))::Tensor{Tuple{3,3}, T} |> Tuple == Adata
+            @test (@inferred convert(SecondOrderTensor{3, T}, A))::Tensor{Tuple{3,3}, T} |> Tuple == Adata
+            @test (@inferred convert(Mat{3, 3, T}, A))::Tensor{Tuple{3,3}, T} |> Tuple == Adata
+            Sdata = map(T, (1:6...,))
+            @test (@inferred convert(Tensor{Tuple{@Symmetry{3,3}}, T}, S))::Tensor{Tuple{@Symmetry{3,3}}, T} |> Tuple == Sdata
+            @test (@inferred convert(SymmetricSecondOrderTensor{3, T}, S))::Tensor{Tuple{@Symmetry{3,3}}, T} |> Tuple == Sdata
+            vdata = map(T, (1:3...,))
+            @test (@inferred convert(Vec{3, T}, v))::Vec{3, T} |> Tuple == vdata
+        end
+    end
+    @testset "AbstractArray -> Tensor" begin
+        A = [1 3; 2 4]
+        v = [1, 2]
+        for T in (Float32, Float64)
+            Adata = map(T, (1,2,3,4))
+            @test (@inferred convert(Tensor{Tuple{2,2}, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
+            @test (@inferred convert(SecondOrderTensor{2, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
+            @test (@inferred convert(Mat{2, 2, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
+            Sdata = map(T, (1,2,4))
+            @test (@inferred convert(Tensor{Tuple{@Symmetry{2,2}}, T}, A))::Tensor{Tuple{@Symmetry{2,2}}, T} |> Tuple == Sdata
+            @test (@inferred convert(SymmetricSecondOrderTensor{2, T}, A))::Tensor{Tuple{@Symmetry{2,2}}, T} |> Tuple == Sdata
+            vdata = map(T, (1,2))
+            @test (@inferred convert(Vec{2, T}, v))::Vec{2, T} |> Tuple == vdata
+        end
     end
 end
 
