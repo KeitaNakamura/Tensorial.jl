@@ -5,6 +5,8 @@ using Tensorial
 DocMeta.setdocmeta!(Tensorial, :DocTestSetup, recursive = true,
     quote
         using Tensorial
+        using Random
+        Random.seed!(1234)
     end
 )
 
@@ -20,6 +22,7 @@ makedocs(;
         "Manual" => [
             "Tensor Type.md",
             # "Constructors.md",
+            "Tensor Operations.md",
         ],
     ],
     doctest = true, # :fix
