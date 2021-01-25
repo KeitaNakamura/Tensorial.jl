@@ -269,3 +269,82 @@ end
         @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices(S)]...))
     end
 end
+
+# rotate
+"""
+    rotmat(θ::Real)
+
+Construct 2D rotation matrix.
+
+# Examples
+```jldoctest
+julia> rotmat(deg2rad(30))
+2×2 Tensor{Tuple{2,2},Float64,2,4}:
+ 0.866025  -0.5
+ 0.5        0.866025
+```
+"""
+@inline function rotmat(θ::Real)
+    sinθ = sin(θ)
+    cosθ = cos(θ)
+    @Mat [cosθ -sinθ
+          sinθ  cosθ]
+end
+
+"""
+    rotmat(θ::Vec{3})
+    rotmatx(α::Real)
+    rotmaty(β::Real)
+    rotmatz(γ::Real)
+
+Convert Euler angles to rotation matrix.
+
+# Examples
+```jldoctest
+julia> rotmatx(deg2rad(30))
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 1.0  0.0        0.0
+ 0.0  0.866025  -0.5
+ 0.0  0.5        0.866025
+```
+"""
+function rotmat(θ::Vec{3})
+    @inbounds begin
+        α = θ[1]
+        β = θ[2]
+        γ = θ[3]
+    end
+    sinα = sin(α); cosα = cos(α)
+    sinβ = sin(β); cosβ = cos(β)
+    sinγ = sin(γ); cosγ = cos(γ)
+    @Mat [ cosβ*cosγ                -cosβ*sinγ                 sinβ
+           sinα*sinβ*cosγ+cosα*sinγ -sinα*sinβ*sinγ+cosα*cosγ -sinα*cosβ
+          -cosα*sinβ*cosγ+sinα*sinγ  cosα*sinβ*sinγ+sinα*cosγ  cosα*cosβ]
+end
+@inline function rotmatx(α::Real)
+    o = one(α)
+    z = zero(α)
+    sinα = sin(α)
+    cosα = cos(α)
+    @Mat [o z     z
+          z cosα -sinα
+          z sinα  cosα]
+end
+@inline function rotmaty(β::Real)
+    o = one(β)
+    z = zero(β)
+    sinβ = sin(β)
+    cosβ = cos(β)
+    @Mat [ cosβ z sinβ
+           z    o z
+          -sinβ z cosβ]
+end
+@inline function rotmatz(γ::Real)
+    o = one(γ)
+    z = zero(γ)
+    sinγ = sin(γ)
+    cosγ = cos(γ)
+    @Mat [cosγ -sinγ z
+          sinγ  cosγ z
+          z     z    o]
+end
