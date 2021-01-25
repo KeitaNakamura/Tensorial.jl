@@ -1,10 +1,10 @@
 @generated function _map(f, xs::Vararg{Tensor, N}) where {N}
-    inds = promote_indices(map(TensorIndices, xs)...)
-    exps = map(uniqueindices(inds)) do i
+    S = promote_size(map(Size, xs)...)
+    exps = map(indices(S)) do i
         vals = [:(xs[$j][$i]) for j in 1:N]
         :(f($(vals...)))
     end
-    TT = tensortype(inds)
+    TT = tensortype(S)
     return quote
         @_inline_meta
         @inbounds $TT($(exps...))
@@ -24,10 +24,10 @@ function Base.:*(::Tensor, ::Tensor)
     error("use `⋅` (`\\cdot`) for single contraction and `⊡` (`\\boxdot`) for double contraction instead of `*`")
 end
 
-function contraction_exprs(::Type{S1}, ::Type{S2}, ::Val{N}) where {S1, S2, N}
-    t = contraction(TensorIndices(S1), TensorIndices(S2), Val(N))
-    s1 = map(i -> EinsumIndex(:(Tuple(x)), i), serialindices(S1))
-    s2 = map(i -> EinsumIndex(:(Tuple(y)), i), serialindices(S2))
+function contraction_exprs(S1::Size, S2::Size, ::Val{N}) where {N}
+    S = contraction(S1, S2, Val(N))
+    s1 = map(i -> EinsumIndex(:(Tuple(x)), i), independent_indices(S1))
+    s2 = map(i -> EinsumIndex(:(Tuple(y)), i), independent_indices(S2))
     J = prod(size(s2)[1:N])
     I = length(s1) ÷ J
     K = length(s2) ÷ J
@@ -35,18 +35,17 @@ function contraction_exprs(::Type{S1}, ::Type{S2}, ::Val{N}) where {S1, S2, N}
     s2′ = reshape(s2, J, K)
     s′ = @einsum (i,k) -> s1′[i,j] * s2′[j,k]
     s = reshape(s′, size(s1)[1:end-N]..., size(s2)[N+1:end]...)
-    map(construct_expr, s[uniqueindices(t)])
+    map(construct_expr, s[indices(S)])
 end
-contraction_exprs(::Type{<: Tensor{S1}}, ::Type{<: Tensor{S2}}, ::Val{N}) where {S1, S2, N} = contraction_exprs(S1, S2, Val(N))
 
 @generated function contraction(x::Tensor, y::Tensor, ::Val{N}) where {N}
-    t = contraction(TensorIndices(x), TensorIndices(y), Val(N))
-    exps = contraction_exprs(x, y, Val(N))
+    S = contraction(Size(x), Size(y), Val(N))
+    exps = contraction_exprs(Size(x), Size(y), Val(N))
     T = promote_type(eltype(x), eltype(y))
-    if ndims(t) == 0
+    if length(S) == 0
         TT = T
     else
-        TT = tensortype(t){T}
+        TT = tensortype(S){T}
     end
     quote
         @_inline_meta
@@ -61,9 +60,9 @@ end
 
 # v_k * S_ikjl * u_l
 @generated function dotdot(v1::Vec{dim}, S::SymmetricFourthOrderTensor{dim}, v2::Vec{dim}) where {dim}
-    v1inds = map(i -> EinsumIndex(:(Tuple(v1)), i), serialindices(v1))
-    v2inds = map(i -> EinsumIndex(:(Tuple(v2)), i), serialindices(v2))
-    Sinds = map(i -> EinsumIndex(:(Tuple(S)), i), serialindices(S))
+    v1inds = map(i -> EinsumIndex(:(Tuple(v1)), i), independent_indices(v1))
+    v2inds = map(i -> EinsumIndex(:(Tuple(v2)), i), independent_indices(v2))
+    Sinds = map(i -> EinsumIndex(:(Tuple(S)), i), independent_indices(S))
     exps = @einsum (i,j) -> v1inds[k] * Sinds[i,k,j,l] * v2inds[l]
     TT = Tensor{Tuple{dim, dim}}
     quote
@@ -136,7 +135,7 @@ end
     return quote
         @_inline_meta
         detinv = 1 / det(x)
-        @inbounds typeof(x)($(exps[uniqueindices(x)]...))
+        @inbounds typeof(x)($(exps[indices(x)]...))
     end
 end
 @generated function inv(x::SquareTensor{3})
@@ -161,7 +160,7 @@ end
     return quote
         @_inline_meta
         detinv = 1 / det(x)
-        @inbounds typeof(x)($(exps[uniqueindices(x)]...))
+        @inbounds typeof(x)($(exps[indices(x)]...))
     end
 end
 @inline function inv(x::SquareTensor)
@@ -199,10 +198,10 @@ end
 ## helper functions
 @inline _powdot(x::SecondOrderTensor, y::SecondOrderTensor) = dot(x, y)
 @generated function _powdot(x::SymmetricSecondOrderTensor{dim}, y::SymmetricSecondOrderTensor{dim}) where {dim}
-    inds = TensorIndices(x)
-    exps = contraction_exprs(x, y, Val(1))
+    S = Size(x)
+    exps = contraction_exprs(Size(x), Size(y), Val(1))
     quote
         @_inline_meta
-        @inbounds SymmetricSecondOrderTensor{dim}($(exps[uniqueindices(inds)]...))
+        @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices(S)]...))
     end
 end

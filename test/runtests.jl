@@ -1,7 +1,7 @@
 using Tensorial
 using Test, Random
 
-using StaticArrays
+using StaticArrays: SArray, SVector
 
 include("tensor.jl")
 include("ops.jl")

@@ -16,6 +16,7 @@ export
 # Types
     Symmetry,
     @Symmetry,
+    Size,
     Tensor,
     SecondOrderTensor,
     ThirdOrderTensor,
@@ -41,8 +42,10 @@ export
     gradient,
     hessian
 
+
 include("utils.jl")
 include("symmetry.jl")
+include("size.jl")
 include("indexing.jl")
 include("einsum.jl")
 include("tensor.jl")

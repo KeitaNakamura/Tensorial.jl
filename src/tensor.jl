@@ -8,13 +8,13 @@ struct Tensor{S, T, N, L} <: AbstractTensor{S, T, N}
     end
 end
 
-@generated function check_tensor_parameters(::Type{Size}, ::Type{T}, ::Val{N}, ::Val{L}) where {Size, T, N, L}
-    check_size_parameters(Size)
-    if ndims(TensorIndices(Size)) != N
-        return :(throw(ArgumentError("Number of dimensions must be $(ndims(TensorIndices(Size))) for $Size size, got $N.")))
+@generated function check_tensor_parameters(::Type{S}, ::Type{T}, ::Val{N}, ::Val{L}) where {S, T, N, L}
+    check_size_parameters(S)
+    if length(Size(S)) != N
+        return :(throw(ArgumentError("Number of dimensions must be $(ndims(Size(S))) for $S size, got $N.")))
     end
-    if length(uniqueindices(Size)) != L
-        return :(throw(ArgumentError("Length of tuple data must be $(length(uniqueindices(Size))) for $Size size, got $L.")))
+    if ncomponents(Size(S)) != L
+        return :(throw(ArgumentError("Length of tuple data must be $(ncomponents(Size(S))) for $S size, got $L.")))
     end
 end
 
@@ -28,11 +28,11 @@ const Vec{dim, T} = Tensor{Tuple{dim}, T, 1, dim}
 
 # constructors
 @inline function Tensor{S, T}(data::Tuple{Vararg{Any, L}}) where {S, T, L}
-    N = ndims(TensorIndices(S))
+    N = length(Size(S))
     Tensor{S, T, N, L}(data)
 end
 @inline function Tensor{S}(data::Tuple{Vararg{Any, L}}) where {S, L}
-    N = ndims(TensorIndices(S))
+    N = length(Size(S))
     T = promote_ntuple_eltype(data)
     Tensor{S, T, N, L}(data)
 end
@@ -46,26 +46,27 @@ end
     TT(data)
 end
 ## from Function
-@generated function (::Type{TT})(f::Function) where {S, TT <: Tensor{S}}
-    tocartesian = CartesianIndices(TensorIndices(S))
-    exps = [:(f($(Tuple(tocartesian[i])...))) for i in uniqueindices(S)]
+@generated function (::Type{TT})(f::Function) where {TT <: Tensor}
+    S = Size(TT)
+    tocartesian = CartesianIndices(S)
+    exps = [:(f($(Tuple(tocartesian[i])...))) for i in indices(S)]
     quote
         @_inline_meta
         TT($(exps...))
     end
 end
 ## from AbstractArray
-@generated function (::Type{TT})(A::AbstractArray) where {S, TT <: Tensor{S}}
-    inds = TensorIndices(S)
+@generated function (::Type{TT})(A::AbstractArray) where {TT <: Tensor}
+    S = Size(TT)
     if IndexStyle(A) isa IndexLinear
-        exps = [:(A[$i]) for i in uniqueindices(S)]
+        exps = [:(A[$i]) for i in indices(S)]
     else
-        tocartesian = CartesianIndices(inds)
-        exps = [:(A[$(tocartesian[i])]) for i in uniqueindices(S)]
+        tocartesian = CartesianIndices(S)
+        exps = [:(A[$(tocartesian[i])]) for i in indices(S)]
     end
     quote
         @_inline_meta
-        promote_shape($inds, A)
+        promote_shape($(CartesianIndices(S)), A)
         @inbounds TT($(exps...))
     end
 end
@@ -100,7 +101,7 @@ end
 for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
     @eval begin
         @inline Base.$op(::Type{Tensor{S}}) where {S} = $op(Tensor{S, Float64})
-        @inline Base.$op(::Type{Tensor{S, T}}) where {S, T} = Tensor{S, T}(fill_tuple($el, Val(length(uniqueindices(S)))))
+        @inline Base.$op(::Type{Tensor{S, T}}) where {S, T} = Tensor{S, T}(fill_tuple($el, Val(ncomponents(Size(S)))))
         # for aliases
         @inline Base.$op(::Type{Tensor{S, T, N}}) where {S, T, N} = $op(Tensor{S, T})
         @inline Base.$op(::Type{Tensor{S, T, N, L}}) where {S, T, N, L} = $op(Tensor{S, T})
@@ -134,7 +135,7 @@ end
 
 # for AbstractArray interface
 Base.IndexStyle(::Type{<: Tensor}) = IndexLinear()
-@generated Base.size(::Type{TT}) where {TT <: Tensor}= :(size($(TensorIndices(TT))))
+Base.size(::Type{TT}) where {TT <: Tensor}= Dims(Size(TT))
 Base.size(x::Tensor) = size(typeof(x))
 
 # helpers
@@ -145,29 +146,17 @@ ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
 @pure basetype(::Type{<: Tensor{S, T}}) where {S, T} = Tensor{S, T}
 
 # indices
-## TensorIndices
-TensorIndices(::Tensor{S}) where {S} = TensorIndices(S)
-TensorIndices(::Type{<: Tensor{S}}) where {S} = TensorIndices(S)
-## serialindices
-@pure serialindices(::Type{S}) where {S} = serialindices(TensorIndices(S))
-@pure serialindices(::Type{<: Tensor{S}}) where {S} = serialindices(S)
-serialindices(::Tensor{S}) where {S} = serialindices(S)
-## uniqueindices
-@pure uniqueindices(::Type{S}) where {S} = uniqueindices(TensorIndices(S))
-@pure uniqueindices(::Type{<: Tensor{S}}) where {S} = uniqueindices(S)
-uniqueindices(::Tensor{S}) where {S} = uniqueindices(S)
-## dupsindices
-@pure dupsindices(::Type{S}) where {S} = dupsindices(TensorIndices(S))
-@pure dupsindices(::Type{<: Tensor{S}}) where {S} = dupsindices(S)
-dupsindices(::Tensor{S}) where {S} = dupsindices(S)
+for func in (:independent_indices, :indices, :duplicates)
+    @eval begin
+        $func(::Type{TT}) where {TT <: Tensor} = $func(Size(TT))
+        $func(x::Tensor) = $func(typeof(x))
+    end
+end
 
 # getindex
-@generated function Base.getindex(x::Tensor, i::Int)
-    quote
-        @_inline_meta
-        @boundscheck checkbounds(x, i)
-        @inbounds Tuple(x)[$(serialindices(x))[i]]
-    end
+@inline function Base.getindex(x::Tensor, i::Int)
+    @boundscheck checkbounds(x, i)
+    @inbounds Tuple(x)[independent_indices(x)[i]]
 end
 
 # broadcast
@@ -175,7 +164,7 @@ Broadcast.broadcastable(x::Tensor) = Ref(x)
 
 # getindex_expr
 function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: Tensor}, i...)
-    inds = serialindices(x)
+    inds = independent_indices(x)
     :(Tuple($ex)[$(inds[i...])])
 end
 
@@ -183,3 +172,6 @@ end
 Base.convert(::Type{TT}, x::TT) where {TT <: Tensor} = x
 Base.convert(::Type{TT}, x::Tensor) where {TT <: Tensor} = TT(Tuple(x))
 Base.convert(::Type{TT}, x::AbstractArray) where {TT <: Tensor} = TT(x)
+
+Size(::Type{<: Tensor{S}}) where {S} = Size(S)
+Size(::Tensor{S}) where {S} = Size(S)
