@@ -38,6 +38,31 @@ function contraction_exprs(S1::Size, S2::Size, ::Val{N}) where {N}
     map(construct_expr, s[indices(S)])
 end
 
+"""
+    contraction(::Tensor, ::Tensor, ::Val{N})
+
+Conduct contraction of `N` inner indices.
+For example, `N=2` contraction for third-order tensors ``A_{ij} = B_{ikl} C_{klj}``
+can be computed in Tensorial.jl as
+
+```jldoctest
+julia> B = rand(Tensor{Tuple{3,3,3}});
+
+julia> C = rand(Tensor{Tuple{3,3,3}});
+
+julia> A = contraction(B, C, Val(2))
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 1.36912   1.86751  1.32531
+ 1.61744   2.34426  1.94101
+ 0.929252  1.89656  1.79015
+```
+
+Following symbols are also available for specific contractions:
+
+- `x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>`): `contraction(x, y, Val(0))`
+- `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`): `contraction(x, y, Val(1))`
+- `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>`): `contraction(x, y, Val(2))`
+"""
 @generated function contraction(x::Tensor, y::Tensor, ::Val{N}) where {N}
     S = contraction(Size(x), Size(y), Val(N))
     exps = contraction_exprs(Size(x), Size(y), Val(N))
@@ -53,7 +78,46 @@ end
     end
 end
 
+"""
+    otimes(x::Tensor, y::Tensor)
+    x ⊗ y
+
+Compute tensor product such as ``A_{ij} = x_i y_j``.
+`x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>`) is a synonym for `otimes(x, y)`.
+
+# Examples
+```jldoctest
+julia> x = rand(Vec{3});
+
+julia> y = rand(Vec{3});
+
+julia> A = x ⊗ y
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 0.271839  0.469146  0.504668
+ 0.352792  0.608857  0.654957
+ 0.260518  0.449607  0.48365
+```
+"""
 @inline otimes(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(0))
+
+"""
+    dot(x::Tensor, y::Tensor)
+    x ⋅ y
+
+Compute dot product such as ``a = x_i y_i``.
+This is equivalent to [`contraction(::Tensor, ::Tensor, Val(1))`](@ref).
+`x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`) is a synonym for `cdot(x, y)`.
+
+# Examples
+```jldoctest
+julia> x = rand(Vec{3});
+
+julia> y = rand(Vec{3});
+
+julia> a = x ⋅ y
+1.3643452781654775
+```
+"""
 @inline dot(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(1))
 @inline dcontraction(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(2))
 @inline norm(x::Tensor) = sqrt(contraction(x, x, Val(ndims(x))))

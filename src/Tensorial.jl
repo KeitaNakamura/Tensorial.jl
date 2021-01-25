@@ -32,6 +32,7 @@ export
     @Tensor,
 # operations
     contraction,
+    otimes,
     dotdot,
     vol,
     dev,
