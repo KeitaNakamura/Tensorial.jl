@@ -59,6 +59,6 @@ include("voigt.jl")
 include("ad.jl")
 
 const ⊗ = otimes
-const ⊡ = dcontraction
+const ⊡ = double_contraction
 
 end # module
