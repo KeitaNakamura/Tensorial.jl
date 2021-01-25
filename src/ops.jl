@@ -119,7 +119,7 @@ julia> a = x ⋅ y
 ```
 """
 @inline dot(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(1))
-@inline dcontraction(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(2))
+@inline double_contraction(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(2))
 @inline norm(x::Tensor) = sqrt(contraction(x, x, Val(ndims(x))))
 
 # v_k * S_ikjl * u_l
