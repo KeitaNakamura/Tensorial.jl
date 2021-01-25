@@ -85,53 +85,14 @@ end
     arr = map(x -> x.second, sort(collect(dups), by = x->x[1]))
     SArray{Tuple{size(arr)...}, Int}(arr)
 end
+    map(x -> x.second, sort(collect(dups), by = x->x[1]))
+end
 
-
-# dropfirst/droplast
-## helper functions
-dropfirst() = error()
-dropfirst(x::LinearIndices{1}, ys...) = ys
-dropfirst(x::SymmetricIndices, ys...) = (dropfirst(x)..., ys...)
-## dropfirst/droplast for TensorIndices
-dropfirst(x::TensorIndices{0}) = error()
-droplast(x::TensorIndices{0}) = error()
-dropfirst(x::TensorIndices) = TensorIndices(dropfirst(indices(x)...))
-droplast(x::TensorIndices) = TensorIndices(reverse(dropfirst(reverse(indices(x))...)))
-for op in (:dropfirst, :droplast)
-    @eval begin
-        $op(x::TensorIndices, ::Val{0}) = x
-        $op(x::TensorIndices, ::Val{N}) where {N} = $op($op(x), Val(N-1))
+for IndicesType in (:independent_indices, :indices, :duplicates)
+    @eval @generated function $IndicesType(::Size{S}) where {S}
+        arr = $(Symbol(:_, IndicesType))(TensorIndices(S))
+        quote
+            SArray{Tuple{$(size(arr)...)}, Int}($arr)
+        end
     end
-end
-
-# otimes/contraction
-otimes(x::TensorIndices, y::TensorIndices) = TensorIndices((indices(x)..., indices(y)...))
-function contraction(x::TensorIndices, y::TensorIndices, ::Val{N}) where {N}
-    if !(0 ≤ N ≤ ndims(x) && 0 ≤ N ≤ ndims(y) && size(x)[end-N+1:end] === size(y)[1:N])
-        throw(DimensionMismatch("dimensions must match"))
-    end
-    otimes(droplast(x, Val(N)), dropfirst(y, Val(N)))
-end
-
-# promote_indices
-promote_indices(x::TensorIndices) = x
-function promote_indices(x::TensorIndices, y::TensorIndices)
-    @assert size(x) == size(y)
-    TensorIndices(_promote_indices(indices(x), indices(y), ()))
-end
-promote_indices(x::TensorIndices, y::TensorIndices, z::TensorIndices...) = promote_indices(promote_indices(x, y), z...)
-## helper functions
-_promote_indices(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
-function _promote_indices(x::Tuple, y::Tuple, promoted::Tuple)
-    if x[1] == y[1]
-        _promote_indices(Base.tail(x), Base.tail(y), (promoted..., x[1]))
-    else
-        _promote_indices(dropfirst(x...), dropfirst(y...), (promoted..., LinearIndices((size(x[1], 1),))))
-    end
-end
-
-_size(x::LinearIndices{1}) = length(x)
-@pure _size(x::SymmetricIndices) = Symmetry{Tuple{size(x)...}}
-@pure function tensortype(x::TensorIndices)
-    Tensor{Tuple{map(_size, indices(x))...}, T, ndims(x), length(unique(x))} where {T}
 end
