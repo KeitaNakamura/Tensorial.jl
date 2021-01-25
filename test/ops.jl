@@ -184,4 +184,15 @@ end
             @test (@inferred fp3(x))::typeof(x) ≈ x ⋅ x ⋅ x
         end
     end
+    @testset "rotmat" begin
+        for T in (Float32, Float64)
+            α = deg2rad(T(10))
+            β = deg2rad(T(20))
+            γ = deg2rad(T(30))
+            @test (@inferred rotmatx(α))::Mat{3,3,T} == rotmat(Vec(α,0,0))
+            @test (@inferred rotmaty(β))::Mat{3,3,T} == rotmat(Vec(0,β,0))
+            @test (@inferred rotmatz(γ))::Mat{3,3,T} == rotmat(Vec(0,0,γ))
+            @test (@inferred rotmat(α))::Mat{2,2,T} == rotmatz(α)[1:2,1:2]
+        end
+    end
 end

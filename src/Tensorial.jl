@@ -39,6 +39,10 @@ export
     symmetric,
     ⊗,
     ⊡,
+    rotmat,
+    rotmatx,
+    rotmaty,
+    rotmatz,
 # ad
     gradient,
     hessian
