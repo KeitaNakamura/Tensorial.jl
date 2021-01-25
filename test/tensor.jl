@@ -118,7 +118,7 @@
                            SymmetricFourthOrderTensor{dim, T},
                            Mat{dim, dim, T},
                            Vec{dim, T})
-                    data = ntuple(i -> T(1), Tensorial.ncomponents(Tensorial.TensorIndices(TT)))
+                    data = ntuple(i -> T(1), Tensorial.ncomponents(Size(TT)))
                     @test (@inferred TT(data))::TT |> Tuple == data
                     @test (@inferred TT(data...))::TT |> Tuple == data
                 end
@@ -173,10 +173,10 @@ end
 @testset "Indices" begin
     x = rand(Tensor{Tuple{2, @Symmetry{2,2}, 3, @Symmetry{2,2}}})
     n = Tensorial.ncomponents(x)
-    @test (@inferred Tensorial.serialindices(x))::SArray{Tuple{size(x)...}, Int} |> unique == 1:n
-    inds = (@inferred Tensorial.uniqueindices(x))::SVector{n, Int}
+    @test (@inferred Tensorial.independent_indices(x))::SArray{Tuple{size(x)...}, Int} |> unique == 1:n
+    inds = (@inferred Tensorial.indices(x))::SVector{n, Int}
     @test x[inds] == unique(x[inds])
-    dups = (@inferred Tensorial.dupsindices(x))::SVector{n, Int}
+    dups = (@inferred Tensorial.duplicates(x))::SVector{n, Int}
     for i in eachindex(inds)
         v = x[inds[i]]
         @test count(==(v), x) == dups[i]

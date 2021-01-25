@@ -2,7 +2,7 @@
     Dual(x, one(x))
 end
 @generated function dualize(x::Tensor{S, T}) where {S, T}
-     dups = dupsindices(x)
+     dups = duplicates(x)
      ex = Expr(:block, [:($(Symbol(:v_, i)) = v_1 / $i) for i in unique(dups) if i != 1]...)
      n = ncomponents(x)
      exps = map(1:n) do i
@@ -33,9 +33,9 @@ end
 # Real case
 @inline extract_gradient(v::RealOrTensor, ::Real) = zero(v)
 @inline extract_gradient(v::Real, x::Tensor{S}) where {S} = zero(Tensor{S, typeof(v)})
-@generated function extract_gradient(v::Tensor{S}, x::Tensor) where {S}
-    inds = otimes(TensorIndices(v), TensorIndices(x))
-    TT = tensortype(inds)
+@generated function extract_gradient(v::Tensor, x::Tensor)
+    S = otimes(Size(v), Size(x))
+    TT = tensortype(S)
     quote
         @_inline_meta
         zero($TT{eltype(v)})
@@ -45,9 +45,9 @@ end
 # Dual case
 @inline extract_gradient(v::Dual, ::Real) = partials(v, 1)
 @inline extract_gradient(v::Dual, x::Tensor{S}) where {S} = Tensor{S}(partials(v).values)
-@generated function extract_gradient(v::Tensor{S, <: Dual}, x::Tensor) where {S}
-    inds = otimes(TensorIndices(v), TensorIndices(x))
-    TT = tensortype(inds)
+@generated function extract_gradient(v::Tensor{<: Any, <: Dual}, x::Tensor)
+    S = otimes(Size(v), Size(x))
+    TT = tensortype(S)
     exps = [:(partials(Tuple(v)[$i], $j)) for i in 1:ncomponents(v), j in 1:ncomponents(x)]
     return quote
         @_inline_meta
