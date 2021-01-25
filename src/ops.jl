@@ -42,13 +42,8 @@ end
     contraction(::Tensor, ::Tensor, ::Val{N})
 
 Conduct contraction of `N` inner indices.
-For example, `N=2` contraction with third-order tensors ``B_{ijk}`` and ``C_{ijk}`` becomes
-
-``
-A_{ij} = B_{ikl} C_{klj}
-``
-
-In Tensorial.jl, above computation is the same as
+For example, `N=2` contraction for third-order tensors ``A_{ij} = B_{ikl} C_{klj}``
+can be computed in Tensorial.jl as
 
 ```jldoctest
 julia> B = rand(Tensor{Tuple{3,3,3}});
@@ -62,11 +57,11 @@ julia> A = contraction(B, C, Val(2))
  0.929252  1.89656  1.79015
 ```
 
-Following aliases are also available:
+Following symbols are also available for specific contractions:
 
-- `⊗` (typed by `\\otimes<tab>`): `contraction(::Tensor, ::Tensor, Val(0))`
-- `⋅` (typed by `\\cdot<tab>`): `contraction(::Tensor, ::Tensor, Val(1))`
-- `⊡` (typed by `\\boxdot<tab>`): `contraction(::Tensor, ::Tensor, Val(2))`
+- `x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>`): `contraction(x, y, Val(0))`
+- `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`): `contraction(x, y, Val(1))`
+- `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>`): `contraction(x, y, Val(2))`
 """
 @generated function contraction(x::Tensor, y::Tensor, ::Val{N}) where {N}
     S = contraction(Size(x), Size(y), Val(N))
