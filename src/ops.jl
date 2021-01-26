@@ -348,3 +348,29 @@ end
           sinγ  cosγ z
           z     z    o]
 end
+
+"""
+    rotmat(a => b)
+
+Construct rotation matrix rotating vector `a` to `b`.
+
+# Examples
+```jldoctest
+julia> a = rand(Vec{3}); a /= norm(a);
+
+julia> b = rand(Vec{3}); b /= norm(b);
+
+julia> rotmat(a => b) ⋅ a ≈ b
+true
+```
+"""
+function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}}) where {dim, T}
+    # https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d/2672702#2672702
+    a = pair.first
+    b = pair.second
+    dot(a, a) ≈ dot(b, b) || throw(ArgumentError("the length of two vectors must be the same"))
+    a ==  b && return  one(Mat{dim, dim, T})
+    a == -b && return -one(Mat{dim, dim, T})
+    c = a + b
+    2 * (c ⊗ c) / (c ⋅ c) - one(Mat{dim, dim, T})
+end
