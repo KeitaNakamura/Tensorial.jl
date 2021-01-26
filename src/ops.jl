@@ -360,7 +360,9 @@ julia> a = rand(Vec{3}); a /= norm(a);
 
 julia> b = rand(Vec{3}); b /= norm(b);
 
-julia> rotmat(a => b) ⋅ a ≈ b
+julia> R = rotmat(a => b);
+
+julia> R ⋅ a ≈ b
 true
 ```
 """
