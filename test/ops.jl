@@ -193,6 +193,12 @@ end
             @test (@inferred rotmaty(β))::Mat{3,3,T} == rotmat(Vec(0,β,0))
             @test (@inferred rotmatz(γ))::Mat{3,3,T} == rotmat(Vec(0,0,γ))
             @test (@inferred rotmat(α))::Mat{2,2,T} == rotmatz(α)[1:2,1:2]
+            for dim in (2, 3)
+                a = rand(Vec{dim, T}); a /= norm(a)
+                b = rand(Vec{dim, T}); b /= norm(b)
+                @test (@inferred rotmat(a => b))::Mat{dim, dim, T} ⋅ a ≈ b
+            end
         end
+        @test_throws Exception rotmat(Vec(1,0) => Vec(1,1)) # length of two vectors must be the same
     end
 end
