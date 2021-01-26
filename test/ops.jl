@@ -199,5 +199,6 @@ end
                 @test (@inferred rotmat(a => b))::Mat{dim, dim, T} ⋅ a ≈ b
             end
         end
+        @test_throws Exception rotmat(Vec(1,0) => Vec(1,1)) # length of two vectors must be the same
     end
 end
