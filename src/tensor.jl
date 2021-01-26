@@ -1,8 +1,6 @@
-abstract type AbstractTensor{S <: Tuple, T <: Real, N} <: AbstractArray{T, N} end
-
-struct Tensor{S, T, N, L} <: AbstractTensor{S, T, N}
+struct Tensor{S <: Tuple, T, N, L} <: AbstractTensor{S, T, N}
     data::NTuple{L, T}
-    function Tensor{S, T, N, L}(data::NTuple{L, Any}) where {S, T, N, L}
+    function Tensor{S, T, N, L}(data::NTuple{L, Real}) where {S, T, N, L}
         check_tensor_parameters(S, T, Val(N), Val(L))
         new{S, T, N, L}(convert_ntuple(T, data))
     end
@@ -135,8 +133,6 @@ end
 
 # for AbstractArray interface
 Base.IndexStyle(::Type{<: Tensor}) = IndexLinear()
-Base.size(::Type{TT}) where {TT <: Tensor}= Dims(Size(TT))
-Base.size(x::Tensor) = size(typeof(x))
 
 # helpers
 Base.Tuple(x::Tensor) = x.data
@@ -144,20 +140,6 @@ ncomponents(x::Tensor) = length(Tuple(x))
 ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
 @pure basetype(::Type{<: Tensor{S}}) where {S} = Tensor{S}
 @pure basetype(::Type{<: Tensor{S, T}}) where {S, T} = Tensor{S, T}
-
-# indices
-for func in (:independent_indices, :indices, :duplicates)
-    @eval begin
-        $func(::Type{TT}) where {TT <: Tensor} = $func(Size(TT))
-        $func(x::Tensor) = $func(typeof(x))
-    end
-end
-
-# getindex
-@inline function Base.getindex(x::Tensor, i::Int)
-    @boundscheck checkbounds(x, i)
-    @inbounds Tuple(x)[independent_indices(x)[i]]
-end
 
 # broadcast
 Broadcast.broadcastable(x::Tensor) = Ref(x)
@@ -172,6 +154,3 @@ end
 Base.convert(::Type{TT}, x::TT) where {TT <: Tensor} = x
 Base.convert(::Type{TT}, x::Tensor) where {TT <: Tensor} = TT(Tuple(x))
 Base.convert(::Type{TT}, x::AbstractArray) where {TT <: Tensor} = TT(x)
-
-Size(::Type{<: Tensor{S}}) where {S} = Size(S)
-Size(::Tensor{S}) where {S} = Size(S)

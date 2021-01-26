@@ -17,6 +17,9 @@ export
     Symmetry,
     @Symmetry,
     Size,
+    AbstractTensor,
+    AbstractVec,
+    AbstractMat,
     Tensor,
     SecondOrderTensor,
     ThirdOrderTensor,
@@ -53,6 +56,7 @@ include("symmetry.jl")
 include("size.jl")
 include("indexing.jl")
 include("einsum.jl")
+include("abstracttensor.jl")
 include("tensor.jl")
 include("ops.jl")
 include("voigt.jl")

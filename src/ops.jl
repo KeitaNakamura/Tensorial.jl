@@ -1,4 +1,4 @@
-@generated function _map(f, xs::Vararg{Tensor, N}) where {N}
+@generated function _map(f, xs::Vararg{AbstractTensor, N}) where {N}
     S = promote_size(map(Size, xs)...)
     exps = map(indices(S)) do i
         vals = [:(xs[$j][$i]) for j in 1:N]
@@ -11,13 +11,13 @@
     end
 end
 
-@inline Base.:+(x::Tensor, y::Tensor) = _map(+, x, y)
-@inline Base.:-(x::Tensor, y::Tensor) = _map(-, x, y)
-@inline Base.:*(y::Real, x::Tensor) = _map(x -> x*y, x)
-@inline Base.:*(x::Tensor, y::Real) = _map(x -> x*y, x)
-@inline Base.:/(x::Tensor, y::Real) = _map(x -> x/y, x)
-@inline Base.:+(x::Tensor) = x
-@inline Base.:-(x::Tensor) = _map(-, x)
+@inline Base.:+(x::AbstractTensor, y::AbstractTensor) = _map(+, x, y)
+@inline Base.:-(x::AbstractTensor, y::AbstractTensor) = _map(-, x, y)
+@inline Base.:*(y::Real, x::AbstractTensor) = _map(x -> x*y, x)
+@inline Base.:*(x::AbstractTensor, y::Real) = _map(x -> x*y, x)
+@inline Base.:/(x::AbstractTensor, y::Real) = _map(x -> x/y, x)
+@inline Base.:+(x::AbstractTensor) = x
+@inline Base.:-(x::AbstractTensor) = _map(-, x)
 
 # error for standard multiplications
 function Base.:*(::Tensor, ::Tensor)
@@ -39,7 +39,7 @@ function contraction_exprs(S1::Size, S2::Size, ::Val{N}) where {N}
 end
 
 """
-    contraction(::Tensor, ::Tensor, ::Val{N})
+    contraction(::AbstractTensor, ::AbstractTensor, ::Val{N})
 
 Conduct contraction of `N` inner indices.
 For example, `N=2` contraction for third-order tensors ``A_{ij} = B_{ikl} C_{klj}``
@@ -63,7 +63,7 @@ Following symbols are also available for specific contractions:
 - `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`): `contraction(x, y, Val(1))`
 - `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>`): `contraction(x, y, Val(2))`
 """
-@generated function contraction(x::Tensor, y::Tensor, ::Val{N}) where {N}
+@generated function contraction(x::AbstractTensor, y::AbstractTensor, ::Val{N}) where {N}
     S = contraction(Size(x), Size(y), Val(N))
     exps = contraction_exprs(Size(x), Size(y), Val(N))
     T = promote_type(eltype(x), eltype(y))
@@ -79,7 +79,7 @@ Following symbols are also available for specific contractions:
 end
 
 """
-    otimes(x::Tensor, y::Tensor)
+    otimes(x::AbstractTensor, y::AbstractTensor)
     x ⊗ y
 
 Compute tensor product such as ``A_{ij} = x_i y_j``.
@@ -98,14 +98,14 @@ julia> A = x ⊗ y
  0.260518  0.449607  0.48365
 ```
 """
-@inline otimes(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(0))
+@inline otimes(x1::AbstractTensor, x2::AbstractTensor) = contraction(x1, x2, Val(0))
 
 """
-    dot(x::Tensor, y::Tensor)
+    dot(x::AbstractTensor, y::AbstractTensor)
     x ⋅ y
 
 Compute dot product such as ``a = x_i y_i``.
-This is equivalent to [`contraction(::Tensor, ::Tensor, Val(1))`](@ref).
+This is equivalent to [`contraction(::AbstractTensor, ::AbstractTensor, Val(1))`](@ref).
 `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`) is a synonym for `cdot(x, y)`.
 
 # Examples
@@ -118,9 +118,9 @@ julia> a = x ⋅ y
 1.3643452781654775
 ```
 """
-@inline dot(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(1))
-@inline double_contraction(x1::Tensor, x2::Tensor) = contraction(x1, x2, Val(2))
-@inline norm(x::Tensor) = sqrt(contraction(x, x, Val(ndims(x))))
+@inline dot(x1::AbstractTensor, x2::AbstractTensor) = contraction(x1, x2, Val(1))
+@inline double_contraction(x1::AbstractTensor, x2::AbstractTensor) = contraction(x1, x2, Val(2))
+@inline norm(x::AbstractTensor) = sqrt(contraction(x, x, Val(ndims(x))))
 
 # v_k * S_ikjl * u_l
 @generated function dotdot(v1::Vec{dim}, S::SymmetricFourthOrderTensor{dim}, v2::Vec{dim}) where {dim}
@@ -135,7 +135,7 @@ julia> a = x ⋅ y
     end
 end
 
-const SquareTensor{dim, T} = Union{SecondOrderTensor{dim, T}, SymmetricSecondOrderTensor{dim, T}}
+const SquareTensor{dim, T} = Union{AbstractTensor{Tuple{dim, dim}, T, 2}, AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}}
 
 # tr/mean
 @inline function tr(x::SquareTensor{dim}) where {dim}
@@ -155,9 +155,9 @@ end
 @inline dev(x::SquareTensor{3}) = x - vol(x)
 
 # transpose/adjoint
-@inline transpose(x::SymmetricSecondOrderTensor) = x
-@inline transpose(x::Tensor{Tuple{m, n}}) where {m, n} = Tensor{Tuple{n, m}}((i,j) -> @inbounds x[j,i])
-@inline adjoint(x::Tensor) = transpose(x)
+@inline transpose(x::AbstractTensor{Tuple{@Symmetry{dim, dim}}}) where {dim} = x
+@inline transpose(x::AbstractTensor{Tuple{m, n}}) where {m, n} = Tensor{Tuple{n, m}}((i,j) -> @inbounds x[j,i])
+@inline adjoint(x::AbstractTensor) = transpose(x)
 
 # symmetric
 @inline symmetric(x::SymmetricSecondOrderTensor) = x

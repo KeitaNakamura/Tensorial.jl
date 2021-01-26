@@ -22,7 +22,7 @@ const RealOrTensor = Union{Real, Tensor}
 
 @inline extract_value(v::RealOrTensor, ::RealOrTensor) = v
 @inline extract_value(v::Dual, ::RealOrTensor) = value(v)
-@generated function extract_value(v::Tensor{S, <: Dual}, ::RealOrTensor) where {S}
+@generated function extract_value(v::Tensor{S, <: Dual}, ::RealOrTensor) where {S <: Tuple}
     exps = [:(value(Tuple(v)[$i])) for i in 1:ncomponents(v)]
     quote
         @_inline_meta
@@ -45,7 +45,7 @@ end
 # Dual case
 @inline extract_gradient(v::Dual, ::Real) = partials(v, 1)
 @inline extract_gradient(v::Dual, x::Tensor{S}) where {S} = Tensor{S}(partials(v).values)
-@generated function extract_gradient(v::Tensor{<: Any, <: Dual}, x::Tensor)
+@generated function extract_gradient(v::Tensor{<: Tuple, <: Dual}, x::Tensor)
     S = otimes(Size(v), Size(x))
     TT = tensortype(S)
     exps = [:(partials(Tuple(v)[$i], $j)) for i in 1:ncomponents(v), j in 1:ncomponents(x)]
@@ -54,7 +54,7 @@ end
         @inbounds $TT($(exps...))
     end
 end
-@generated function extract_gradient(v::Tensor{S, <: Dual}, ::Real) where {S}
+@generated function extract_gradient(v::Tensor{S, <: Dual}, ::Real) where {S <: Tuple}
     exps = [:(partials(Tuple(v)[$i], 1)) for i in 1:ncomponents(v)]
     return quote
         @_inline_meta
