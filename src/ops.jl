@@ -19,10 +19,37 @@ end
 @inline Base.:+(x::AbstractTensor) = x
 @inline Base.:-(x::AbstractTensor) = _map(-, x)
 
-# error for standard multiplications
-function Base.:*(::Tensor, ::Tensor)
-    error("use `⋅` (`\\cdot`) for single contraction and `⊡` (`\\boxdot`) for double contraction instead of `*`")
+const SquareTensor{dim, T} = Union{AbstractTensor{Tuple{dim, dim}, T, 2}, AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}}
+
+@generated function _add_uniform(x::SquareTensor{dim}, λ::Real) where {dim}
+    S = promote_size(Size(x), Size(Symmetry(dim, dim)))
+    tocartesian = CartesianIndices(S)
+    exps = map(indices(S)) do i
+        i, j = Tuple(tocartesian[i])
+        ex = getindex_expr(:x, x, i, j)
+        return i == j ? :($ex + λ) : ex
+    end
+    TT = tensortype(S)
+    return quote
+        @_inline_meta
+        @inbounds $TT($(exps...))
+    end
 end
+
+@inline Base.:+(x::AbstractTensor, y::UniformScaling) = _add_uniform( x,  y.λ)
+@inline Base.:-(x::AbstractTensor, y::UniformScaling) = _add_uniform( x, -y.λ)
+@inline Base.:+(x::UniformScaling, y::AbstractTensor) = _add_uniform( y,  x.λ)
+@inline Base.:-(x::UniformScaling, y::AbstractTensor) = _add_uniform(-y,  x.λ)
+@inline dot(x::Union{AbstractVec, AbstractMat, SquareTensor}, y::UniformScaling) = x * y.λ
+@inline dot(x::UniformScaling, y::Union{AbstractVec, AbstractMat, SquareTensor}) = x.λ * y
+@inline double_contraction(x::SquareTensor, y::UniformScaling) = tr(x) * y.λ
+@inline double_contraction(x::UniformScaling, y::SquareTensor) = x.λ * tr(y)
+
+# error for standard multiplications
+error_multiply() = error("use `⋅` (`\\cdot`) for single contraction and `⊡` (`\\boxdot`) for double contraction instead of `*`")
+Base.:*(::AbstractTensor, ::AbstractTensor) = error_multiply()
+Base.:*(::AbstractTensor, ::UniformScaling) = error_multiply()
+Base.:*(::UniformScaling, ::AbstractTensor) = error_multiply()
 
 function contraction_exprs(S1::Size, S2::Size, ::Val{N}) where {N}
     S = contraction(S1, S2, Val(N))
@@ -134,8 +161,6 @@ julia> a = x ⋅ y
         @inbounds $TT($(map(construct_expr, exps)...))
     end
 end
-
-const SquareTensor{dim, T} = Union{AbstractTensor{Tuple{dim, dim}, T, 2}, AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}}
 
 # tr/mean
 @inline function tr(x::SquareTensor{dim}) where {dim}
