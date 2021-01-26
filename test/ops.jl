@@ -202,3 +202,32 @@ end
         @test_throws Exception rotmat(Vec(1,0) => Vec(1,1)) # length of two vectors must be the same
     end
 end
+
+@testset "UniformScaling" begin
+    for T in (Float32, Float64)
+        for SquareTensorType in (Tensor{Tuple{3, 3}, T}, Tensor{Tuple{@Symmetry{3, 3}}, T})
+            x = rand(SquareTensorType)
+            @test (@inferred x + I)::SquareTensorType == x + one(x)
+            @test (@inferred x - I)::SquareTensorType == x - one(x)
+            @test (@inferred I + x)::SquareTensorType == one(x) + x
+            @test (@inferred I - x)::SquareTensorType == one(x) - x
+            y = rand(Mat{3, 4, T})
+            v = rand(Vec{3, T})
+            @test (@inferred x ⋅ I)::SquareTensorType == x ⋅ one(x)
+            @test (@inferred I ⋅ x)::SquareTensorType == one(x) ⋅ x
+            @test (@inferred y ⋅ I)::Mat{3, 4, T} == y ⋅ one(Mat{4, 4})
+            @test (@inferred I ⋅ y)::Mat{3, 4, T} == one(Mat{3, 3}) ⋅ y
+            @test (@inferred v ⋅ I)::Vec{3, T} == v ⋅ one(x)
+            @test (@inferred I ⋅ v)::Vec{3, T} == one(x) ⋅ v
+            @test (@inferred I ⊡ x)::T == one(x) ⊡ x
+            @test (@inferred x ⊡ I)::T == x ⊡ one(x)
+            # wrong input
+            @test_throws Exception x * I
+            @test_throws Exception y * I
+            @test_throws Exception v * I
+            @test_throws Exception I * x
+            @test_throws Exception I * y
+            @test_throws Exception I * v
+        end
+    end
+end
