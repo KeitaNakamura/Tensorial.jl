@@ -364,7 +364,7 @@ julia> rotmat(a => b) ⋅ a ≈ b
 true
 ```
 """
-function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}}) where {dim, T}
+function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {dim, T}
     # https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d/2672702#2672702
     a = pair.first
     b = pair.second
