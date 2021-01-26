@@ -8,9 +8,9 @@
         @test (@inferred Tensor{Tuple{2,Symmetry{Tuple{2,2}}}, Float64, 3, 6}((1,2,3,4,5,6)))::Tensor{Tuple{2,Symmetry{Tuple{2,2}}}, Float64, 3, 6} |> Tuple == (1.0,2.0,3.0,4.0,5.0,6.0)
 
         # bad input
-        @test_throws MethodError Tensor{Tuple{2,2}, Int, 2, 4}((1,2,3))
-        @test_throws MethodError Tensor{Tuple{2,2}, Int, 2, 4}(())
-        @test_throws TypeError Tensor{Tuple{2}, Vector{Int}, 1, 2}(([1,2],[3,4]))
+        @test_throws Exception Tensor{Tuple{2,2}, Int, 2, 4}((1,2,3))
+        @test_throws Exception Tensor{Tuple{2,2}, Int, 2, 4}(())
+        @test_throws Exception Tensor{Tuple{2}, Vector{Int}, 1, 2}(([1,2],[3,4]))
 
         # bad parameters
         @test_throws Exception Tensor{Tuple{Int,2}, Int, 2, 4}((1,2,3,4)) # bad size
@@ -223,4 +223,19 @@ end
     @test (@inferred size(TT))::Tuple{Int, Int} == (2,3)
     TT = Tensor{Tuple{2, 3, @Symmetry{3, 3}}}
     @test (@inferred size(TT))::Tuple{Int, Int, Int, Int} == (2,3,3,3)
+end
+
+@testset "AbstractTensor" begin
+    struct Point{dim, T} <: AbstractVec{dim, T}
+        x::Vec{dim, T}
+    end
+    Base.Tuple(p::Point) = Tuple(p.x)
+    for T in (Float32, Float64)
+        x = Vec{2, T}(1, 2)
+        p = Point(x)
+        @test (@inferred p + p)::Vec{2, T} |> Tuple == (x + x).data
+        @test (@inferred p - p)::Vec{2, T} |> Tuple == (x - x).data
+        @test (@inferred p ⋅ p)::T == x ⋅ x
+        @test (@inferred p ⊗ p)::Mat{2, 2, T} == x ⊗ x
+    end
 end
