@@ -2,14 +2,14 @@ module Tensorial
 
 using LinearAlgebra, Statistics
 # re-exports from LinearAlgebra and Statistics
-export ⋅, ×, dot, tr, det, norm, mean, I
+export ⋅, ×, dot, tr, det, norm, mean, I, eigen, eigvals, eigvecs
 
 using StaticArrays
 using Base: @pure, @_inline_meta, @_propagate_inbounds_meta
 using ForwardDiff: Dual, value, partials
 
 import Base: transpose, inv
-import LinearAlgebra: dot, norm, tr, adjoint, det, cross
+import LinearAlgebra: dot, norm, tr, adjoint, det, cross, eigen, eigvals, eigvecs
 import Statistics: mean
 
 export

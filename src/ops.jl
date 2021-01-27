@@ -440,3 +440,12 @@ function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {d
     c = a + b
     2 * (c ⊗ c) / (c ⋅ c) - one(Mat{dim, dim, T})
 end
+
+# eigvals/eigen (just call methos in StaticArrays.jl)
+@inline function eigvals(x::SymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
+    Tensor(eigvals(Symmetric(convert_to_SArray(x)); permute, scale))
+end
+@inline function eigen(x::SymmetricSecondOrderTensor)
+    eig = eigen(Symmetric(convert_to_SArray(x)))
+    Eigen(Tensor(eig.values), Tensor(eig.vectors))
+end
