@@ -151,5 +151,15 @@ Broadcast.broadcastable(x::Tensor) = Ref(x)
 end
 
 # convert
-Base.convert(::Type{TT}, x::AbstractTensor) where {TT <: Tensor} = TT(Tuple(x))
-Base.convert(::Type{TT}, x::AbstractArray) where {TT <: Tensor} = TT(x)
+@inline Base.convert(::Type{TT}, x::TT) where {TT <: Tensor} = x
+@inline Base.convert(::Type{TT}, x::AbstractArray) where {TT <: Tensor} = TT(x)
+@generated function Base.convert(::Type{TT}, x::AbstractTensor) where {TT <: Tensor}
+    S = promote_size(Size(TT), Size(x))
+    S == Size(TT) ||
+        return :(throw(ArgumentError("Cannot `convert` an object of type $(typeof(x)) to an object of type $TT")))
+    exps = [getindex_expr(:x, x, i) for i in indices(S)]
+    quote
+        @_inline_meta
+        @inbounds TT(tuple($(exps...)))
+    end
+end

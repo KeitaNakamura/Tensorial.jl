@@ -189,6 +189,7 @@ end
         S = Tensor{Tuple{@Symmetry{3,3}}}(1:6...)
         v = Vec(1:3...)
         for T in (Float32, Float64)
+            # convert eltype
             Adata = map(T, (1:9...,))
             @test (@inferred convert(Tensor{Tuple{3,3}, T}, A))::Tensor{Tuple{3,3}, T} |> Tuple == Adata
             @test (@inferred convert(SecondOrderTensor{3, T}, A))::Tensor{Tuple{3,3}, T} |> Tuple == Adata
@@ -198,6 +199,11 @@ end
             @test (@inferred convert(SymmetricSecondOrderTensor{3, T}, S))::Tensor{Tuple{@Symmetry{3,3}}, T} |> Tuple == Sdata
             vdata = map(T, (1:3...,))
             @test (@inferred convert(Vec{3, T}, v))::Vec{3, T} |> Tuple == vdata
+            # convert symmetric tensor to tensor
+            (@inferred convert(Tensor{Tuple{3, 3}, T}, S))::Tensor{Tuple{3, 3}, T} |> Array == Array(S)
+            (@inferred convert(Mat{3, 3, T}, S))::Tensor{Tuple{3, 3}, T} |> Array == Array(S)
+            # convert tensor to symmetric tensor
+            @test_throws Exception convert(Tensor{Tuple{@Symmetry{3, 3}}, T}, A)
         end
     end
     @testset "AbstractArray -> Tensor" begin

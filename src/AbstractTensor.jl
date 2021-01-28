@@ -20,9 +20,6 @@ function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: AbstractTensor}, i...
     :(Tuple($ex)[$(inds[i...])])
 end
 
-# convert
-Base.convert(::Type{TT}, x::TT) where {TT <: AbstractTensor} = x
-
 # to SArray
 @generated function convert_to_SArray(x::AbstractTensor)
     S = Size(x)
