@@ -212,6 +212,16 @@ end
         end
         @test_throws Exception rotmat(Vec(1,0) => Vec(1,1)) # length of two vectors must be the same
     end
+    @testset "eigen" begin
+        for T in (Float32, Float64)
+            for dim in (2, 3)
+                x = rand(SymmetricSecondOrderTensor{dim, T})
+                @test (@inferred eigvals(x)) |> Array ≈ eigvals(Array(x))
+                @test (@inferred eigen(x)).values |> Array ≈ eigen(Array(x)).values
+                @test (@inferred eigen(x)).vectors ≈ (@inferred eigvecs(x))
+            end
+        end
+    end
 end
 
 @testset "UniformScaling" begin
