@@ -183,14 +183,14 @@ end
 @inline adjoint(x::AbstractTensor) = transpose(x)
 
 # symmetric
-@inline symmetric(x::SymmetricSecondOrderTensor) = x
-@inline symmetric(x::SecondOrderTensor{dim}) where {dim} =
+@inline symmetric(x::AbstractSymmetricSecondOrderTensor) = x
+@inline symmetric(x::AbstractSecondOrderTensor{dim}) where {dim} =
     SymmetricSecondOrderTensor{dim}((i,j) -> @inbounds i == j ? x[i,j] : (x[i,j] + x[j,i]) / 2)
-@inline symmetric(x::SecondOrderTensor{1}) =
+@inline symmetric(x::AbstractSecondOrderTensor{1}) =
     @inbounds SymmetricSecondOrderTensor{1}(x[1,1])
-@inline symmetric(x::SecondOrderTensor{2}) =
+@inline symmetric(x::AbstractSecondOrderTensor{2}) =
     @inbounds SymmetricSecondOrderTensor{2}(x[1,1], (x[2,1]+x[1,2])/2, x[2,2])
-@inline symmetric(x::SecondOrderTensor{3}) =
+@inline symmetric(x::AbstractSecondOrderTensor{3}) =
     @inbounds SymmetricSecondOrderTensor{3}(x[1,1], (x[2,1]+x[1,2])/2, (x[3,1]+x[1,3])/2, x[2,2], (x[3,2]+x[2,3])/2, x[3,3])
 
 # det
@@ -283,8 +283,8 @@ end
     y
 end
 ## helper functions
-@inline _powdot(x::SecondOrderTensor, y::SecondOrderTensor) = dot(x, y)
-@generated function _powdot(x::SymmetricSecondOrderTensor{dim}, y::SymmetricSecondOrderTensor{dim}) where {dim}
+@inline _powdot(x::AbstractSecondOrderTensor, y::AbstractSecondOrderTensor) = dot(x, y)
+@generated function _powdot(x::AbstractSymmetricSecondOrderTensor{dim}, y::AbstractSymmetricSecondOrderTensor{dim}) where {dim}
     S = Size(x)
     exps = contraction_exprs(Size(x), Size(y), Val(1))
     quote
@@ -440,10 +440,10 @@ function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {d
 end
 
 # eigvals/eigen (just call methos in StaticArrays.jl)
-@inline function eigvals(x::SymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
+@inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
     Tensor(eigvals(Symmetric(convert_to_SArray(x)); permute, scale))
 end
-@inline function eigen(x::SymmetricSecondOrderTensor)
+@inline function eigen(x::AbstractSymmetricSecondOrderTensor)
     eig = eigen(Symmetric(convert_to_SArray(x)))
     Eigen(Tensor(eig.values), Tensor(eig.vectors))
 end

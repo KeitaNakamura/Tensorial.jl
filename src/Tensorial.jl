@@ -13,19 +13,23 @@ import LinearAlgebra: dot, norm, tr, adjoint, det, cross, eigen, eigvals, eigvec
 import Statistics: mean
 
 export
-# Types
+# Symmetry/Size
     Symmetry,
     @Symmetry,
     Size,
+# AbstractTensor
     AbstractTensor,
+    AbstractSecondOrderTensor,
+    AbstractFourthOrderTensor,
+    AbstractSymmetricSecondOrderTensor,
+    AbstractSymmetricFourthOrderTensor,
     AbstractVec,
     AbstractMat,
+# Tensor
     Tensor,
     SecondOrderTensor,
-    ThirdOrderTensor,
     FourthOrderTensor,
     SymmetricSecondOrderTensor,
-    SymmetricThirdOrderTensor,
     SymmetricFourthOrderTensor,
     Vec,
     Mat,
