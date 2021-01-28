@@ -144,6 +144,12 @@ ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
 # broadcast
 Broadcast.broadcastable(x::Tensor) = Ref(x)
 
+# getindex
+@inline function Base.getindex(x::Tensor, i::Int)
+    @boundscheck checkbounds(x, i)
+    @inbounds Tuple(x)[independent_indices(x)[i]]
+end
+
 # getindex_expr
 function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: Tensor}, i...)
     inds = independent_indices(x)

@@ -11,12 +11,6 @@ for func in (:independent_indices, :indices, :duplicates)
     end
 end
 
-# getindex
-@inline function Base.getindex(x::AbstractTensor, i::Int)
-    @boundscheck checkbounds(x, i)
-    @inbounds Tuple(x)[independent_indices(x)[i]]
-end
-
 Size(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Size(S)
 Size(::AbstractTensor{S}) where {S} = Size(S)
 

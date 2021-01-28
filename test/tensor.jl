@@ -230,6 +230,7 @@ end
         x::Vec{dim, T}
     end
     Base.Tuple(p::Point) = Tuple(p.x)
+    Base.getindex(p::Point, i::Int) = p.x[i]
     for T in (Float32, Float64)
         x = Vec{2, T}(1, 2)
         p = Point(x)
