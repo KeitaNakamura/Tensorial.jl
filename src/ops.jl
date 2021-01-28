@@ -317,34 +317,61 @@ julia> rotmat(deg2rad(30))
 end
 
 """
-    rotmat(θ::Vec{3})
-    rotmatx(α::Real)
-    rotmaty(β::Real)
-    rotmatz(γ::Real)
+    rotmat(θ::Vec{3}; sequence::Symbol, degree::Bool = false)
+    rotmatx(θ::Real)
+    rotmaty(θ::Real)
+    rotmatz(θ::Real)
 
 Convert Euler angles to rotation matrix.
+Use 3 characters belonging to the set (X, Y, Z) for intrinsic rotations,
+or (x, y, z) for extrinsic rotations.
 
 # Examples
 ```jldoctest
-julia> rotmatx(deg2rad(30))
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
- 1.0  0.0        0.0
- 0.0  0.866025  -0.5
- 0.0  0.5        0.866025
+julia> α, β, γ = rand(Vec{3});
+
+julia> rotmat(Vec(α,β,γ), sequence = :XYZ) ≈ rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatz(γ)
+true
+
+julia> rotmat(Vec(α,β,γ), sequence = :xyz) ≈ rotmatz(γ) ⋅ rotmaty(β) ⋅ rotmatx(α)
+true
+
+julia> rotmat(Vec(α,β,γ), sequence = :XYZ) ≈ rotmat(Vec(γ,β,α), sequence = :zyx)
+true
 ```
 """
-function rotmat(θ::Vec{3})
-    @inbounds begin
-        α = θ[1]
-        β = θ[2]
-        γ = θ[3]
+function rotmat(θ::Vec{3}; sequence::Symbol, degree::Bool = false)
+    @inbounds α, β, γ = θ[1], θ[2], θ[3]
+    if degree
+        α, β, γ = map(deg2rad, (α, β, γ))
     end
-    sinα = sin(α); cosα = cos(α)
-    sinβ = sin(β); cosβ = cos(β)
-    sinγ = sin(γ); cosγ = cos(γ)
-    @Mat [ cosβ*cosγ                -cosβ*sinγ                 sinβ
-           sinα*sinβ*cosγ+cosα*sinγ -sinα*sinβ*sinγ+cosα*cosγ -sinα*cosβ
-          -cosα*sinβ*cosγ+sinα*sinγ  cosα*sinβ*sinγ+sinα*cosγ  cosα*cosβ]
+    # intrinsic
+    sequence == :XZX && return rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatz(γ)
+    sequence == :XYX && return rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatx(γ)
+    sequence == :YXY && return rotmaty(α) ⋅ rotmatx(β) ⋅ rotmaty(γ)
+    sequence == :YZY && return rotmaty(α) ⋅ rotmatz(β) ⋅ rotmaty(γ)
+    sequence == :ZYZ && return rotmatz(α) ⋅ rotmaty(β) ⋅ rotmatz(γ)
+    sequence == :ZXZ && return rotmatz(α) ⋅ rotmatx(β) ⋅ rotmatz(γ)
+    sequence == :XZY && return rotmatx(α) ⋅ rotmatz(β) ⋅ rotmaty(γ)
+    sequence == :XYZ && return rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatz(γ)
+    sequence == :YXZ && return rotmaty(α) ⋅ rotmatx(β) ⋅ rotmatz(γ)
+    sequence == :YZX && return rotmaty(α) ⋅ rotmatz(β) ⋅ rotmatx(γ)
+    sequence == :ZYX && return rotmatz(α) ⋅ rotmaty(β) ⋅ rotmatx(γ)
+    sequence == :ZXY && return rotmatz(α) ⋅ rotmatx(β) ⋅ rotmaty(γ)
+    # extrinsic
+    sequence == :xzx && return rotmatx(γ) ⋅ rotmaty(β) ⋅ rotmatz(α)
+    sequence == :xyx && return rotmatx(γ) ⋅ rotmaty(β) ⋅ rotmatx(α)
+    sequence == :yxy && return rotmaty(γ) ⋅ rotmatx(β) ⋅ rotmaty(α)
+    sequence == :yzy && return rotmaty(γ) ⋅ rotmatz(β) ⋅ rotmaty(α)
+    sequence == :zyz && return rotmatz(γ) ⋅ rotmaty(β) ⋅ rotmatz(α)
+    sequence == :zxz && return rotmatz(γ) ⋅ rotmatx(β) ⋅ rotmatz(α)
+    sequence == :xzy && return rotmaty(γ) ⋅ rotmatz(β) ⋅ rotmatx(α)
+    sequence == :xyz && return rotmatz(γ) ⋅ rotmaty(β) ⋅ rotmatx(α)
+    sequence == :yxz && return rotmatz(γ) ⋅ rotmatx(β) ⋅ rotmaty(α)
+    sequence == :yzx && return rotmatx(γ) ⋅ rotmatz(β) ⋅ rotmaty(α)
+    sequence == :zyx && return rotmatx(γ) ⋅ rotmaty(β) ⋅ rotmatz(α)
+    sequence == :zxy && return rotmaty(γ) ⋅ rotmatx(β) ⋅ rotmatz(α)
+    throw(ArgumentError("sequence $sequence is not supported"))
 end
 @inline function rotmatx(α::Real)
     o = one(α)

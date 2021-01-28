@@ -189,10 +189,12 @@ end
             α = deg2rad(T(10))
             β = deg2rad(T(20))
             γ = deg2rad(T(30))
-            @test (@inferred rotmatx(α))::Mat{3,3,T} == rotmat(Vec(α,0,0))
-            @test (@inferred rotmaty(β))::Mat{3,3,T} == rotmat(Vec(0,β,0))
-            @test (@inferred rotmatz(γ))::Mat{3,3,T} == rotmat(Vec(0,0,γ))
-            @test (@inferred rotmat(α))::Mat{2,2,T} == rotmatz(α)[1:2,1:2]
+            for (XYZ, zyx) in ((:XZX, :xzx), (:XYX, :xyx), (:YXY, :yxy), (:YZY, :yzy), (:ZYZ, :zyz), (:ZXZ, :zxz),
+                               (:XZY, :yzx), (:XYZ, :zyx), (:YXZ, :zxy), (:YZX, :xzy), (:ZYX, :xyz), (:ZXY, :yxz))
+                @test (@inferred rotmat(Vec(α,β,γ), sequence = XYZ))::Mat{3,3,T} ≈ (@inferred rotmat(Vec(γ,β,α), sequence = zyx))::Mat{3,3,T}
+                @test (@inferred rotmat(Vec(α,β,γ), sequence = XYZ))::Mat{3,3,T} ≈ (@inferred rotmat(Vec(rad2deg(α),rad2deg(β),rad2deg(γ)), sequence = XYZ, degrees = true))::Mat{3,3,T}
+                @test (@inferred rotmat(Vec(α,β,γ), sequence = zyx))::Mat{3,3,T} ≈ (@inferred rotmat(Vec(rad2deg(α),rad2deg(β),rad2deg(γ)), sequence = zyx, degrees = true))::Mat{3,3,T}
+            end
             for dim in (2, 3)
                 a = rand(Vec{dim, T}); a /= norm(a)
                 b = rand(Vec{dim, T}); b /= norm(b)
