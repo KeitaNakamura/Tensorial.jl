@@ -56,12 +56,12 @@ export
 
 
 include("utils.jl")
-include("symmetry.jl")
-include("size.jl")
+include("Symmetry.jl")
+include("Size.jl")
 include("indexing.jl")
 include("einsum.jl")
-include("abstracttensor.jl")
-include("tensor.jl")
+include("AbstractTensor.jl")
+include("Tensor.jl")
 include("ops.jl")
 include("voigt.jl")
 include("ad.jl")
