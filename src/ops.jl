@@ -309,7 +309,10 @@ julia> rotmat(deg2rad(30))
  0.5        0.866025
 ```
 """
-@inline function rotmat(θ::Real)
+@inline function rotmat(θ::Real; degree::Bool = false)
+    if degree
+        θ = deg2rad(θ)
+    end
     sinθ = sin(θ)
     cosθ = cos(θ)
     @Mat [cosθ -sinθ
@@ -373,31 +376,40 @@ function rotmat(θ::Vec{3}; sequence::Symbol, degree::Bool = false)
     sequence == :zxy && return rotmaty(γ) ⋅ rotmatx(β) ⋅ rotmatz(α)
     throw(ArgumentError("sequence $sequence is not supported"))
 end
-@inline function rotmatx(α::Real)
-    o = one(α)
-    z = zero(α)
-    sinα = sin(α)
-    cosα = cos(α)
+@inline function rotmatx(θ::Real; degree::Bool = false)
+    if degree
+        θ = deg2rad(θ)
+    end
+    o = one(θ)
+    z = zero(θ)
+    sinθ = sin(θ)
+    cosθ = cos(θ)
     @Mat [o z     z
-          z cosα -sinα
-          z sinα  cosα]
+          z cosθ -sinθ
+          z sinθ  cosθ]
 end
-@inline function rotmaty(β::Real)
-    o = one(β)
-    z = zero(β)
-    sinβ = sin(β)
-    cosβ = cos(β)
-    @Mat [ cosβ z sinβ
+@inline function rotmaty(θ::Real; degree::Bool = false)
+    if degree
+        θ = deg2rad(θ)
+    end
+    o = one(θ)
+    z = zero(θ)
+    sinθ = sin(θ)
+    cosθ = cos(θ)
+    @Mat [ cosθ z sinθ
            z    o z
-          -sinβ z cosβ]
+          -sinθ z cosθ]
 end
-@inline function rotmatz(γ::Real)
-    o = one(γ)
-    z = zero(γ)
-    sinγ = sin(γ)
-    cosγ = cos(γ)
-    @Mat [cosγ -sinγ z
-          sinγ  cosγ z
+@inline function rotmatz(θ::Real; degree::Bool = false)
+    if degree
+        θ = deg2rad(θ)
+    end
+    o = one(θ)
+    z = zero(θ)
+    sinθ = sin(θ)
+    cosθ = cos(θ)
+    @Mat [cosθ -sinθ z
+          sinθ  cosθ z
           z     z    o]
 end
 
