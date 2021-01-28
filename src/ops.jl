@@ -19,9 +19,7 @@ end
 @inline Base.:+(x::AbstractTensor) = x
 @inline Base.:-(x::AbstractTensor) = _map(-, x)
 
-const SquareTensor{dim, T} = Union{AbstractTensor{Tuple{dim, dim}, T, 2}, AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}}
-
-@generated function _add_uniform(x::SquareTensor{dim}, λ::Real) where {dim}
+@generated function _add_uniform(x::AbstractSquareTensor{dim}, λ::Real) where {dim}
     S = promote_size(Size(x), Size(Symmetry(dim, dim)))
     tocartesian = CartesianIndices(S)
     exps = map(indices(S)) do i
@@ -40,10 +38,10 @@ end
 @inline Base.:-(x::AbstractTensor, y::UniformScaling) = _add_uniform( x, -y.λ)
 @inline Base.:+(x::UniformScaling, y::AbstractTensor) = _add_uniform( y,  x.λ)
 @inline Base.:-(x::UniformScaling, y::AbstractTensor) = _add_uniform(-y,  x.λ)
-@inline dot(x::Union{AbstractVec, AbstractMat, SquareTensor}, y::UniformScaling) = x * y.λ
-@inline dot(x::UniformScaling, y::Union{AbstractVec, AbstractMat, SquareTensor}) = x.λ * y
-@inline double_contraction(x::SquareTensor, y::UniformScaling) = tr(x) * y.λ
-@inline double_contraction(x::UniformScaling, y::SquareTensor) = x.λ * tr(y)
+@inline dot(x::Union{AbstractVec, AbstractMat, AbstractSquareTensor}, y::UniformScaling) = x * y.λ
+@inline dot(x::UniformScaling, y::Union{AbstractVec, AbstractMat, AbstractSquareTensor}) = x.λ * y
+@inline double_contraction(x::AbstractSquareTensor, y::UniformScaling) = tr(x) * y.λ
+@inline double_contraction(x::UniformScaling, y::AbstractSquareTensor) = x.λ * tr(y)
 
 # error for standard multiplications
 error_multiply() = error("use `⋅` (`\\cdot`) for single contraction and `⊡` (`\\boxdot`) for double contraction instead of `*`")
@@ -163,21 +161,21 @@ julia> a = x ⋅ y
 end
 
 # tr/mean
-@inline function tr(x::SquareTensor{dim}) where {dim}
+@inline function tr(x::AbstractSquareTensor{dim}) where {dim}
     sum(i -> @inbounds(x[i,i]), 1:dim)
 end
-@inline tr(x::SquareTensor{1}) = @inbounds x[1,1]
-@inline tr(x::SquareTensor{2}) = @inbounds x[1,1] + x[2,2]
-@inline tr(x::SquareTensor{3}) = @inbounds x[1,1] + x[2,2] + x[3,3]
-@inline mean(x::SquareTensor{dim}) where {dim} = tr(x) / dim
+@inline tr(x::AbstractSquareTensor{1}) = @inbounds x[1,1]
+@inline tr(x::AbstractSquareTensor{2}) = @inbounds x[1,1] + x[2,2]
+@inline tr(x::AbstractSquareTensor{3}) = @inbounds x[1,1] + x[2,2] + x[3,3]
+@inline mean(x::AbstractSquareTensor{dim}) where {dim} = tr(x) / dim
 
 # vol/dev
-@inline function vol(x::SquareTensor{3})
+@inline function vol(x::AbstractSquareTensor{3})
     v = mean(x)
     z = zero(v)
     typeof(x)((i,j) -> i == j ? v : z)
 end
-@inline dev(x::SquareTensor{3}) = x - vol(x)
+@inline dev(x::AbstractSquareTensor{3}) = x - vol(x)
 
 # transpose/adjoint
 @inline transpose(x::AbstractTensor{Tuple{@Symmetry{dim, dim}}}) where {dim} = x
@@ -185,37 +183,37 @@ end
 @inline adjoint(x::AbstractTensor) = transpose(x)
 
 # symmetric
-@inline symmetric(x::SymmetricSecondOrderTensor) = x
-@inline symmetric(x::SecondOrderTensor{dim}) where {dim} =
+@inline symmetric(x::AbstractSymmetricSecondOrderTensor) = x
+@inline symmetric(x::AbstractSecondOrderTensor{dim}) where {dim} =
     SymmetricSecondOrderTensor{dim}((i,j) -> @inbounds i == j ? x[i,j] : (x[i,j] + x[j,i]) / 2)
-@inline symmetric(x::SecondOrderTensor{1}) =
+@inline symmetric(x::AbstractSecondOrderTensor{1}) =
     @inbounds SymmetricSecondOrderTensor{1}(x[1,1])
-@inline symmetric(x::SecondOrderTensor{2}) =
+@inline symmetric(x::AbstractSecondOrderTensor{2}) =
     @inbounds SymmetricSecondOrderTensor{2}(x[1,1], (x[2,1]+x[1,2])/2, x[2,2])
-@inline symmetric(x::SecondOrderTensor{3}) =
+@inline symmetric(x::AbstractSecondOrderTensor{3}) =
     @inbounds SymmetricSecondOrderTensor{3}(x[1,1], (x[2,1]+x[1,2])/2, (x[3,1]+x[1,3])/2, x[2,2], (x[3,2]+x[2,3])/2, x[3,3])
 
 # det
-@inline function det(x::SquareTensor{1})
+@inline function det(x::AbstractSquareTensor{1})
     @inbounds x[1,1]
 end
-@inline function det(x::SquareTensor{2})
+@inline function det(x::AbstractSquareTensor{2})
     @inbounds x[1,1] * x[2,2] - x[1,2] * x[2,1]
 end
-@inline function det(x::SquareTensor{3})
+@inline function det(x::AbstractSquareTensor{3})
     @inbounds (x[1,1] * (x[2,2]*x[3,3] - x[2,3]*x[3,2]) -
                x[1,2] * (x[2,1]*x[3,3] - x[2,3]*x[3,1]) +
                x[1,3] * (x[2,1]*x[3,2] - x[2,2]*x[3,1]))
 end
-@inline function det(x::SquareTensor)
+@inline function det(x::AbstractSquareTensor)
     det(Matrix(x))
 end
 
 # inv
-@inline function inv(x::SquareTensor{1})
+@inline function inv(x::AbstractSquareTensor{1})
     typeof(x)(1/det(x))
 end
-@generated function inv(x::SquareTensor{2})
+@generated function inv(x::AbstractSquareTensor{2})
     x_11 = getindex_expr(:x, x, 1, 1)
     x_21 = getindex_expr(:x, x, 2, 1)
     x_12 = getindex_expr(:x, x, 1, 2)
@@ -227,7 +225,7 @@ end
         @inbounds typeof(x)($(exps[indices(x)]...))
     end
 end
-@generated function inv(x::SquareTensor{3})
+@generated function inv(x::AbstractSquareTensor{3})
     x_11 = getindex_expr(:x, x, 1, 1)
     x_21 = getindex_expr(:x, x, 2, 1)
     x_31 = getindex_expr(:x, x, 3, 1)
@@ -252,7 +250,7 @@ end
         @inbounds typeof(x)($(exps[indices(x)]...))
     end
 end
-@inline function inv(x::SquareTensor)
+@inline function inv(x::AbstractSquareTensor)
     typeof(x)(inv(Matrix(x)))
 end
 @inline function inv(x::FourthOrderTensor{dim}) where {dim}
@@ -273,10 +271,10 @@ end
     @inbounds Vec{3}((x[2]*y[3] - x[3]*y[2], x[3]*y[1] - x[1]*y[3], x[1]*y[2] - x[2]*y[1]))
 
 # power
-@inline Base.literal_pow(::typeof(^), x::SquareTensor, ::Val{-1}) = inv(x)
-@inline Base.literal_pow(::typeof(^), x::SquareTensor, ::Val{0})  = one(x)
-@inline Base.literal_pow(::typeof(^), x::SquareTensor, ::Val{1})  = x
-@inline function Base.literal_pow(::typeof(^), x::SquareTensor, ::Val{p}) where {p}
+@inline Base.literal_pow(::typeof(^), x::AbstractSquareTensor, ::Val{-1}) = inv(x)
+@inline Base.literal_pow(::typeof(^), x::AbstractSquareTensor, ::Val{0})  = one(x)
+@inline Base.literal_pow(::typeof(^), x::AbstractSquareTensor, ::Val{1})  = x
+@inline function Base.literal_pow(::typeof(^), x::AbstractSquareTensor, ::Val{p}) where {p}
     p > 0 ? (y = x; q = p) : (y = inv(x); q = -p)
     z = y
     for i in 2:q
@@ -285,8 +283,8 @@ end
     y
 end
 ## helper functions
-@inline _powdot(x::SecondOrderTensor, y::SecondOrderTensor) = dot(x, y)
-@generated function _powdot(x::SymmetricSecondOrderTensor{dim}, y::SymmetricSecondOrderTensor{dim}) where {dim}
+@inline _powdot(x::AbstractSecondOrderTensor, y::AbstractSecondOrderTensor) = dot(x, y)
+@generated function _powdot(x::AbstractSymmetricSecondOrderTensor{dim}, y::AbstractSymmetricSecondOrderTensor{dim}) where {dim}
     S = Size(x)
     exps = contraction_exprs(Size(x), Size(y), Val(1))
     quote
@@ -442,10 +440,10 @@ function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {d
 end
 
 # eigvals/eigen (just call methos in StaticArrays.jl)
-@inline function eigvals(x::SymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
+@inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
     Tensor(eigvals(Symmetric(convert_to_SArray(x)); permute, scale))
 end
-@inline function eigen(x::SymmetricSecondOrderTensor)
+@inline function eigen(x::AbstractSymmetricSecondOrderTensor)
     eig = eigen(Symmetric(convert_to_SArray(x)))
     Eigen(Tensor(eig.values), Tensor(eig.vectors))
 end

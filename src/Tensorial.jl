@@ -13,19 +13,23 @@ import LinearAlgebra: dot, norm, tr, adjoint, det, cross, eigen, eigvals, eigvec
 import Statistics: mean
 
 export
-# Types
+# Symmetry/Size
     Symmetry,
     @Symmetry,
     Size,
+# AbstractTensor
     AbstractTensor,
+    AbstractSecondOrderTensor,
+    AbstractFourthOrderTensor,
+    AbstractSymmetricSecondOrderTensor,
+    AbstractSymmetricFourthOrderTensor,
     AbstractVec,
     AbstractMat,
+# Tensor
     Tensor,
     SecondOrderTensor,
-    ThirdOrderTensor,
     FourthOrderTensor,
     SymmetricSecondOrderTensor,
-    SymmetricThirdOrderTensor,
     SymmetricFourthOrderTensor,
     Vec,
     Mat,
@@ -52,12 +56,12 @@ export
 
 
 include("utils.jl")
-include("symmetry.jl")
-include("size.jl")
+include("Symmetry.jl")
+include("Size.jl")
 include("indexing.jl")
 include("einsum.jl")
-include("abstracttensor.jl")
-include("tensor.jl")
+include("AbstractTensor.jl")
+include("Tensor.jl")
 include("ops.jl")
 include("voigt.jl")
 include("ad.jl")

@@ -144,24 +144,22 @@ ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
 # broadcast
 Broadcast.broadcastable(x::Tensor) = Ref(x)
 
-# getindex_expr
-function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: Tensor}, i...)
-    inds = independent_indices(x)
-    :(Tuple($ex)[$(inds[i...])])
+# getindex
+@inline function Base.getindex(x::Tensor, i::Int)
+    @boundscheck checkbounds(x, i)
+    @inbounds Tuple(x)[independent_indices(x)[i]]
 end
 
 # convert
-Base.convert(::Type{TT}, x::TT) where {TT <: Tensor} = x
-Base.convert(::Type{TT}, x::Tensor) where {TT <: Tensor} = TT(Tuple(x))
-Base.convert(::Type{TT}, x::AbstractArray) where {TT <: Tensor} = TT(x)
-
-# to SArray
-@generated function convert_to_SArray(x::Tensor)
-    S = Size(x)
-    NewS = Size(Dims(S)) # remove Symmetry
-    exps = [getindex_expr(:x, x, i) for i in indices(NewS)]
+@inline Base.convert(::Type{TT}, x::TT) where {TT <: Tensor} = x
+@inline Base.convert(::Type{TT}, x::AbstractArray) where {TT <: Tensor} = TT(x)
+@generated function Base.convert(::Type{TT}, x::AbstractTensor) where {TT <: Tensor}
+    S = promote_size(Size(TT), Size(x))
+    S == Size(TT) ||
+        return :(throw(ArgumentError("Cannot `convert` an object of type $(typeof(x)) to an object of type $TT")))
+    exps = [getindex_expr(:x, x, i) for i in indices(S)]
     quote
         @_inline_meta
-        @inbounds SArray{Tuple{$(Dims(NewS)...)}}(tuple($(exps...)))
+        @inbounds TT(tuple($(exps...)))
     end
 end
