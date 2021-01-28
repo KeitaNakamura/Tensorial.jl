@@ -16,3 +16,7 @@ Size(::AbstractTensor{S}) where {S} = Size(S)
 
 const AbstractVec{dim, T} = AbstractTensor{Tuple{dim}, T, 1}
 const AbstractMat{m, n, T} = AbstractTensor{Tuple{m, n}, T, 2}
+
+# special name (not exported)
+const AbstractSquareTensor{dim, T} = Union{AbstractTensor{Tuple{dim, dim}, T, 2},
+                                           AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}}
