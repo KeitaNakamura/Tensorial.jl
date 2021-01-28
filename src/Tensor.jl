@@ -150,24 +150,6 @@ Broadcast.broadcastable(x::Tensor) = Ref(x)
     @inbounds Tuple(x)[independent_indices(x)[i]]
 end
 
-# getindex_expr
-function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: Tensor}, i...)
-    inds = independent_indices(x)
-    :(Tuple($ex)[$(inds[i...])])
-end
-
 # convert
-Base.convert(::Type{TT}, x::TT) where {TT <: Tensor} = x
-Base.convert(::Type{TT}, x::Tensor) where {TT <: Tensor} = TT(Tuple(x))
+Base.convert(::Type{TT}, x::AbstractTensor) where {TT <: Tensor} = TT(Tuple(x))
 Base.convert(::Type{TT}, x::AbstractArray) where {TT <: Tensor} = TT(x)
-
-# to SArray
-@generated function convert_to_SArray(x::Tensor)
-    S = Size(x)
-    NewS = Size(Dims(S)) # remove Symmetry
-    exps = [getindex_expr(:x, x, i) for i in indices(NewS)]
-    quote
-        @_inline_meta
-        @inbounds SArray{Tuple{$(Dims(NewS)...)}}(tuple($(exps...)))
-    end
-end

@@ -14,6 +14,26 @@ end
 Size(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Size(S)
 Size(::AbstractTensor{S}) where {S} = Size(S)
 
+# getindex_expr
+function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: AbstractTensor}, i...)
+    inds = independent_indices(x)
+    :(Tuple($ex)[$(inds[i...])])
+end
+
+# convert
+Base.convert(::Type{TT}, x::TT) where {TT <: AbstractTensor} = x
+
+# to SArray
+@generated function convert_to_SArray(x::AbstractTensor)
+    S = Size(x)
+    NewS = Size(Dims(S)) # remove Symmetry
+    exps = [getindex_expr(:x, x, i) for i in indices(NewS)]
+    quote
+        @_inline_meta
+        @inbounds SArray{Tuple{$(Dims(NewS)...)}}(tuple($(exps...)))
+    end
+end
+
 # aliases (too long name?)
 const AbstractSecondOrderTensor{dim, T} = AbstractTensor{NTuple{2, dim}, T, 2}
 const AbstractFourthOrderTensor{dim, T} = AbstractTensor{NTuple{4, dim}, T, 4}
