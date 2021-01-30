@@ -58,7 +58,14 @@ function construct_expr(x::EinsumIndexMul)
 end
 
 function construct_expr(x::EinsumIndexSum)
-    Expr(:call, :+, map(construct_expr, x)...)
+    quote
+        v = tuple($(map(construct_expr, x)...))
+        out = zero(eltype(v))
+        @simd for i in eachindex(v)
+            @inbounds out += v[i]
+        end
+        out
+    end
 end
 
 
