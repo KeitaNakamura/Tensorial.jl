@@ -28,24 +28,23 @@ struct TensorIndices{order, S <: Tuple{Vararg{Union{Int, Symmetry}}}} <: Abstrac
     size::S
 end
 
-TensorIndices(S::Tuple{Vararg{Union{Int, Symmetry}}}) = TensorIndices(flatten_tuple(map(_dims, S)), S)
+TensorIndices(S::Tuple{Vararg{Union{Int, Symmetry}}}) = TensorIndices(flatten_tuple(map(Dims, S)), S)
 TensorIndices(S::Vararg{Union{Int, Symmetry}}) = TensorIndices(S)
 
 Base.size(x::TensorIndices) = x.dims
 
-_length(x::Int) = x
-_length(x::Symmetry) = prod(Dims(x))
 function Base.getindex(t::TensorIndices{order}, I::Vararg{Int, order}) where {order}
     @boundscheck checkbounds(t, I...)
+    S = t.size
     st = 1
-    inds = Vector{Int}(undef, length(t.size))
+    inds = Vector{Int}(undef, length(S))
     @inbounds begin
-        for (i,s) in enumerate(t.size)
+        for (i, s) in enumerate(S)
             x = toindices(s)
             n = ndims(x)
             inds[i] = x[I[st:(st+=n)-1]...]
         end
-        LinearIndices(_length.(t.size))[inds...]
+        LinearIndices(prod.(Dims.(S)))[inds...]
     end
 end
 

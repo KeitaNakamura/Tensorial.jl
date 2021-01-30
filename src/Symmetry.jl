@@ -10,7 +10,7 @@ end
 
 @generated function check_symmetry_parameters(::Type{S}) where {S <: Tuple}
     if !all(x -> isa(x, Int), S.parameters)
-        return :(throw(ArgumentError("Symmetry parameter Size must be a tuple of Ints (e.g. `Symmetry{Tuple{3,3}}` or `@Symmetry{3,3}`).")))
+        return :(throw(ArgumentError("Symmetry parameter Size must be a tuple of Ints (e.g., `Symmetry{Tuple{3,3}}` or `@Symmetry{3,3}`).")))
     end
     if length(unique(S.parameters)) != 1
         return :(throw(ArgumentError("Symmetry parameter Size must be unique, got $S.")))
