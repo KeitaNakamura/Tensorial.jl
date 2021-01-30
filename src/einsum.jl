@@ -17,7 +17,8 @@ end
 EinsumIndexMul(ndups::Int, indices::NTuple{N, EinsumIndex}) where {N} = EinsumIndexMul{N}(ndups, indices)
 
 function Base.:(==)(x::EinsumIndexMul{N}, y::EinsumIndexMul{N}) where {N}
-    all(i -> x.indices[i] == y.indices[i], 1:N)
+    # all(i -> x.indices[i] == y.indices[i], 1:N)
+    false # considering number of duplications is slow
 end
 Base.:*(x::EinsumIndex, y::EinsumIndexMul) = (@assert y.ndups == 1; EinsumIndexMul(1, (x, y.indices...)))
 Base.:*(x::EinsumIndexMul, y::EinsumIndex) = y * x
