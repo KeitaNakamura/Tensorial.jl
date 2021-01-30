@@ -44,6 +44,7 @@ export
     vol,
     dev,
     symmetric,
+    skew,
     ⊗,
     ⊡,
     rotmat,

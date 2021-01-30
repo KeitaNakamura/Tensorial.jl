@@ -177,6 +177,15 @@ end
 end
 @inline dev(x::AbstractSquareTensor{3}) = x - vol(x)
 
+"""
+    skew(::AbstractSecondOrderTensor)
+    skew(::AbstractSymmetricSecondOrderTensor)
+
+Compute skew-symmetric (anti-symmetric) part of a second order tensor.
+"""
+@inline skew(x::AbstractSecondOrderTensor) = (x - x') / 2
+@inline skew(x::AbstractSymmetricSecondOrderTensor{dim, T}) where {dim, T} = zero(SecondOrderTensor{dim, T})
+
 # transpose/adjoint
 @inline transpose(x::AbstractTensor{Tuple{@Symmetry{dim, dim}}}) where {dim} = x
 @inline transpose(x::AbstractTensor{Tuple{m, n}}) where {m, n} = Tensor{Tuple{n, m}}((i,j) -> @inbounds x[j,i])

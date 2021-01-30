@@ -134,6 +134,15 @@ end
             @test (@inferred symmetric(y))::typeof(y) == y
         end
     end
+    @testset "skew" begin
+        for T in (Float32, Float64), dim in 1:4
+            x = rand(SecondOrderTensor{dim, T})
+            @test (@inferred skew(x))::SecondOrderTensor{dim, T} ≈ (x - x') / 2
+            @test symmetric(x) + skew(x) ≈ x
+            x = rand(SymmetricSecondOrderTensor{dim, T})
+            @test (@inferred skew(x))::SecondOrderTensor{dim, T} ≈ zero(SecondOrderTensor{dim})
+        end
+    end
     @testset "det/inv" begin
         for T in (Float32, Float64), dim in 1:4
             Random.seed!(1234)
