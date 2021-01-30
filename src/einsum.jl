@@ -5,6 +5,7 @@ struct EinsumIndex
 end
 
 Base.:*(x::EinsumIndex, y::EinsumIndex, z::EinsumIndex...) = EinsumIndexMul(1, (x, y, z...))
+Base.:(==)(x::EinsumIndex, y::EinsumIndex) = (x.name == y.name) && (x.index == y.index)
 
 struct EinsumIndexMul{N}
     ndups::Int
@@ -15,7 +16,10 @@ struct EinsumIndexMul{N}
 end
 EinsumIndexMul(ndups::Int, indices::NTuple{N, EinsumIndex}) where {N} = EinsumIndexMul{N}(ndups, indices)
 
-Base.:(==)(x::EinsumIndexMul, y::EinsumIndexMul) = x.indices == y.indices
+function Base.:(==)(x::EinsumIndexMul{N}, y::EinsumIndexMul{N}) where {N}
+    # all(i -> x.indices[i] == y.indices[i], 1:N)
+    false # considering number of duplications is slow
+end
 Base.:*(x::EinsumIndex, y::EinsumIndexMul) = (@assert y.ndups == 1; EinsumIndexMul(1, (x, y.indices...)))
 Base.:*(x::EinsumIndexMul, y::EinsumIndex) = y * x
 
@@ -54,7 +58,14 @@ function construct_expr(x::EinsumIndexMul)
 end
 
 function construct_expr(x::EinsumIndexSum)
-    Expr(:call, :+, map(construct_expr, x)...)
+    quote
+        v = tuple($(map(construct_expr, x)...))
+        out = zero(eltype(v))
+        @simd for i in eachindex(v)
+            @inbounds out += v[i]
+        end
+        out
+    end
 end
 
 
