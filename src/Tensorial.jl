@@ -33,10 +33,21 @@ export
     SymmetricFourthOrderTensor,
     Vec,
     Mat,
+# MTensor
+    MTensor,
+    MSecondOrderTensor,
+    MFourthOrderTensor,
+    MSymmetricSecondOrderTensor,
+    MSymmetricFourthOrderTensor,
+    MVec,
+    MMat,
 # macros
     @Vec,
     @Mat,
     @Tensor,
+    @MVec,
+    @MMat,
+    @MTensor,
 # operations
     contraction,
     otimes,
@@ -63,6 +74,7 @@ include("indexing.jl")
 include("einsum.jl")
 include("AbstractTensor.jl")
 include("Tensor.jl")
+include("MTensor.jl")
 include("ops.jl")
 include("voigt.jl")
 include("ad.jl")
