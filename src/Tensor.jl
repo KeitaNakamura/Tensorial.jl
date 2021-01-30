@@ -163,3 +163,22 @@ end
         @inbounds TT(tuple($(exps...)))
     end
 end
+
+# promotion
+@inline convert_eltype(::Type{T}, x::Real) where {T <: Real} = T(x)
+@generated function convert_eltype(::Type{T}, x::Tensor) where {T <: Real}
+    S = Size(x)
+    TT = tensortype(S)
+    quote
+        @_inline_meta
+        $TT{T}(x)
+    end
+end
+@generated function promote_elements(xs::Vararg{Union{Real, Tensor}, N}) where {N}
+    T = promote_type(eltype.(xs)...)
+    exps = [:(convert_eltype($T, xs[$i])) for i in 1:N]
+    quote
+        @_inline_meta
+        tuple($(exps...))
+    end
+end
