@@ -246,3 +246,11 @@ end
         @test (@inferred p ⊗ p)::Mat{2, 2, T} == x ⊗ x
     end
 end
+
+@testset "Promotion" begin
+    x = Vec(1,2,3)
+    for T in (Float32, Float64)
+        res = (@inferred Tensorial.promote_elements(x, 3, rand(Mat{3,3,T})))
+        @test promote_type(map(eltype, res)...) == T
+    end
+end
