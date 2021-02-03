@@ -19,11 +19,11 @@ _ncomponents(x::Int) = x
 _ncomponents(x::Symmetry) = ncomponents(x)
 @pure ncomponents(::Size{S}) where {S} = prod(_ncomponents, S)
 
-@pure Base.length(s::Size) = length(Dims(s))
-Base.getindex(s::Size, i::Int) = Tuple(s)[i]
-
 @pure Base.Dims(::Size{S}) where {S} = flatten_tuple(map(Dims, S))
 @pure Base.Tuple(::Size{S}) where {S} = S
+
+@pure Base.length(s::Size) = length(Dims(s))
+Base.getindex(s::Size, i::Int) = Tuple(s)[i]
 
 function Base.show(io::IO, ::Size{S}) where {S}
     print(io, "Size", S)
