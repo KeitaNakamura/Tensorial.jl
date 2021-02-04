@@ -118,7 +118,7 @@
                            SymmetricFourthOrderTensor{dim, T},
                            Mat{dim, dim, T},
                            Vec{dim, T})
-                    data = ntuple(i -> T(1), Tensorial.ncomponents(Size(TT)))
+                    data = ntuple(i -> T(1), Tensorial.ncomponents(Space(TT)))
                     @test (@inferred TT(data))::TT |> Tuple == data
                     @test (@inferred TT(data...))::TT |> Tuple == data
                 end

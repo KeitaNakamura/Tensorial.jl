@@ -14,10 +14,10 @@ import LinearAlgebra: dot, norm, tr, adjoint, det, cross, eigen, eigvals, eigvec
 import Statistics: mean
 
 export
-# Symmetry/Size
+# Symmetry/Space
     Symmetry,
     @Symmetry,
-    Size,
+    Space,
 # AbstractTensor
     AbstractTensor,
     AbstractSecondOrderTensor,
@@ -59,7 +59,7 @@ export
 
 include("utils.jl")
 include("Symmetry.jl")
-include("Size.jl")
+include("Space.jl")
 include("indexing.jl")
 include("einsum.jl")
 include("AbstractTensor.jl")

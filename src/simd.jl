@@ -2,8 +2,8 @@ const SIMDTypes = Union{Float16, Float32, Float64}
 
 # TODO: implement more efficient computations for symmetric case
 @generated function contraction(x::Tensor{<: Any, T}, y::Tensor{<: Any, T}, ::Val{N}) where {T <: SIMDTypes, N}
-    S1 = Size(x)
-    S2 = Size(y)
+    S1 = Space(x)
+    S2 = Space(y)
     S = contraction(S1, S2, Val(N))
     s1 = map(i -> EinsumIndex(:(Tuple(x)), i), independent_indices(S1))
     s2 = map(i -> EinsumIndex(:(Tuple(y)), i), independent_indices(S2))

@@ -1,18 +1,18 @@
 abstract type AbstractTensor{S <: Tuple, T, N} <: AbstractArray{T, N} end
 
-Base.size(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Dims(Size(S))
+Base.size(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Dims(Space(S))
 Base.size(x::AbstractTensor) = size(typeof(x))
 
 # indices
 for func in (:independent_indices, :indices, :duplicates)
     @eval begin
-        $func(::Type{TT}) where {S, TT <: AbstractTensor{S}} = $func(Size(S))
+        $func(::Type{TT}) where {S, TT <: AbstractTensor{S}} = $func(Space(S))
         $func(x::AbstractTensor) = $func(typeof(x))
     end
 end
 
-Size(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Size(S)
-Size(::AbstractTensor{S}) where {S} = Size(S)
+Space(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Space(S)
+Space(::AbstractTensor{S}) where {S} = Space(S)
 
 # getindex_expr
 function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: AbstractTensor}, i...)
@@ -22,8 +22,8 @@ end
 
 # to SArray
 @generated function convert_to_SArray(x::AbstractTensor)
-    S = Size(x)
-    NewS = Size(Dims(S)) # remove Symmetry
+    S = Space(x)
+    NewS = Space(Dims(S)) # remove Symmetry
     exps = [getindex_expr(:x, x, i) for i in indices(NewS)]
     quote
         @_inline_meta
