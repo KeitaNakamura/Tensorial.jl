@@ -20,6 +20,9 @@ end
 @pure Base.Dims(::Symmetry{S}) where {S} = tuple(S.parameters...)
 @pure ncomponents(::Symmetry{NTuple{order, dim}}) where {order, dim} = binomial(dim + order - 1, order)
 
+@pure Base.length(s::Symmetry) = length(Dims(s))
+Base.getindex(s::Symmetry, i::Int) = Dims(s)[i]
+
 macro Symmetry(ex::Expr)
     @assert ex.head == :braces
     esc(:($Symmetry{Tuple{$(ex.args...)}}))

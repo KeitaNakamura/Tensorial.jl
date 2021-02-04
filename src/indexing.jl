@@ -71,9 +71,9 @@ function _duplicates(inds::TensorIndices)
     map(x -> x.second, sort(collect(dups), by = x->x[1]))
 end
 
-for IndicesType in (:independent_indices, :indices, :duplicates)
-    @eval @generated function $IndicesType(::Size{S}) where {S}
-        arr = $(Symbol(:_, IndicesType))(TensorIndices(S))
+for func in (:independent_indices, :indices, :duplicates)
+    @eval @generated function $func(::Size{S}) where {S}
+        arr = $(Symbol(:_, func))(TensorIndices(S))
         quote
             SArray{Tuple{$(size(arr)...)}, Int}($arr)
         end
