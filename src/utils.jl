@@ -1,5 +1,5 @@
-@generated function check_size_parameters(::Type{Size}) where {Size}
-    if !all(x -> isa(x, Int) || x <: Symmetry, Size.parameters)
+@generated function check_size_parameters(::Type{S}) where {S}
+    if !all(x -> isa(x, Int) || x <: Symmetry, S.parameters)
         return :(throw(ArgumentError("Tensor parameter size must be a tuple of `Int`s or `Symmetry` (e.g. `Tensor{Tuple{3,3}}` or `Tensor{Tuple{3, Symmetry{3,3}}}`).")))
     end
 end

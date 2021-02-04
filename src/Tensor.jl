@@ -8,11 +8,11 @@ end
 
 @generated function check_tensor_parameters(::Type{S}, ::Type{T}, ::Val{N}, ::Val{L}) where {S, T, N, L}
     check_size_parameters(S)
-    if length(Size(S)) != N
-        return :(throw(ArgumentError("Number of dimensions must be $(ndims(Size(S))) for $S size, got $N.")))
+    if length(Space(S)) != N
+        return :(throw(ArgumentError("Number of dimensions must be $(ndims(Space(S))) for $S size, got $N.")))
     end
-    if ncomponents(Size(S)) != L
-        return :(throw(ArgumentError("Length of tuple data must be $(ncomponents(Size(S))) for $S size, got $L.")))
+    if ncomponents(Space(S)) != L
+        return :(throw(ArgumentError("Length of tuple data must be $(ncomponents(Space(S))) for $S size, got $L.")))
     end
 end
 
@@ -26,11 +26,11 @@ const Vec{dim, T} = Tensor{Tuple{dim}, T, 1, dim}
 
 # constructors
 @inline function Tensor{S, T}(data::Tuple{Vararg{Any, L}}) where {S, T, L}
-    N = length(Size(S))
+    N = length(Space(S))
     Tensor{S, T, N, L}(data)
 end
 @inline function Tensor{S}(data::Tuple{Vararg{Any, L}}) where {S, L}
-    N = length(Size(S))
+    N = length(Space(S))
     T = promote_ntuple_eltype(data)
     Tensor{S, T, N, L}(data)
 end
@@ -45,7 +45,7 @@ end
 end
 ## from Function
 @generated function (::Type{TT})(f::Function) where {TT <: Tensor}
-    S = Size(TT)
+    S = Space(TT)
     tocartesian = CartesianIndices(S)
     exps = [:(f($(Tuple(tocartesian[i])...))) for i in indices(S)]
     quote
@@ -55,7 +55,7 @@ end
 end
 ## from AbstractArray
 @generated function (::Type{TT})(A::AbstractArray) where {TT <: Tensor}
-    S = Size(TT)
+    S = Space(TT)
     if IndexStyle(A) isa IndexLinear
         exps = [:(A[$i]) for i in indices(S)]
     else
@@ -99,7 +99,7 @@ end
 for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
     @eval begin
         @inline Base.$op(::Type{Tensor{S}}) where {S} = $op(Tensor{S, Float64})
-        @inline Base.$op(::Type{Tensor{S, T}}) where {S, T} = Tensor{S, T}(fill_tuple($el, Val(ncomponents(Size(S)))))
+        @inline Base.$op(::Type{Tensor{S, T}}) where {S, T} = Tensor{S, T}(fill_tuple($el, Val(ncomponents(Space(S)))))
         # for aliases
         @inline Base.$op(::Type{Tensor{S, T, N}}) where {S, T, N} = $op(Tensor{S, T})
         @inline Base.$op(::Type{Tensor{S, T, N, L}}) where {S, T, N, L} = $op(Tensor{S, T})
@@ -154,8 +154,8 @@ end
 @inline Base.convert(::Type{TT}, x::TT) where {TT <: Tensor} = x
 @inline Base.convert(::Type{TT}, x::AbstractArray) where {TT <: Tensor} = TT(x)
 @generated function Base.convert(::Type{TT}, x::AbstractTensor) where {TT <: Tensor}
-    S = promote_size(Size(TT), Size(x))
-    S == Size(TT) ||
+    S = promote_space(Space(TT), Space(x))
+    S == Space(TT) ||
         return :(throw(ArgumentError("Cannot `convert` an object of type $(typeof(x)) to an object of type $TT")))
     exps = [getindex_expr(:x, x, i) for i in indices(S)]
     quote
@@ -167,7 +167,7 @@ end
 # promotion
 @inline convert_eltype(::Type{T}, x::Real) where {T <: Real} = T(x)
 @generated function convert_eltype(::Type{T}, x::Tensor) where {T <: Real}
-    S = Size(x)
+    S = Space(x)
     TT = tensortype(S)
     quote
         @_inline_meta

@@ -34,7 +34,7 @@ end
 @inline extract_gradient(v::RealOrTensor, ::Real) = zero(v)
 @inline extract_gradient(v::Real, x::Tensor{S}) where {S} = zero(Tensor{S, typeof(v)})
 @generated function extract_gradient(v::Tensor, x::Tensor)
-    S = otimes(Size(v), Size(x))
+    S = otimes(Space(v), Space(x))
     TT = tensortype(S)
     quote
         @_inline_meta
@@ -46,7 +46,7 @@ end
 @inline extract_gradient(v::Dual, ::Real) = partials(v, 1)
 @inline extract_gradient(v::Dual, x::Tensor{S}) where {S} = Tensor{S}(partials(v).values)
 @generated function extract_gradient(v::Tensor{<: Tuple, <: Dual}, x::Tensor)
-    S = otimes(Size(v), Size(x))
+    S = otimes(Space(v), Space(x))
     TT = tensortype(S)
     exps = [:(partials(Tuple(v)[$i], $j)) for i in 1:ncomponents(v), j in 1:ncomponents(x)]
     return quote

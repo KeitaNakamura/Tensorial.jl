@@ -72,7 +72,7 @@ function _duplicates(inds::TensorIndices)
 end
 
 for func in (:independent_indices, :indices, :duplicates)
-    @eval @generated function $func(::Size{S}) where {S}
+    @eval @generated function $func(::Space{S}) where {S}
         arr = $(Symbol(:_, func))(TensorIndices(S))
         quote
             SArray{Tuple{$(size(arr)...)}, Int}($arr)

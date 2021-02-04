@@ -1,5 +1,5 @@
 @generated function _map(f, xs::Vararg{AbstractTensor, N}) where {N}
-    S = promote_size(map(Size, xs)...)
+    S = promote_space(map(Space, xs)...)
     exps = map(indices(S)) do i
         vals = [:(xs[$j][$i]) for j in 1:N]
         :(f($(vals...)))
@@ -20,7 +20,7 @@ end
 @inline Base.:-(x::AbstractTensor) = _map(-, x)
 
 @generated function _add_uniform(x::AbstractSquareTensor{dim}, λ::Real) where {dim}
-    S = promote_size(Size(x), Size(Symmetry(dim, dim)))
+    S = promote_space(Space(x), Space(Symmetry(dim, dim)))
     tocartesian = CartesianIndices(S)
     exps = map(indices(S)) do i
         i, j = Tuple(tocartesian[i])
@@ -49,7 +49,7 @@ Base.:*(::AbstractTensor, ::AbstractTensor) = error_multiply()
 Base.:*(::AbstractTensor, ::UniformScaling) = error_multiply()
 Base.:*(::UniformScaling, ::AbstractTensor) = error_multiply()
 
-function contraction_exprs(S1::Size, S2::Size, ::Val{N}) where {N}
+function contraction_exprs(S1::Space, S2::Space, ::Val{N}) where {N}
     S = contraction(S1, S2, Val(N))
     s1 = map(i -> EinsumIndex(:(Tuple(x)), i), independent_indices(S1))
     s2 = map(i -> EinsumIndex(:(Tuple(y)), i), independent_indices(S2))
@@ -89,8 +89,8 @@ Following symbols are also available for specific contractions:
 - `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>`): `contraction(x, y, Val(2))`
 """
 @generated function contraction(x::AbstractTensor, y::AbstractTensor, ::Val{N}) where {N}
-    S = contraction(Size(x), Size(y), Val(N))
-    exps = contraction_exprs(Size(x), Size(y), Val(N))
+    S = contraction(Space(x), Space(y), Val(N))
+    exps = contraction_exprs(Space(x), Space(y), Val(N))
     T = promote_type(eltype(x), eltype(y))
     if length(S) == 0
         TT = T
@@ -439,8 +439,8 @@ end
 ## helper functions
 @inline _powdot(x::AbstractSecondOrderTensor, y::AbstractSecondOrderTensor) = dot(x, y)
 @generated function _powdot(x::AbstractSymmetricSecondOrderTensor{dim}, y::AbstractSymmetricSecondOrderTensor{dim}) where {dim}
-    S = Size(x)
-    exps = contraction_exprs(Size(x), Size(y), Val(1))
+    S = Space(x)
+    exps = contraction_exprs(Space(x), Space(y), Val(1))
     quote
         @_inline_meta
         @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices(S)]...))
