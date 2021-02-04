@@ -7,6 +7,7 @@ export ⋅, ×, dot, tr, det, norm, mean, I, eigen, eigvals, eigvecs
 using StaticArrays
 using Base: @pure, @_inline_meta, @_propagate_inbounds_meta
 using ForwardDiff: Dual, value, partials
+import SIMD
 
 import Base: transpose, inv
 import LinearAlgebra: dot, norm, tr, adjoint, det, cross, eigen, eigvals, eigvecs
@@ -66,6 +67,7 @@ include("Tensor.jl")
 include("ops.jl")
 include("voigt.jl")
 include("ad.jl")
+include("simd.jl")
 
 const ⊗ = otimes
 const ⊡ = double_contraction
