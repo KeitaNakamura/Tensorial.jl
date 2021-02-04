@@ -112,9 +112,17 @@ Compute tensor product such as ``A_{ij} = x_i y_j``.
 
 # Examples
 ```jldoctest
-julia> x = rand(Vec{3});
+julia> x = rand(Vec{3})
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.5908446386657102
+ 0.7667970365022592
+ 0.5662374165061859
 
-julia> y = rand(Vec{3});
+julia> y = rand(Vec{3})
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.4600853424625171
+ 0.7940257103317943
+ 0.8541465903790502
 
 julia> A = x ⊗ y
 3×3 Tensor{Tuple{3,3},Float64,2,9}:
@@ -135,9 +143,17 @@ This is equivalent to [`contraction(::AbstractTensor, ::AbstractTensor, Val(1))`
 
 # Examples
 ```jldoctest
-julia> x = rand(Vec{3});
+julia> x = rand(Vec{3})
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.5908446386657102
+ 0.7667970365022592
+ 0.5662374165061859
 
-julia> y = rand(Vec{3});
+julia> y = rand(Vec{3})
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.4600853424625171
+ 0.7940257103317943
+ 0.8541465903790502
 
 julia> a = x ⋅ y
 1.3643452781654775
@@ -145,6 +161,24 @@ julia> a = x ⋅ y
 """
 @inline dot(x1::AbstractTensor, x2::AbstractTensor) = contraction(x1, x2, Val(1))
 @inline double_contraction(x1::AbstractTensor, x2::AbstractTensor) = contraction(x1, x2, Val(2))
+
+"""
+    norm(::AbstractTensor)
+
+Compute norm of a tensor.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3, 3})
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> norm(x)
+1.7377443667834922
+```
+"""
 @inline norm(x::AbstractTensor) = sqrt(contraction(x, x, Val(ndims(x))))
 
 # v_k * S_ikjl * u_l
@@ -160,21 +194,107 @@ julia> a = x ⋅ y
     end
 end
 
-# tr/mean
+"""
+    tr(::AbstractSecondOrderTensor)
+    tr(::AbstractSymmetricSecondOrderTensor)
+
+Compute the trace of a square tensor.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3})
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> tr(x)
+1.6317075356075135
+```
+"""
 @inline function tr(x::AbstractSquareTensor{dim}) where {dim}
     sum(i -> @inbounds(x[i,i]), 1:dim)
 end
 @inline tr(x::AbstractSquareTensor{1}) = @inbounds x[1,1]
 @inline tr(x::AbstractSquareTensor{2}) = @inbounds x[1,1] + x[2,2]
 @inline tr(x::AbstractSquareTensor{3}) = @inbounds x[1,1] + x[2,2] + x[3,3]
+
+"""
+    mean(::AbstractSecondOrderTensor)
+    mean(::AbstractSymmetricSecondOrderTensor)
+
+Compute the mean value of diagonal entries of a square tensor.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3})
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> mean(x)
+0.5439025118691712
+```
+"""
 @inline mean(x::AbstractSquareTensor{dim}) where {dim} = tr(x) / dim
 
-# vol/dev
+"""
+    vol(::AbstractSecondOrderTensor{3})
+    vol(::AbstractSymmetricSecondOrderTensor{3})
+
+Compute the volumetric part of a square tensor.
+Support only for tensors in 3D.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3})
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> vol(x)
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 0.543903  0.0       0.0
+ 0.0       0.543903  0.0
+ 0.0       0.0       0.543903
+
+julia> vol(x) + dev(x) ≈ x
+true
+```
+"""
 @inline function vol(x::AbstractSquareTensor{3})
     v = mean(x)
     z = zero(v)
     typeof(x)((i,j) -> i == j ? v : z)
 end
+
+"""
+    dev(::AbstractSecondOrderTensor{3})
+    dev(::AbstractSymmetricSecondOrderTensor{3})
+
+Compute the deviatoric part of a square tensor.
+Support only for tensors in 3D.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3})
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> dev(x)
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 0.0469421  0.460085   0.200586
+ 0.766797   0.250123   0.298614
+ 0.566237   0.854147  -0.297065
+
+julia> tr(dev(x))
+0.0
+```
+"""
 @inline dev(x::AbstractSquareTensor{3}) = x - vol(x)
 
 """
@@ -218,7 +338,32 @@ end
     det(Matrix(x))
 end
 
-# inv
+"""
+    inv(::AbstractSecondOrderTensor)
+    inv(::AbstractSymmetricSecondOrderTensor)
+    inv(::AbstractFourthOrderTensor)
+    inv(::AbstractSymmetricFourthOrderTensor)
+
+Compute the inverse of a tensor.
+
+# Examples
+```jldoctest
+julia> x = rand(SecondOrderTensor{3})
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> inv(x)
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+  19.7146   -19.2802    7.30384
+   6.73809  -10.7687    7.55198
+ -68.541     81.4917  -38.8361
+
+julia> x ⋅ inv(x) ≈ one(I)
+true
+```
+"""
 @inline function inv(x::AbstractSquareTensor{1})
     typeof(x)(1/det(x))
 end
@@ -424,6 +569,7 @@ end
     rotmat(a => b)
 
 Construct rotation matrix rotating vector `a` to `b`.
+The norms of two vectors must be the same.
 
 # Examples
 ```jldoctest
@@ -441,7 +587,7 @@ function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {d
     # https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d/2672702#2672702
     a = pair.first
     b = pair.second
-    dot(a, a) ≈ dot(b, b) || throw(ArgumentError("the length of two vectors must be the same"))
+    dot(a, a) ≈ dot(b, b) || throw(ArgumentError("the norms of two vectors must be the same"))
     a ==  b && return  one(Mat{dim, dim, T})
     a == -b && return -one(Mat{dim, dim, T})
     c = a + b
