@@ -12,5 +12,6 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 ForwardDiff = "0.10"
+SIMD = "3"
 StaticArrays = "1"
 julia = "1.5"
