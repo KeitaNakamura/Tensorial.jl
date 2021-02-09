@@ -53,12 +53,12 @@ function contraction_exprs(S1::Space, S2::Space, ::Val{N}) where {N}
     S = contraction(S1, S2, Val(N))
     s1 = map(i -> EinsumIndex(:(Tuple(x)), i), independent_indices(S1))
     s2 = map(i -> EinsumIndex(:(Tuple(y)), i), independent_indices(S2))
-    J = prod(size(s2)[1:N])
-    I = length(s1) ÷ J
-    K = length(s2) ÷ J
-    s1′ = reshape(s1, I, J)
-    s2′ = reshape(s2, J, K)
-    s′ = @einsum (i,k) -> s1′[i,j] * s2′[j,k]
+    K = prod(size(s2)[1:N])
+    I = length(s1) ÷ K
+    J = length(s2) ÷ K
+    s1′ = reshape(s1, I, K)
+    s2′ = reshape(s2, K, J)
+    s′ = @einsum (i,j) -> s1′[i,k] * s2′[k,j]
     s = reshape(s′, size(s1)[1:end-N]..., size(s2)[N+1:end]...)
     map(construct_expr, s[indices(S)])
 end
