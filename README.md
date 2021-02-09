@@ -6,13 +6,11 @@
 [![codecov](https://codecov.io/gh/KeitaNakamura/Tensorial.jl/branch/main/graph/badge.svg?token=V58DXDI1R5)](https://codecov.io/gh/KeitaNakamura/Tensorial.jl)
 
 
-This package provides symbolic operations for tensors written in Julia.
-The main motivation behind the development of this package is to provide useful tensor operations
-(e.g., contraction; tensor product, `⊗`; `inv`; etc.) for arbitrary order and size of tensors.
-The symmetry of the tensor is also supported for fast computations.
-The way to give size of the tensor is similar to [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl), except that symmetry can be specified by `Symmetry`.
-For example, symmetric fourth-order tensor can be represented as `Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}`.
-All of these tensors can also be used in provided automatic differentiation functions.
+Tensorial provides useful tensor operations (e.g., contraction; tensor product, `⊗`; `inv`; etc.) written in the [Julia programming language](https://julialang.org).
+The library supports arbitrary size of non-symmetric and symmetric tensors, where symmetries should be specified to avoid wasteful duplicate computations.
+The way to give a size of the tensor is similar to [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl), and symmetries of tensors can be specified by using `@Symmetry`.
+For example, symmetric fourth-order tensor (symmetrizing tensor) is represented in this library as `Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}`.
+Any tensors can also be used in provided automatic differentiation functions.
 
 ## Installation
 
