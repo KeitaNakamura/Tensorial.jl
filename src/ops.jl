@@ -156,7 +156,7 @@ julia> y = rand(Vec{3})
  0.8541465903790502
 
 julia> a = x ⋅ y
-1.3643452781654775
+1.3643452781654772
 ```
 """
 @inline dot(x1::AbstractTensor, x2::AbstractTensor) = contraction(x1, x2, Val(1))

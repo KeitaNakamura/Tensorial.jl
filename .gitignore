@@ -2,3 +2,5 @@
 /test/Manifest.toml
 /docs/build
 /docs/Manifest.toml
+/benchmark/Manifest.toml
+/docs/src/Benchmarks.md
