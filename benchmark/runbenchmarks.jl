@@ -30,7 +30,11 @@ tune!(suite)
 const results = run(suite)
 
 let path = "../docs/src/Benchmarks.md"
-    open(joinpath(dirname(@__FILE__), path), "w") do file
+
+    path = joinpath(dirname(@__FILE__), path)
+    println("writing results in $path")
+
+    open(path, "w") do file
 
         function printheader(head)
             println(file, "| **$(head)** | | | |")
