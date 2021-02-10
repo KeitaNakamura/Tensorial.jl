@@ -489,13 +489,13 @@ end
 
 # rotate
 """
-    rotmat(θ::Real)
+    rotmat(θ::Real; degree::Bool = false)
 
 Construct 2D rotation matrix.
 
 # Examples
 ```jldoctest
-julia> rotmat(deg2rad(30))
+julia> rotmat(30, degree = true)
 2×2 Tensor{Tuple{2,2},Float64,2,4}:
  0.866025  -0.5
  0.5        0.866025
