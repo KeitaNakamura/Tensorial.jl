@@ -323,19 +323,27 @@ Compute skew-symmetric (anti-symmetric) part of a second order tensor.
     @inbounds SymmetricSecondOrderTensor{3}(x[1,1], (x[2,1]+x[1,2])/2, (x[3,1]+x[1,3])/2, x[2,2], (x[3,2]+x[2,3])/2, x[3,3])
 
 # det
+@generated function extract_vecs(x::AbstractSquareTensor{dim}) where {dim}
+    exps = map(1:dim) do j
+        :(Vec($([getindex_expr(:x, x, i, j) for i in 1:dim]...)))
+    end
+    quote
+        @_inline_meta
+        @inbounds tuple($(exps...))
+    end
+end
 @inline function det(x::AbstractSquareTensor{1})
     @inbounds x[1,1]
 end
 @inline function det(x::AbstractSquareTensor{2})
     @inbounds x[1,1] * x[2,2] - x[1,2] * x[2,1]
 end
-@inline function det(x::AbstractSquareTensor{3})
-    @inbounds (x[1,1] * (x[2,2]*x[3,3] - x[2,3]*x[3,2]) -
-               x[1,2] * (x[2,1]*x[3,3] - x[2,3]*x[3,1]) +
-               x[1,3] * (x[2,1]*x[3,2] - x[2,2]*x[3,1]))
+@inline function det(A::AbstractSquareTensor{3})
+    a1, a2, a3 = extract_vecs(A)
+    (a1 × a2) ⋅ a3
 end
-@inline function det(x::AbstractSquareTensor)
-    det(Matrix(x))
+@inline function det(x::AbstractSquareTensor{dim}) where {dim}
+    det(SMatrix{dim, dim}(x))
 end
 
 """
@@ -372,11 +380,10 @@ end
     x_21 = getindex_expr(:x, x, 2, 1)
     x_12 = getindex_expr(:x, x, 1, 2)
     x_22 = getindex_expr(:x, x, 2, 2)
-    exps = [:($x_22 * detinv), :(-$x_21 * detinv), :(-$x_12 * detinv), :($x_11 * detinv)]
-    return quote
+    exps = [x_22, :(-$x_21), :(-$x_12), x_11]
+    quote
         @_inline_meta
-        detinv = 1 / det(x)
-        @inbounds typeof(x)($(exps[indices(x)]...))
+        @inbounds typeof(x)($(exps[indices(x)]...)) / det(x)
     end
 end
 @generated function inv(x::AbstractSquareTensor{3})
@@ -389,23 +396,22 @@ end
     x_13 = getindex_expr(:x, x, 1, 3)
     x_23 = getindex_expr(:x, x, 2, 3)
     x_33 = getindex_expr(:x, x, 3, 3)
-    exps = [:(($x_22*$x_33 - $x_23*$x_32) * detinv),
-            :(($x_23*$x_31 - $x_21*$x_33) * detinv),
-            :(($x_21*$x_32 - $x_22*$x_31) * detinv),
-            :(($x_13*$x_32 - $x_12*$x_33) * detinv),
-            :(($x_11*$x_33 - $x_13*$x_31) * detinv),
-            :(($x_12*$x_31 - $x_11*$x_32) * detinv),
-            :(($x_12*$x_23 - $x_13*$x_22) * detinv),
-            :(($x_13*$x_21 - $x_11*$x_23) * detinv),
-            :(($x_11*$x_22 - $x_12*$x_21) * detinv)]
-    return quote
+    exps = [:(($x_22*$x_33 - $x_23*$x_32)),
+            :(($x_23*$x_31 - $x_21*$x_33)),
+            :(($x_21*$x_32 - $x_22*$x_31)),
+            :(($x_13*$x_32 - $x_12*$x_33)),
+            :(($x_11*$x_33 - $x_13*$x_31)),
+            :(($x_12*$x_31 - $x_11*$x_32)),
+            :(($x_12*$x_23 - $x_13*$x_22)),
+            :(($x_13*$x_21 - $x_11*$x_23)),
+            :(($x_11*$x_22 - $x_12*$x_21))]
+    quote
         @_inline_meta
-        detinv = 1 / det(x)
-        @inbounds typeof(x)($(exps[indices(x)]...))
+        @inbounds typeof(x)($(exps[indices(x)]...)) / det(x)
     end
 end
-@inline function inv(x::AbstractSquareTensor)
-    typeof(x)(inv(Matrix(x)))
+@inline function inv(x::AbstractSquareTensor{dim}) where {dim}
+    typeof(x)(inv(SMatrix{dim, dim}(x)))
 end
 @inline function inv(x::FourthOrderTensor{dim}) where {dim}
     @assert dim < 4
