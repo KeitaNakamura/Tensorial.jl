@@ -139,7 +139,7 @@ julia> A = x ⊗ y
 
 Compute dot product such as ``a = x_i y_i``.
 This is equivalent to [`contraction(::AbstractTensor, ::AbstractTensor, Val(1))`](@ref).
-`x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`) is a synonym for `cdot(x, y)`.
+`x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`) is a synonym for `dot(x, y)`.
 
 # Examples
 ```jldoctest
@@ -422,7 +422,37 @@ end
     frommandel(SymmetricFourthOrderTensor{dim}, inv(tomandel(x)))
 end
 
-# cross
+"""
+    cross(x::Vec{3}, y::Vec{3}) -> Vec{3}
+    cross(x::Vec{2}, y::Vec{2}) -> Vec{3}
+    cross(x::Vec{1}, y::Vec{1}) -> Vec{3}
+    x × y
+
+Compute the cross product between two vectors.
+The vectors are expanded to 3D frist for dimensions 1 and 2.
+The infix operator `×` (written `\\times`) can also be used.
+`x × y` (where `×` can be typed by `\\times<tab>`) is a synonym for `cross(x, y)`.
+
+```jldoctest
+julia> x = rand(Vec{3})
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.5908446386657102
+ 0.7667970365022592
+ 0.5662374165061859
+
+julia> y = rand(Vec{3})
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.4600853424625171
+ 0.7940257103317943
+ 0.8541465903790502
+
+julia> x × y
+3-element Tensor{Tuple{3},Float64,1,3}:
+  0.20535000738340053
+ -0.24415039787171888
+  0.11635375677388776
+```
+"""
 @inline cross(x::Vec{1, T1}, y::Vec{1, T2}) where {T1, T2} = zero(Vec{3, promote_type(T1, T2)})
 @inline function cross(x::Vec{2, T1}, y::Vec{2, T2}) where {T1, T2}
     z = zero(promote_type(T1, T2))
