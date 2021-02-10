@@ -43,8 +43,25 @@ jobs:
       - uses: codecov/codecov-action@v1
         with:
           file: lcov.info
+
+  benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.5'
+      - run: |
+          julia --project=benchmark -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.instantiate()'
+      - run: julia --project=benchmark benchmark/runbenchmarks.jl
+
   docs:
     name: Documentation
+    needs: benchmark
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
