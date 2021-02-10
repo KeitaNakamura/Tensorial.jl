@@ -1,5 +1,6 @@
 using Tensorial
 using BenchmarkTools
+using InteractiveUtils # for `versioninfo`
 
 const run_array = true
 
