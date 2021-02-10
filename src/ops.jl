@@ -417,12 +417,16 @@ end
 end
 
 # cross
-@inline cross(x::Vec{1}, y::Vec{1}) =
-    zero(Vec{3, promote_type(eltype(x), eltype(y))})
-@inline cross(x::Vec{2, T1}, y::Vec{2, T2}) where {T1, T2} =
-    @inbounds Vec{3}((zero(T1)*zero(T2), zero(T1)*zero(T2), x[1]*y[2] - x[2]*y[1]))
-@inline cross(x::Vec{3}, y::Vec{3}) =
-    @inbounds Vec{3}((x[2]*y[3] - x[3]*y[2], x[3]*y[1] - x[1]*y[3], x[1]*y[2] - x[2]*y[1]))
+@inline cross(x::Vec{1, T1}, y::Vec{1, T2}) where {T1, T2} = zero(Vec{3, promote_type(T1, T2)})
+@inline function cross(x::Vec{2, T1}, y::Vec{2, T2}) where {T1, T2}
+    z = zero(promote_type(T1, T2))
+    @inbounds Vec(z, z, x[1]*y[2] - x[2]*y[1])
+end
+@inline function cross(x::Vec{3}, y::Vec{3})
+    @inbounds Vec(x[2]*y[3] - x[3]*y[2],
+                  x[3]*y[1] - x[1]*y[3],
+                  x[1]*y[2] - x[2]*y[1])
+end
 
 # power
 @inline Base.literal_pow(::typeof(^), x::AbstractSquareTensor, ::Val{-1}) = inv(x)
