@@ -50,7 +50,6 @@ on the following system:
 
 ```julia
 julia> versioninfo()
-
 Julia Version 1.5.3
 Commit 788b2c77c1 (2020-11-09 13:37 UTC)
 Platform Info:

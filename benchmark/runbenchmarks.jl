@@ -106,8 +106,8 @@ let path = "../docs/src/Benchmarks.md"
 
                 ```julia
                 julia> versioninfo()
+                $((x = IOBuffer(); versioninfo(x); String(take!(x))))
                 """)
-        versioninfo(file)
         println(file, "```")
     end
 
