@@ -63,3 +63,12 @@ end
 @inline function Base.:*(a::T, x::TT) where {T <: SIMDTypes, TT <: Tensor{<: Any, T}}
     x * a
 end
+
+@inline function cross(_x::Vec{3, T}, _y::Vec{3, T}) where {T <: SIMDTypes}
+    x = SIMD.Vec(Tuple(_x))
+    y = SIMD.Vec(Tuple(_y))
+    x′ = SIMD.shufflevector(x, Val((1,2,0)))
+    y′ = SIMD.shufflevector(y, Val((1,2,0)))
+    v = SIMD.shufflevector(x*y′ - x′*y, Val((1,2,0)))
+    Vec(Tuple(v))
+end
