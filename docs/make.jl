@@ -24,6 +24,7 @@ makedocs(;
             # "Constructors.md",
             "Tensor Operations.md",
         ],
+        "Benchmarks.md",
     ],
     doctest = true, # :fix
 )
