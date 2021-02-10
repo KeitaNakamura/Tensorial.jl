@@ -1,6 +1,7 @@
 using Tensorial
 using BenchmarkTools
 using InteractiveUtils # for `versioninfo`
+using Markdown
 
 const run_array = true
 
@@ -32,7 +33,6 @@ const results = run(suite)
 let path = "../docs/src/Benchmarks.md"
 
     path = joinpath(dirname(@__FILE__), path)
-    println("writing results in $path")
 
     open(path, "w") do file
 
@@ -109,5 +109,10 @@ let path = "../docs/src/Benchmarks.md"
                 """)
         versioninfo(file)
         println(file, "```")
+    end
+
+    # display results
+    open(path, "r") do file
+        display(Markdown.parse(file))
     end
 end
