@@ -17,7 +17,6 @@ end
 
 _ncomponents(x::Int) = x
 _ncomponents(x::Symmetry) = ncomponents(x)
-_ncomponents(x::Skew) = ncomponents(x)
 @pure ncomponents(::Space{S}) where {S} = prod(_ncomponents, S)
 
 @pure Base.Dims(::Space{S}) where {S} = flatten_tuple(map(Dims, S))
@@ -58,9 +57,12 @@ end
 
 # promote_space
 promote_space(x::Space) = x
-function promote_space(x::Space, y::Space)
-    Dims(x) == Dims(y) || throw(DimensionMismatch("dimensions must match"))
-    Space(_promote_space(Tuple(x), Tuple(y), ()))
+@generated function promote_space(x::Space{S1}, y::Space{S2}) where {S1, S2}
+    S = _promote_space(S1, S2, ())
+    quote
+        Dims(x) == Dims(y) || throw(DimensionMismatch("dimensions must match"))
+        Space($S)
+    end
 end
 promote_space(x::Space, y::Space, z::Space...) = promote_space(promote_space(x, y), z...)
 ## helper functions
