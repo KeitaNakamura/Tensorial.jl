@@ -13,7 +13,7 @@ end
         return :(throw(ArgumentError("Symmetry parameter must be a tuple of Ints (e.g., `Symmetry{Tuple{3,3}}` or `@Symmetry{3,3}`).")))
     end
     if length(unique(S.parameters)) != 1
-        return :(throw(ArgumentError("Symmetry parameter must be unique, got $S.")))
+        return :(throw(ArgumentError("Dimensions must be all the same number, got $S.")))
     end
 end
 

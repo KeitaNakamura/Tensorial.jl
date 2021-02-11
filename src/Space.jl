@@ -22,7 +22,8 @@ _ncomponents(x::Symmetry) = ncomponents(x)
 @pure Base.Dims(::Space{S}) where {S} = flatten_tuple(map(Dims, S))
 @pure Base.Tuple(::Space{S}) where {S} = S
 
-@pure Base.length(s::Space) = length(Dims(s))
+@pure Base.ndims(s::Space) = length(Dims(s))
+@pure Base.length(s::Space) = length(Tuple(s))
 Base.getindex(s::Space, i::Int) = Tuple(s)[i]
 
 function Base.show(io::IO, ::Space{S}) where {S}
@@ -48,7 +49,7 @@ end
 # otimes/contraction
 @pure otimes(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
 @pure function contraction(x::Space, y::Space, ::Val{N}) where {N}
-    if !(0 ≤ N ≤ length(x) && 0 ≤ N ≤ length(y) && Dims(x)[end-N+1:end] === Dims(y)[1:N])
+    if !(0 ≤ N ≤ ndims(x) && 0 ≤ N ≤ ndims(y) && Dims(x)[end-N+1:end] === Dims(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
     end
     otimes(droplast(x, Val(N)), dropfirst(y, Val(N)))
@@ -56,18 +57,39 @@ end
 
 # promote_space
 promote_space(x::Space) = x
-function promote_space(x::Space, y::Space)
-    Dims(x) == Dims(y) || throw(DimensionMismatch("dimensions must match"))
-    Space(_promote_space(Tuple(x), Tuple(y), ()))
+@generated function promote_space(x::Space{S1}, y::Space{S2}) where {S1, S2}
+    S = _promote_space(S1, S2, ())
+    quote
+        Dims(x) == Dims(y) || throw(DimensionMismatch("dimensions must match"))
+        Space($S)
+    end
 end
 promote_space(x::Space, y::Space, z::Space...) = promote_space(promote_space(x, y), z...)
 ## helper functions
 _promote_space(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
 function _promote_space(x::Tuple, y::Tuple, promoted::Tuple)
-    if x[1] == y[1]
-        _promote_space(Base.tail(x), Base.tail(y), (promoted..., x[1]))
+    x1 = x[1]
+    y1 = y[1]
+    if x1 == y1
+        _promote_space(Base.tail(x), Base.tail(y), (promoted..., x1))
     else
-        _promote_space(_dropfirst(x...), _dropfirst(y...), (promoted..., Dims(x[1])[1]))
+        x1_len = length(x1)
+        y1_len = length(y1)
+        if x1_len < y1_len
+            common = promote_space(Space(x1),
+                                   droplast(Space(y1), Val(y1_len - x1_len))) |> Tuple
+            _promote_space(Base.tail(x),
+                           Tuple(dropfirst(Space(y), Val(x1_len))),
+                           (promoted..., only(common)))
+        elseif length(x1) > length(y1)
+            common = promote_space(droplast(Space(x1), Val(x1_len - y1_len)),
+                                   Space(y1)) |> Tuple
+            _promote_space(Tuple(dropfirst(Space(x), Val(y1_len))),
+                           Base.tail(y),
+                           (promoted..., only(common)))
+        else
+            error()
+        end
     end
 end
 
@@ -75,7 +97,7 @@ end
 _typeof(x::Int) = x
 _typeof(x::Symmetry) = typeof(x)
 @pure function tensortype(x::Space)
-    Tensor{Tuple{map(_typeof, Tuple(x))...}, T, length(x), ncomponents(x)} where {T}
+    Tensor{Tuple{map(_typeof, Tuple(x))...}, T, ndims(x), ncomponents(x)} where {T}
 end
 
 # LinearIndices/CartesianIndices
