@@ -115,10 +115,10 @@ gradient(symmetric, A) == one(SymmetricFourthOrderTensor{3}) # symmetric 4th-ord
 ## Aliases
 
 ```julia
+const Vec{dim, T} = Tensor{Tuple{dim}, T, 1, dim}
+const Mat{m, n, T, L} = Tensor{Tuple{m, n}, T, 2, L}
 const SecondOrderTensor{dim, T, L} = Tensor{NTuple{2, dim}, T, 2, L}
 const FourthOrderTensor{dim, T, L} = Tensor{NTuple{4, dim}, T, 4, L}
 const SymmetricSecondOrderTensor{dim, T, L} = Tensor{Tuple{@Symmetry{dim, dim}}, T, 2, L}
 const SymmetricFourthOrderTensor{dim, T, L} = Tensor{NTuple{2, @Symmetry{dim, dim}}, T, 4, L}
-const Mat{m, n, T, L} = Tensor{Tuple{m, n}, T, 2, L}
-const Vec{dim, T} = Tensor{Tuple{dim}, T, 1, dim}
 ```

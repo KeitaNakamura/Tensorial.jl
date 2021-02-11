@@ -24,6 +24,8 @@ AA = rand(FourthOrderTensor{3})          # 3x3x3x3 fourth order tensor
 SS = rand(SymmetricFourthOrderTensor{3}) # 3x3x3x3 symmetric fourth order tensor (symmetrizing tensor)
 ```
 
+See [here](https://keitanakamura.github.io/Tensorial.jl/stable/Cheat%20Sheet/#Aliases) for above aliases.
+
 | Operation  | `Tensor` | `Array` | speed-up |
 |:-----------|---------:|--------:|---------:|
 | **Single contraction** | | | |
