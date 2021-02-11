@@ -66,10 +66,28 @@ promote_space(x::Space, y::Space, z::Space...) = promote_space(promote_space(x, 
 ## helper functions
 _promote_space(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
 function _promote_space(x::Tuple, y::Tuple, promoted::Tuple)
-    if x[1] == y[1]
-        _promote_space(Base.tail(x), Base.tail(y), (promoted..., x[1]))
+    x1 = x[1]
+    y1 = y[1]
+    if x1 == y1
+        _promote_space(Base.tail(x), Base.tail(y), (promoted..., x1))
     else
-        _promote_space(_dropfirst(x...), _dropfirst(y...), (promoted..., Dims(x[1])[1]))
+        x1_len = length(x1)
+        y1_len = length(y1)
+        if x1_len < y1_len
+            common = promote_space(Space(x1),
+                                   droplast(Space(y1), Val(y1_len - x1_len))) |> Tuple
+            _promote_space(Base.tail(x),
+                           Tuple(dropfirst(Space(y), Val(x1_len))),
+                           (promoted..., only(common)))
+        elseif length(x1) > length(y1)
+            common = promote_space(droplast(Space(x1), Val(x1_len - y1_len)),
+                                   Space(y1)) |> Tuple
+            _promote_space(Tuple(dropfirst(Space(x), Val(y1_len))),
+                           Base.tail(y),
+                           (promoted..., only(common)))
+        else
+            error()
+        end
     end
 end
 
