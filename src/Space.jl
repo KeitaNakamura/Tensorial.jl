@@ -17,12 +17,14 @@ end
 
 _ncomponents(x::Int) = x
 _ncomponents(x::Symmetry) = ncomponents(x)
+_ncomponents(x::Skew) = ncomponents(x)
 @pure ncomponents(::Space{S}) where {S} = prod(_ncomponents, S)
 
 @pure Base.Dims(::Space{S}) where {S} = flatten_tuple(map(Dims, S))
 @pure Base.Tuple(::Space{S}) where {S} = S
 
-@pure Base.length(s::Space) = length(Dims(s))
+@pure Base.ndims(s::Space) = length(Dims(s))
+@pure Base.length(s::Space) = length(Tuple(s))
 Base.getindex(s::Space, i::Int) = Tuple(s)[i]
 
 function Base.show(io::IO, ::Space{S}) where {S}
@@ -48,7 +50,7 @@ end
 # otimes/contraction
 @pure otimes(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
 @pure function contraction(x::Space, y::Space, ::Val{N}) where {N}
-    if !(0 ≤ N ≤ length(x) && 0 ≤ N ≤ length(y) && Dims(x)[end-N+1:end] === Dims(y)[1:N])
+    if !(0 ≤ N ≤ ndims(x) && 0 ≤ N ≤ ndims(y) && Dims(x)[end-N+1:end] === Dims(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
     end
     otimes(droplast(x, Val(N)), dropfirst(y, Val(N)))
@@ -75,7 +77,7 @@ end
 _typeof(x::Int) = x
 _typeof(x::Symmetry) = typeof(x)
 @pure function tensortype(x::Space)
-    Tensor{Tuple{map(_typeof, Tuple(x))...}, T, length(x), ncomponents(x)} where {T}
+    Tensor{Tuple{map(_typeof, Tuple(x))...}, T, ndims(x), ncomponents(x)} where {T}
 end
 
 # LinearIndices/CartesianIndices
