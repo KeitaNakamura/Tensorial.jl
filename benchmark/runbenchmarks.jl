@@ -86,6 +86,10 @@ let path = "../docs/src/Benchmarks.md"
         printrow("a ⊗ a", results["Tensor"]["Space(3) ⊗ Space(3)"],
                           results["Array" ]["Space(3) ⊗ Space(3)"])
 
+        printheader("Cross product")
+        printrow("a × a", results["Tensor"]["Space(3) ⊗ Space(3)"],
+                          results["Array" ]["Space(3) ⊗ Space(3)"])
+
         printheader("Determinant and Inverse")
         printrow("det(A)", results["Tensor"]["det(Space(3,3))"],
                            results["Array" ]["det(Space(3,3))"])
