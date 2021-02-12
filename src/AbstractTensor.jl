@@ -15,9 +15,10 @@ Space(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Space(S)
 Space(::AbstractTensor{S}) where {S} = Space(S)
 
 # getindex_expr
-function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: AbstractTensor}, i...)
-    inds = independent_indices(x)
-    :(Tuple($ex)[$(inds[i...])])
+function getindex_expr(ex::Union{Symbol, Expr}, ::Type{TT}, i...) where {TT <: AbstractTensor}
+    S = Space(TT)
+    inds = independent_indices(TT)
+    construct_expr(EinsumIndex(:(Tuple($ex)), inds[i...]))
 end
 
 # to SArray
@@ -35,10 +36,12 @@ end
 const AbstractSecondOrderTensor{dim, T} = AbstractTensor{NTuple{2, dim}, T, 2}
 const AbstractFourthOrderTensor{dim, T} = AbstractTensor{NTuple{4, dim}, T, 4}
 const AbstractSymmetricSecondOrderTensor{dim, T} = AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}
+const AbstractSkewSymmetricSecondOrderTensor{dim, T} = AbstractTensor{Tuple{@Skew{dim, dim}}, T, 2}
 const AbstractSymmetricFourthOrderTensor{dim, T} = AbstractTensor{NTuple{2, @Symmetry{dim, dim}}, T, 4}
 const AbstractVec{dim, T} = AbstractTensor{Tuple{dim}, T, 1}
 const AbstractMat{m, n, T} = AbstractTensor{Tuple{m, n}, T, 2}
 
 # special name (not exported)
 const AbstractSquareTensor{dim, T} = Union{AbstractTensor{Tuple{dim, dim}, T, 2},
-                                           AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}}
+                                           AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2},
+                                           AbstractTensor{Tuple{@Skew{dim, dim}}, T, 2}}

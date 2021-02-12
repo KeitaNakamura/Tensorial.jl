@@ -1,14 +1,15 @@
 struct Space{S}
     function Space{S}() where {S}
-        new{S::Tuple{Vararg{Union{Int, Symmetry}}}}()
+        new{S::Tuple{Vararg{Union{Int, Symmetry, Skew}}}}()
     end
 end
 
-@pure Space(dims::Vararg{Union{Int, Symmetry}}) = Space{dims}()
+@pure Space(dims::Vararg{Union{Int, Symmetry, Skew}}) = Space{dims}()
 @pure Space(dims::Tuple) = Space{dims}()
 
 _construct(x::Int) = x
 @pure _construct(::Type{Symmetry{S}}) where {S} = Symmetry{S}()
+@pure _construct(::Type{Skew{S}}) where {S} = Skew{S}()
 @pure function Space(::Type{S}) where {S <: Tuple}
     check_size_parameters(S)
     dims = map(_construct, tuple(S.parameters...))
@@ -17,6 +18,7 @@ end
 
 _ncomponents(x::Int) = x
 _ncomponents(x::Symmetry) = ncomponents(x)
+_ncomponents(x::Skew) = ncomponents(x)
 @pure ncomponents(::Space{S}) where {S} = prod(_ncomponents, S)
 
 @pure Base.Dims(::Space{S}) where {S} = flatten_tuple(map(Dims, S))
@@ -36,6 +38,8 @@ dropfirst() = error()
 dropfirst(x::Int) = ()
 @pure dropfirst(::Symmetry{NTuple{2, dim}}) where {dim} = (dim,)
 @pure dropfirst(::Symmetry{NTuple{order, dim}}) where {order, dim} = (Symmetry{NTuple{order-1, dim}}(),)
+@pure dropfirst(::Skew{NTuple{2, dim}}) where {dim} = (dim,)
+@pure dropfirst(::Skew{NTuple{order, dim}}) where {order, dim} = (Skew{NTuple{order-1, dim}}(),)
 _dropfirst(x, ys...) = (dropfirst(x)..., ys...)
 @pure dropfirst(::Space{S}) where {S} = Space(_dropfirst(S...))
 @pure droplast(::Space{S}) where {S} = Space(reverse(_dropfirst(reverse(S)...)))
@@ -88,16 +92,21 @@ function _promote_space(x::Tuple, y::Tuple, promoted::Tuple)
                            Base.tail(y),
                            (promoted..., only(common)))
         else
-            error()
+            @assert ((x1, y1) isa Tuple{Symmetry, Skew}) || ((x1, y1) isa Tuple{Skew, Symmetry})
+            common = Dims(x1)
+            _promote_space(Base.tail(x), Base.tail(y), (promoted..., common...))
         end
     end
 end
 
+@pure data_length(x::Space) = length(indices(x))
+
 # tensortype
 _typeof(x::Int) = x
 _typeof(x::Symmetry) = typeof(x)
+_typeof(x::Skew) = typeof(x)
 @pure function tensortype(x::Space)
-    Tensor{Tuple{map(_typeof, Tuple(x))...}, T, ndims(x), ncomponents(x)} where {T}
+    Tensor{Tuple{map(_typeof, Tuple(x))...}, T, ndims(x), data_length(x)} where {T}
 end
 
 # LinearIndices/CartesianIndices

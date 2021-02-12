@@ -303,11 +303,14 @@ julia> tr(dev(x))
 
 Compute skew-symmetric (anti-symmetric) part of a second order tensor.
 """
-@inline skew(x::AbstractSecondOrderTensor) = (x - x') / 2
-@inline skew(x::AbstractSymmetricSecondOrderTensor{dim, T}) where {dim, T} = zero(SecondOrderTensor{dim, T})
+@inline function skew(x::AbstractSecondOrderTensor{dim}) where {dim}
+    SkewSymmetricSecondOrderTensor{dim}((i,j) -> @inbounds (x[i,j] - x[j,i]) / 2)
+end
+@inline skew(x::AbstractSymmetricSecondOrderTensor{dim, T}) where {dim, T} = zero(SkewSymmetricSecondOrderTensor{dim, T})
 
 # transpose/adjoint
 @inline transpose(x::AbstractTensor{Tuple{@Symmetry{dim, dim}}}) where {dim} = x
+@inline transpose(x::AbstractTensor{Tuple{@Skew{dim, dim}}}) where {dim} = typeof(x)(map(-, Tuple(x)))
 @inline transpose(x::AbstractTensor{Tuple{m, n}}) where {m, n} = Tensor{Tuple{n, m}}((i,j) -> @inbounds x[j,i])
 @inline adjoint(x::AbstractTensor) = transpose(x)
 
@@ -471,10 +474,18 @@ end
 @inline function Base.literal_pow(::typeof(^), x::AbstractSquareTensor, ::Val{p}) where {p}
     p > 0 ? (y = x; q = p) : (y = inv(x); q = -p)
     z = y
-    for i in 2:q
-        y = _powdot(y, z)
+    if @generated
+        ex = :y
+        for i in 2:abs(p)
+            ex = :(_powdot($ex, z))
+        end
+        esc(ex)
+    else
+        for i in 2:q
+            y = _powdot(y, z)
+        end
+        y
     end
-    y
 end
 ## helper functions
 @inline _powdot(x::AbstractSecondOrderTensor, y::AbstractSecondOrderTensor) = dot(x, y)
@@ -484,6 +495,22 @@ end
     quote
         @_inline_meta
         @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices(S)]...))
+    end
+end
+@generated function _powdot(x::AbstractSymmetricSecondOrderTensor{dim}, y::AbstractSkewSymmetricSecondOrderTensor{dim}) where {dim}
+    TT = SkewSymmetricSecondOrderTensor{dim}
+    exps = contraction_exprs(Space(x), Space(y), Val(1))
+    quote
+        @_inline_meta
+        @inbounds $TT($(exps[indices(TT)]...))
+    end
+end
+@generated function _powdot(x::AbstractSkewSymmetricSecondOrderTensor{dim}, y::AbstractSkewSymmetricSecondOrderTensor{dim}) where {dim}
+    TT = SymmetricSecondOrderTensor{dim}
+    exps = contraction_exprs(Space(x), Space(y), Val(1))
+    quote
+        @_inline_meta
+        @inbounds $TT($(exps[indices(TT)]...))
     end
 end
 

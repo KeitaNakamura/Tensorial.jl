@@ -2,7 +2,22 @@ struct Tensor{S <: Tuple, T, N, L} <: AbstractTensor{S, T, N}
     data::NTuple{L, T}
     function Tensor{S, T, N, L}(data::NTuple{L, Real}) where {S, T, N, L}
         check_tensor_parameters(S, T, Val(N), Val(L))
-        new{S, T, N, L}(convert_ntuple(T, data))
+        new{S, T, N, L}(check_data(S, T, data))
+    end
+end
+
+@generated function check_data(::Type{S}, ::Type{T}, data::NTuple{N, Any}) where {S, T, N}
+    ex = quote
+        @_inline_meta
+        data = convert_ntuple(T, data)
+    end
+    if any(s -> s isa Skew, Tuple(Space(S)))
+        quote
+            $ex
+            (zero(T), $([:(data[$i]) for i in 2:N]...))
+        end
+    else
+        ex
     end
 end
 
@@ -11,8 +26,11 @@ end
     if ndims(Space(S)) != N
         return :(throw(ArgumentError("Number of dimensions must be $(ndims(Space(S))) for $S size, got $N.")))
     end
-    if ncomponents(Space(S)) != L
-        return :(throw(ArgumentError("Length of tuple data must be $(ncomponents(Space(S))) for $S size, got $L.")))
+    if data_length(Space(S)) != L
+        return :(throw(ArgumentError("Length of tuple data must be $(data_length(Space(S))) for $S size, got $L.")))
+    end
+    if L == 0
+        return :(throw(ArgumentError("Tuple data is empty. Tensors having no independent components are not supported.")))
     end
 end
 
@@ -20,6 +38,7 @@ end
 const SecondOrderTensor{dim, T, L} = Tensor{NTuple{2, dim}, T, 2, L}
 const FourthOrderTensor{dim, T, L} = Tensor{NTuple{4, dim}, T, 4, L}
 const SymmetricSecondOrderTensor{dim, T, L} = Tensor{Tuple{@Symmetry{dim, dim}}, T, 2, L}
+const SkewSymmetricSecondOrderTensor{dim, T, L} = Tensor{Tuple{@Skew{dim, dim}}, T, 2, L}
 const SymmetricFourthOrderTensor{dim, T, L} = Tensor{NTuple{2, @Symmetry{dim, dim}}, T, 4, L}
 const Mat{m, n, T, L} = Tensor{Tuple{m, n}, T, 2, L}
 const Vec{dim, T} = Tensor{Tuple{dim}, T, 1, dim}
@@ -99,7 +118,7 @@ end
 for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
     @eval begin
         @inline Base.$op(::Type{Tensor{S}}) where {S} = $op(Tensor{S, Float64})
-        @inline Base.$op(::Type{Tensor{S, T}}) where {S, T} = Tensor{S, T}(fill_tuple($el, Val(ncomponents(Space(S)))))
+        @inline Base.$op(::Type{Tensor{S, T}}) where {S, T} = Tensor{S, T}(fill_tuple($el, Val(data_length(Space(S)))))
         # for aliases
         @inline Base.$op(::Type{Tensor{S, T, N}}) where {S, T, N} = $op(Tensor{S, T})
         @inline Base.$op(::Type{Tensor{S, T, N, L}}) where {S, T, N, L} = $op(Tensor{S, T})
@@ -114,21 +133,28 @@ Base.one(::Type{Tensor{S}}) where {S} = _one(Tensor{S, Float64})
 Base.one(::Type{Tensor{S, T}}) where {S, T} = _one(Tensor{S, T})
 Base.one(::Type{TT}) where {TT} = one(basetype(TT))
 Base.one(x::Tensor) = one(typeof(x))
+## second order tensors
 @inline function _one(TT::Type{<: Union{Tensor{Tuple{dim,dim}, T}, Tensor{Tuple{@Symmetry{dim,dim}}, T}}}) where {dim, T}
     o = one(T)
     z = zero(T)
     TT((i,j) -> i == j ? o : z)
 end
+## fourth order tensors
 @inline function _one(TT::Type{Tensor{NTuple{4,dim}, T}}) where {dim, T}
     o = one(T)
     z = zero(T)
     TT((i,j,k,l) -> i == k && j == l ? o : z)
 end
+## symmetric fourth order tensors
 @inline function _one(TT::Type{Tensor{NTuple{2,@Symmetry{dim,dim}}, T}}) where {dim, T}
     o = one(T)
     z = zero(T)
     δ(i,j) = i == j ? o : z
     TT((i,j,k,l) -> (δ(i,k)*δ(j,l) + δ(i,l)*δ(j,k))/2)
+end
+## skew symmetric tensors
+@inline function _one(TT::Type{Tensor{Tuple{Skew{NTuple{dim, dim}}}, T}}) where {dim, T}
+    TT((ij...) -> -one(T))
 end
 
 # for AbstractArray interface
@@ -136,8 +162,10 @@ Base.IndexStyle(::Type{<: Tensor}) = IndexLinear()
 
 # helpers
 Base.Tuple(x::Tensor) = x.data
-ncomponents(x::Tensor) = length(Tuple(x))
-ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
+data_length(x::Tensor) = length(Tuple(x))
+data_length(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
+ncomponents(::Type{TT}) where {TT} = ncomponents(Space(TT))
+ncomponents(x::Tensor) = ncomponents(Space(x))
 @pure basetype(::Type{<: Tensor{S}}) where {S} = Tensor{S}
 @pure basetype(::Type{<: Tensor{S, T}}) where {S, T} = Tensor{S, T}
 
@@ -145,9 +173,25 @@ ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
 Broadcast.broadcastable(x::Tensor) = Ref(x)
 
 # getindex
-@inline function Base.getindex(x::Tensor, i::Int)
-    @boundscheck checkbounds(x, i)
-    @inbounds Tuple(x)[independent_indices(x)[i]]
+@generated function Base.getindex(x::Tensor, i::Int)
+    S = Space(x)
+    inds = independent_indices(S)
+    if any(s -> s isa Skew, Tuple(S))
+        return quote
+            @_inline_meta
+            @boundscheck checkbounds(x, i)
+            @inbounds begin
+                I = $inds[i]
+                I > 0 ? Tuple(x)[I] : -Tuple(x)[-I]
+            end
+        end
+    else
+        return quote
+            @_inline_meta
+            @boundscheck checkbounds(x, i)
+            @inbounds Tuple(x)[$inds[i]]
+        end
+    end
 end
 
 # convert

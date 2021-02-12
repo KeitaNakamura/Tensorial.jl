@@ -1,5 +1,5 @@
 @generated function check_size_parameters(::Type{S}) where {S}
-    if !all(x -> isa(x, Int) || x <: Symmetry, S.parameters)
+    if !all(x -> isa(x, Int) || x <: Symmetry || x <: Skew, S.parameters)
         return :(throw(ArgumentError("Tensor parameter size must be a tuple of `Int`s or `Symmetry` (e.g. `Tensor{Tuple{3,3}}` or `Tensor{Tuple{3, Symmetry{3,3}}}`).")))
     end
 end
@@ -29,5 +29,6 @@ end
         $T
     end
 end
+promote_ntuple_eltype(::Tuple{}) = throw(ArgumentError("Tuple data is empty. Tensors having no independent components are not supported."))
 
 tuple_sort(x::NTuple{N, Any}; kwargs...) where {N} = Tuple(sort(SVector(x); kwargs...))

@@ -47,7 +47,11 @@ end
 Base.:+(x::EinsumIndexMul, y::EinsumIndexSum) = y + x
 
 
-construct_expr(x::EinsumIndex) = :($(x.name)[$(x.index)])
+function construct_expr(x::EinsumIndex)
+    x.index > 0 && return :($(x.name)[$(x.index)])
+    x.index < 0 && return :(-$(x.name)[$(-x.index)])
+    error()
+end
 
 function construct_expr(x::EinsumIndexMul)
     if x.ndups == 1

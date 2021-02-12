@@ -14,15 +14,18 @@ import LinearAlgebra: dot, norm, tr, adjoint, det, cross, eigen, eigvals, eigvec
 import Statistics: mean
 
 export
-# Symmetry/Space
+# Symmetry/Skew/Space
     Symmetry,
     @Symmetry,
+    Skew,
+    @Skew,
     Space,
 # AbstractTensor
     AbstractTensor,
     AbstractSecondOrderTensor,
     AbstractFourthOrderTensor,
     AbstractSymmetricSecondOrderTensor,
+    AbstractSkewSymmetricSecondOrderTensor,
     AbstractSymmetricFourthOrderTensor,
     AbstractVec,
     AbstractMat,
@@ -31,6 +34,7 @@ export
     SecondOrderTensor,
     FourthOrderTensor,
     SymmetricSecondOrderTensor,
+    SkewSymmetricSecondOrderTensor,
     SymmetricFourthOrderTensor,
     Vec,
     Mat,

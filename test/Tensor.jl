@@ -16,9 +16,9 @@
         @test_throws Exception Tensor{Tuple{Int,2}, Int, 2, 4}((1,2,3,4)) # bad size
         @test_throws Exception Tensor{Tuple{2,2}, Int, 2, 5}((1,2,3,4,5)) # bad ncomponents
         @test_throws Exception Tensor{Tuple{2,2}, Int, 3, 4}((1,2,3,4))   # bad ndims
-        @test_throws Exception Tensor{Tuple{2,Symmetry{Int,2}}, Int, 3, 6}((1,2,3,4,5,6)) # bad Symmetry size
-        @test_throws Exception Tensor{Tuple{2,Symmetry{2,2}}, Int, 3, 5}((1,2,3,4,5))     # bad ncomponents
-        @test_throws Exception Tensor{Tuple{2,Symmetry{2,2}}, Int, 2, 6}((1,2,3,4,5,6))   # bad ndims
+        @test_throws Exception Tensor{Tuple{2,@Symmetry{Int,2}}, Int, 3, 6}((1,2,3,4,5,6)) # bad Symmetry size
+        @test_throws Exception Tensor{Tuple{2,@Symmetry{2,2}}, Int, 3, 5}((1,2,3,4,5))     # bad ncomponents
+        @test_throws Exception Tensor{Tuple{2,@Symmetry{2,2}}, Int, 2, 6}((1,2,3,4,5,6))   # bad ndims
     end
     @testset "Outer constructors" begin
         data = (1,2,3,4)
@@ -102,6 +102,7 @@
                 @test (@inferred op(Tensor{Tuple{2,2}}))::Tensor{Tuple{2,2}, Float64, 2, 4} |> unique |> length != 1
                 for TensorType in (SecondOrderTensor, FourthOrderTensor,
                                    SymmetricSecondOrderTensor, SymmetricFourthOrderTensor,
+                                   SkewSymmetricSecondOrderTensor,
                                    Vec)
                     @test (@inferred op(TensorType{2, Float32}))::TensorType{2, Float32} |> unique |> length != 1
                     @test (@inferred op(TensorType{2}))::TensorType{2, Float64} |> unique |> length != 1
@@ -147,11 +148,21 @@
                 @test (IIs ⊡ A)::SymmetricSecondOrderTensor{dim} ≈ (A+A')/2
                 @test (IIs ⊡ As)::SymmetricSecondOrderTensor{dim} ≈ As
             end
+            # skew symmetric tensors
+            for dim in 2:4
+                A = (@inferred one(Tensor{Tuple{Skew{NTuple{dim, dim}}}, Int}))::Tensor{Tuple{Skew{NTuple{dim, dim}}}, Int}
+                A = (@inferred one(Tensor{Tuple{Skew{NTuple{dim, dim}}}}))::Tensor{Tuple{Skew{NTuple{dim, dim}}}, Float64}
+                for i in CartesianIndices(A)
+                    levi = levicivita(collect(Tuple(i))) # use Combinatorics package
+                    @test A[i] == Int(levi)
+                end
+            end
         end
     end
 end
 
 @testset "Symmetric tensors" begin
+    # symmetry
     x = rand(Tensor{Tuple{2, @Symmetry{2,2}, 3}})
     @test Tensorial.ncomponents(x) == 18
     for i in axes(x, 1), l in axes(x, 4)
@@ -166,6 +177,30 @@ end
             @test x[i,j,k,l] == x[i,k,j,l]
             @test x[i,j,k,l] == x[i,j,l,k]
             @test x[i,j,k,l] == x[i,l,k,j]
+            @test x[i,j,k,l] == x[i,k,l,j]
+            @test x[i,j,k,l] == x[i,l,j,k]
+        end
+    end
+    # skew symmetry
+    x = rand(Tensor{Tuple{2, @Skew{2,2}, 3}})
+    @test Tensorial.ncomponents(x) == 6
+    for i in axes(x, 1), l in axes(x, 4)
+        for j in axes(x, 2), k in axes(x, 3)
+            @test x[i,j,k,l] == -x[i,k,j,l]
+            if levicivita([j,k]) == 0
+                @test x[i,j,k,l] == 0
+            end
+        end
+    end
+    x = rand(Tensor{Tuple{2, @Skew{3,3,3}}})
+    @test Tensorial.ncomponents(x) == 2
+    for i in axes(x, 1)
+        for j in axes(x, 2), k in axes(x, 3), l in axes(x, 4)
+            @test x[i,j,k,l] == -x[i,k,j,l]
+            @test x[i,j,k,l] == -x[i,j,l,k]
+            @test x[i,j,k,l] == -x[i,l,k,j]
+            @test x[i,j,k,l] == x[i,k,l,j]
+            @test x[i,j,k,l] == x[i,l,j,k]
         end
     end
 end

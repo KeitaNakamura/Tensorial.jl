@@ -33,45 +33,58 @@ end
 
 @testset "Tensor operations" begin
     @testset "contraction" begin
-        for T in (Float32, Float64)
-            x = rand(Tensor{Tuple{3,@Symmetry{3,3}}, T})
-            y = rand(Tensor{Tuple{@Symmetry{3,3,3}}, T})
-            # single contraction
-            z = (@inferred contraction(x, y, Val(1)))::Tensor{Tuple{3,3,@Symmetry{3,3}}, T}
-            X = Array(x);
-            Y = Array(y);
-            Z = zeros(T, 3,3,3,3)
-            for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,2), m in axes(Y,3)
-                Z[i,j,l,m] += X[i,j,k] * Y[k,l,m]
+        for (SymTypeX, SymTypeY, SymTypeZ) in ((@Symmetry{3,3}, @Symmetry{3,3,3}, @Symmetry{3,3}),
+                                               (@Skew{3,3}, @Skew{3,3,3}, @Skew{3,3}))
+            for T in (Float32, Float64)
+                x = rand(Tensor{Tuple{3,SymTypeX}, T})
+                y = rand(Tensor{Tuple{SymTypeY}, T})
+                # single contraction
+                ## case 1
+                z = (@inferred contraction(x, y, Val(1)))::Tensor{Tuple{3,3,SymTypeZ}, T}
+                X = Array(x);
+                Y = Array(y);
+                Z = zeros(T, 3,3,3,3)
+                for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,2), m in axes(Y,3)
+                    Z[i,j,l,m] += X[i,j,k] * Y[k,l,m]
+                end
+                @test Array(z) ≈ Z
+                ## case 2
+                v = rand(Vec{3, T})
+                z = (@inferred contraction(y, v, Val(1)))::Tensor{Tuple{SymTypeX}, T}
+                V = Array(v);
+                Z = zeros(T, 3,3)
+                for i in axes(X,1), j in axes(X,2), k in axes(X,3)
+                    Z[i,j] += Y[i,j,k] * V[k]
+                end
+                @test Array(z) ≈ Z
+                # double contraction
+                z = (@inferred contraction(x, y, Val(2)))::Tensor{Tuple{3,3}, T}
+                X = Array(x);
+                Y = Array(y);
+                Z = zeros(T, 3,3)
+                for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,3)
+                    Z[i,l] += X[i,j,k] * Y[j,k,l]
+                end
+                @test Array(z) ≈ Z
+                # triple contraction
+                z = (@inferred contraction(x, y, Val(3)))::T
+                X = Array(x);
+                Y = Array(y);
+                Z = zero(T)
+                for i in axes(X,1), j in axes(X,2), k in axes(X,3)
+                    Z += X[i,j,k] * Y[i,j,k]
+                end
+                @test z ≈ Z
+                # zero contraction (otimes)
+                z = (@inferred contraction(x, y, Val(0)))::Tensor{Tuple{3,SymTypeX,SymTypeY}, T}
+                X = Array(x);
+                Y = Array(y);
+                Z = zeros(T, 3,3,3,3,3,3)
+                for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,1), m in axes(Y,2), n in axes(Y,3)
+                    Z[i,j,k,l,m,n] = X[i,j,k] * Y[l,m,n]
+                end
+                @test Array(z) ≈ Z
             end
-            @test Array(z) ≈ Z
-            # double contraction
-            z = (@inferred contraction(x, y, Val(2)))::Tensor{Tuple{3,3}, T}
-            X = Array(x);
-            Y = Array(y);
-            Z = zeros(T, 3,3)
-            for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,3)
-                Z[i,l] += X[i,j,k] * Y[j,k,l]
-            end
-            @test Array(z) ≈ Z
-            # triple contraction
-            z = (@inferred contraction(x, y, Val(3)))::T
-            X = Array(x);
-            Y = Array(y);
-            Z = zero(T)
-            for i in axes(X,1), j in axes(X,2), k in axes(X,3)
-                Z += X[i,j,k] * Y[i,j,k]
-            end
-            @test z ≈ Z
-            # zero contraction (otimes)
-            z = (@inferred contraction(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry{3,3},@Symmetry{3,3,3}}, T}
-            X = Array(x);
-            Y = Array(y);
-            Z = zeros(T, 3,3,3,3,3,3)
-            for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,1), m in axes(Y,2), n in axes(Y,3)
-                Z[i,j,k,l,m,n] = X[i,j,k] * Y[l,m,n]
-            end
-            @test Array(z) ≈ Z
         end
     end
     @testset "otimes/dot/norm" begin
@@ -137,10 +150,11 @@ end
     @testset "skew" begin
         for T in (Float32, Float64), dim in 1:4
             x = rand(SecondOrderTensor{dim, T})
-            @test (@inferred skew(x))::SecondOrderTensor{dim, T} ≈ (x - x') / 2
-            @test symmetric(x) + skew(x) ≈ x
+            @test (@inferred skew(x))::SkewSymmetricSecondOrderTensor{dim, T} ≈ (x - x') / 2
+            @test (@inferred symmetric(x) + skew(x))::typeof(x) ≈ x
+            @test (@inferred transpose(skew(x)))::SkewSymmetricSecondOrderTensor{dim, T} == -skew(x)
             x = rand(SymmetricSecondOrderTensor{dim, T})
-            @test (@inferred skew(x))::SecondOrderTensor{dim, T} ≈ zero(SecondOrderTensor{dim})
+            @test (@inferred skew(x))::SkewSymmetricSecondOrderTensor{dim, T} ≈ zero(x)
         end
     end
     @testset "det/inv" begin
@@ -183,14 +197,26 @@ end
         for T in (Float32, Float64), dim in 1:3
             x = rand(SecondOrderTensor{dim, T})
             y = rand(SymmetricSecondOrderTensor{dim, T})
-            fm3, fm2, fm1, f0, fp1, fp2, fp3 = x -> x^-3, x -> x^-2, x -> x^-1, x -> x^0, x -> x^1, x -> x^2, x -> x^3
-            @test (@inferred fm3(x))::typeof(x) ≈ inv(x) ⋅ inv(x) ⋅ inv(x)
-            @test (@inferred fm2(x))::typeof(x) ≈ inv(x) ⋅ inv(x)
-            @test (@inferred fm1(x))::typeof(x) == inv(x)
-            @test (@inferred f0(x))::typeof(x) == one(x)
-            @test (@inferred fp1(x))::typeof(x) == x
-            @test (@inferred fp2(x))::typeof(x) ≈ x ⋅ x
-            @test (@inferred fp3(x))::typeof(x) ≈ x ⋅ x ⋅ x
+            fm5, fm4, fm3, fm2, fm1, f0, fp1, fp2, fp3, fp4, fp5 = x -> x^-5, x -> x^-4, x -> x^-3, x -> x^-2, x -> x^-1, x -> x^0, x -> x^1, x -> x^2, x -> x^3, x -> x^4, x -> x^5
+            for t in (x, y)
+                @test (@inferred fm5(t))::typeof(t) ≈ inv(t) ⋅ inv(t) ⋅ inv(t) ⋅ inv(t) ⋅ inv(t)
+                @test (@inferred fm4(t))::typeof(t) ≈ inv(t) ⋅ inv(t) ⋅ inv(t) ⋅ inv(t)
+                @test (@inferred fm3(t))::typeof(t) ≈ inv(t) ⋅ inv(t) ⋅ inv(t)
+                @test (@inferred fm2(t))::typeof(t) ≈ inv(t) ⋅ inv(t)
+                @test (@inferred fm1(t))::typeof(t) == inv(t)
+                @test (@inferred f0(t))::typeof(t) == one(t)
+                @test (@inferred fp1(t))::typeof(t) == t
+                @test (@inferred fp2(t))::typeof(t) ≈ t ⋅ t
+                @test (@inferred fp3(t))::typeof(t) ≈ t ⋅ t ⋅ t
+                @test (@inferred fp4(t))::typeof(t) ≈ t ⋅ t ⋅ t ⋅ t
+                @test (@inferred fp5(t))::typeof(t) ≈ t ⋅ t ⋅ t ⋅ t ⋅ t
+            end
+            z = rand(SkewSymmetricSecondOrderTensor{dim, T})
+            @test (@inferred fp1(z))::typeof(z) == z
+            @test (@inferred fp2(z))::typeof(y) ≈ z ⋅ z
+            @test (fp3(z))::typeof(z) ≈ z ⋅ z ⋅ z
+            @test (fp4(z))::typeof(y) ≈ z ⋅ z ⋅ z ⋅ z
+            @test (fp5(z))::typeof(z) ≈ z ⋅ z ⋅ z ⋅ z ⋅ z
         end
     end
     @testset "rotmat" begin
