@@ -23,6 +23,7 @@ makedocs(;
             "Tensor Type.md",
             # "Constructors.md",
             "Tensor Operations.md",
+            "Voigt form.md",
         ],
         "Benchmarks.md",
     ],

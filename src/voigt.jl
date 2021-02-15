@@ -1,89 +1,272 @@
-const VOIGT_ORDER = ([1], [1 3; 4 2], [1 6 5; 9 2 4; 8 7 3])
-
-@generated function tovoigt(x::SecondOrderTensor{dim, T}) where {dim, T}
-    L = ncomponents(x)
-    exps = Vector{Expr}(undef, L)
-    for i in 1:dim, j in 1:dim
-        exps[VOIGT_ORDER[dim][i,j]] = getindex_expr(:x, x, i, j)
+# default voigt order
+# not sure appropriate order for dim ≥ 4
+@generated function default_voigt_order(::Val{dim}) where {dim}
+    inds = Vector{Tuple{Int, Int}}(undef, dim*dim)
+    count = 0
+    for i in 1:dim
+        @inbounds inds[count+=1] = (i,i)
     end
-    return quote
-        @_inline_meta
-        @inbounds SVector{$L, T}(tuple($(exps...)))
+    # upper
+    for j in dim:-1:1
+        for i in j-1:-1:1
+            @inbounds inds[count+=1] = (i,j)
+        end
     end
-end
-@generated function tovoigt(x::FourthOrderTensor{dim, T}) where {dim, T}
-    L = ncomponents(x)
-    L2 = Int(√L)
-    exps = Matrix{Expr}(undef, L2, L2)
-    for i in 1:dim, j in 1:dim, k in 1:dim, l in 1:dim
-        exps[VOIGT_ORDER[dim][i,j], VOIGT_ORDER[dim][k,l]] = getindex_expr(:x, x, i, j, k, l)
+    # lower
+    for i in dim:-1:1
+        for j in i-1:-1:1
+            @inbounds inds[count+=1] = (i,j)
+        end
     end
-    return quote
-        @_inline_meta
-        @inbounds SMatrix{$L2, $L2, T}(tuple($(exps...)))
-    end
-end
-
-@generated function tovoigt(x::SymmetricSecondOrderTensor{dim, T}; offdiagscale::T = one(T)) where {dim, T}
-    L = ncomponents(x)
-    exps = Vector{Expr}(undef, L)
-    for i in 1:dim, j in i:dim
-        ex = getindex_expr(:x, x, i, j)
-        exps[VOIGT_ORDER[dim][i,j]] = i == j ? ex : :(offdiagscale * $ex)
-    end
-    return quote
-        @_inline_meta
-        @inbounds SVector{$L, T}(tuple($(exps...)))
-    end
-end
-@generated function tovoigt(x::SymmetricFourthOrderTensor{dim, T}; offdiagscale::T = one(T)) where {dim, T}
-    L = ncomponents(x)
-    L2 = Int(√L)
-    exps = Matrix{Expr}(undef, L2, L2)
-    for i in 1:dim, j in i:dim, k in 1:dim, l in k:dim
-        ex = getindex_expr(:x, x, i, j, k, l)
-        exps[VOIGT_ORDER[dim][i,j], VOIGT_ORDER[dim][k,l]] =
-            (i == j && k == l) ? ex :
-            (i == j || k == l) ? :($ex * offdiagscale) :
-                                 :($ex * (offdiagscale * offdiagscale))
-    end
-    return quote
-        @_inline_meta
-        @inbounds SMatrix{$L2, $L2, T}(tuple($(exps...)))
+    quote
+        SVector{$(length(inds))}($inds)
     end
 end
 
+"""
+    tovoigt(A::Union{SecondOrderTensor, FourthOrderTensor}; [order])
+    tovoigt(A::Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor}; [order, offdiagonal])
+
+Convert a tensor to Voigt form.
+
+Keyword arguments:
+ - `offdiagscale`: determines the scaling factor for the offdiagonal elements.
+ - `order`: vector of cartesian indices (`Tuple{Int, Int}`) determining the Voigt order.
+   The default order is `[(1,1), (2,2), (3,3), (2,3), (1,3), (1,2), (3,2), (3,1), (2,1)]`
+
+See also [`fromvoigt`](@ref).
+
+```jldoctest
+julia> tovoigt(Mat{3,3}(1:9...))
+9-element StaticArrays.SArray{Tuple{9},Int64,1,9} with indices SOneTo(9):
+ 1
+ 5
+ 9
+ 8
+ 7
+ 4
+ 6
+ 3
+ 2
+
+julia> tovoigt(SymmetricSecondOrderTensor{3}(1:6...); offdiagscale = 2)
+6-element StaticArrays.SArray{Tuple{6},Int64,1,6} with indices SOneTo(6):
+  1
+  4
+  6
+ 10
+  6
+  4
+
+julia> tovoigt(FourthOrderTensor{2}(1:16...))
+4×4 StaticArrays.SArray{Tuple{4,4},Int64,2,16} with indices SOneTo(4)×SOneTo(4):
+ 1  13   9  5
+ 4  16  12  8
+ 3  15  11  7
+ 2  14  10  6
+```
+"""
+function tovoigt end
+
+@generated function tovoigt(x::SecondOrderTensor{dim};
+                            order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim))) where {dim}
+    L = ncomponents(x)
+    exps = [:(x[order[$i]...]) for i in 1:L]
+    quote
+        @_propagate_inbounds_meta
+        @assert length(order) == $L
+        SVector{$L}($(exps...))
+    end
+end
+
+@generated function tovoigt(x::FourthOrderTensor{dim};
+                            order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim))) where {dim}
+    L = Int(sqrt(ncomponents(x)))
+    exps = [:(x[order[$i][1], order[$i][2], order[$j][1], order[$j][2]]) for i in 1:L, j in 1:L]
+    quote
+        @_propagate_inbounds_meta
+        @assert length(order) == $L
+        SMatrix{$L, $L}($(exps...))
+    end
+end
+
+@generated function tovoigt(x::SymmetricSecondOrderTensor{dim, T};
+                            order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim)),
+                            offdiagscale::T = one(T)) where {dim, T}
+    L = ncomponents(x)
+    function tovoigt_element(i)
+        ex = :(x[i,j])
+        quote
+            i, j = order[$i]
+            (i == j ? $ex : $ex * offdiagscale)
+        end
+    end
+    exps = map(tovoigt_element, 1:L)
+    quote
+        @_propagate_inbounds_meta
+        @assert length(order) ≥ $L
+        @inbounds SVector{$L, T}($(exps...))
+    end
+end
+
+@generated function tovoigt(x::SymmetricFourthOrderTensor{dim, T};
+                            order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim)),
+                            offdiagscale::T = one(T)) where {dim, T}
+    L = Int(sqrt(ncomponents(x)))
+    function tovoigt_element(i, j)
+        ex = :(x[i,j,k,l])
+        quote
+            i, j = order[$i]
+            k, l = order[$j]
+            ((i == j && k == l) ? $ex :
+             (i == j || k == l) ? $ex * offdiagscale :
+                                  $ex * (offdiagscale * offdiagscale))
+        end
+    end
+    exps = [tovoigt_element(i, j) for i in 1:L, j in 1:L]
+    quote
+        @_propagate_inbounds_meta
+        @assert length(order) ≥ $L
+        SMatrix{$L, $L, T}($(exps...))
+    end
+end
+
+"""
+    tomandel(A::Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor})
+
+Convert a tensor to Mandel form which is equivalent to `tovoigt(A, offdiagscale = √2)`.
+
+See also [`tovoigt`](@ref).
+"""
 @inline function tomandel(x::Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor})
     tovoigt(x, offdiagscale = eltype(x)(√2))
 end
 
-@inline function fromvoigt(TT::Type{<: SecondOrderTensor{dim}}, v::AbstractVector) where {dim}
-    @_propagate_inbounds_meta
-    TT(function (i, j); v[VOIGT_ORDER[dim][i, j]]; end)
-end
-@inline function fromvoigt(TT::Type{<: FourthOrderTensor{dim}}, v::AbstractMatrix) where {dim}
-    @_propagate_inbounds_meta
-    TT(function (i, j, k, l); v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]]; end)
-end
-@inline function fromvoigt(TT::Type{<: SymmetricSecondOrderTensor{dim}}, v::AbstractVector{T}; offdiagscale::T = T(1)) where {dim, T}
-    @_propagate_inbounds_meta
-    TT(function (i, j)
-           i > j && ((i, j) = (j, i))
-           i == j ? (return v[VOIGT_ORDER[dim][i, j]]) :
-                    (return v[VOIGT_ORDER[dim][i, j]] / offdiagscale)
-       end)
-end
-@inline function fromvoigt(TT::Type{<: SymmetricFourthOrderTensor{dim}}, v::AbstractMatrix{T}; offdiagscale::T = T(1)) where {dim, T}
-    @_propagate_inbounds_meta
-    TT(function (i, j, k, l)
-           i > j && ((i, j) = (j, i))
-           k > l && ((k, l) = (l, k))
-           i == j && k == l ? (return v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]]) :
-           i == j || k == l ? (return v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]] / offdiagscale) :
-                              (return v[VOIGT_ORDER[dim][i, j], VOIGT_ORDER[dim][k, l]] / (offdiagscale * offdiagscale))
-       end)
+
+"""
+    fromvoigt(S::Type{<: Union{SecondOrderTensor, FourthOrderTensor}}, A::AbstractArray{T})
+    fromvoigt(S::Type{<: Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor}}, A::AbstractArray{T}; [offdiagscale])
+
+Converts an array `A` stored in Voigt format to a Tensor of type `S`.
+
+Keyword arguments:
+ - `offdiagscale`: determines the scaling factor for the offdiagonal elements.
+ - `order`: vector of cartesian indices (`Tuple{Int, Int}`) determining the Voigt order.
+   The default order is `[(1,1), (2,2), (3,3), (2,3), (1,3), (1,2), (3,2), (3,1), (2,1)]`
+
+See also [`tovoigt`](@ref).
+
+```jldoctest
+julia> fromvoigt(Mat{3,3}, 1.0:1.0:9.0)
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 1.0  6.0  5.0
+ 9.0  2.0  4.0
+ 8.0  7.0  3.0
+```
+"""
+function fromvoigt end
+
+@generated function fromvoigt(::Type{TT},
+                              v::AbstractVector;
+                              order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim))) where {dim, TT <: Tensor{Tuple{dim, dim}}}
+    S = Space(TT)
+    L = ncomponents(S)
+    inds = independent_indices(S)
+    T = eltype(TT) == Any ? eltype(v) : eltype(TT)
+    quote
+        @_propagate_inbounds_meta
+        @assert length(v) == length(order) == $L
+        data = MVector{$L, $T}(undef)
+        for I in 1:$L
+            i, j = order[I]
+            data[$inds[i,j]] = v[I]
+        end
+        TT(Tuple(data))
+    end
 end
 
+@generated function fromvoigt(::Type{TT},
+                              v::AbstractMatrix;
+                              order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim))) where {dim, TT <: Tensor{NTuple{4, dim}}}
+    S = Space(TT)
+    L = Int(sqrt(ncomponents(S)))
+    inds = independent_indices(S)
+    T = eltype(TT) == Any ? eltype(v) : eltype(TT)
+    quote
+        @_propagate_inbounds_meta
+        @assert length(v) == $(L*L)
+        @assert length(order) == $L
+        data = MVector{$(L*L), $T}(undef)
+        for J in 1:$L, I in 1:$L
+            i, j = order[I]
+            k, l = order[J]
+            data[$inds[i,j,k,l]] = v[I,J]
+        end
+        TT(Tuple(data))
+    end
+end
+
+@generated function fromvoigt(::Type{TT},
+                              v::AbstractVector{T};
+                              order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim)),
+                              offdiagscale::T = one(T)) where {dim, T, TT <: Tensor{Tuple{@Symmetry{dim, dim}}}}
+    S = Space(TT)
+    L = ncomponents(S)
+    inds = independent_indices(S)
+    T = eltype(TT) == Any ? eltype(v) : eltype(TT)
+    quote
+        @_propagate_inbounds_meta
+        @assert length(v) == $L
+        @assert length(order) ≥ $L
+        data = MVector{$L, $T}(undef)
+        for I in 1:$L
+            i, j = order[I]
+            if i == j
+                data[$inds[i,j]] = v[I]
+            else
+                data[$inds[i,j]] = v[I] / offdiagscale
+            end
+        end
+        TT(Tuple(data))
+    end
+end
+
+@generated function fromvoigt(::Type{TT},
+                              v::AbstractMatrix{T};
+                              order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim)),
+                              offdiagscale::T = one(T)) where {dim, T, TT <: Tensor{NTuple{2, @Symmetry{dim, dim}}}}
+    S = Space(TT)
+    L = Int(sqrt(ncomponents(S)))
+    inds = independent_indices(S)
+    T = eltype(TT) == Any ? eltype(v) : eltype(TT)
+    quote
+        @_propagate_inbounds_meta
+        @assert length(v) == $(L*L)
+        @assert length(order) ≥ $L
+        data = MVector{$(L*L), $T}(undef)
+        for J in 1:$L, I in 1:$L
+            i, j = order[I]
+            k, l = order[J]
+            if i == j && k == l
+                data[$inds[i,j,k,l]] = v[I,J]
+            elseif i == j || k == l
+                data[$inds[i,j,k,l]] = v[I,J] / offdiagscale
+            else
+                data[$inds[i,j,k,l]] = v[I,J] / (offdiagscale * offdiagscale)
+            end
+        end
+        TT(Tuple(data))
+    end
+end
+
+"""
+    frommandel(S::Type{<: Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor}}, A::AbstractArray{T})
+
+Create a tensor of type `S` from Mandel form.
+This is equivalent to `fromvoigt(S, A, offdiagscale = √2)`.
+
+See also [`fromvoigt`](@ref).
+"""
 @inline function frommandel(TT::Type{<: Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor}}, v::AbstractArray{T}) where T
     @_propagate_inbounds_meta
     fromvoigt(TT, v, offdiagscale = T(√2))
