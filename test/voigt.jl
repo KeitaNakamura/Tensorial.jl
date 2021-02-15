@@ -18,6 +18,7 @@
         @test (@inferred fromvoigt(SymmetricFourthOrderTensor{dim, Float64}, tovoigt(AA_sym, offdiagscale=T(2)), offdiagscale=T(2)))::SymmetricFourthOrderTensor{dim, Float64} ≈ AA_sym
         # tomandel
         @test (@inferred tomandel(AA_sym)) * (@inferred tomandel(A_sym)) ≈ tomandel(AA_sym ⊡ A_sym)
+        # frommandel
         @test (@inferred frommandel(SymmetricSecondOrderTensor{dim}, tomandel(A_sym)))::SymmetricSecondOrderTensor{dim, T} ≈ A_sym
         @test (@inferred frommandel(SymmetricFourthOrderTensor{dim}, tomandel(AA_sym)))::SymmetricFourthOrderTensor{dim, T} ≈ AA_sym
         @test (@inferred frommandel(SymmetricSecondOrderTensor{dim, Float64}, tomandel(A_sym)))::SymmetricSecondOrderTensor{dim, Float64} ≈ A_sym
