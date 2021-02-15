@@ -52,6 +52,11 @@ export
     rotmatx,
     rotmaty,
     rotmatz,
+# voigt
+    tovoigt,
+    fromvoigt,
+    tomandel,
+    frommandel,
 # ad
     gradient,
     hessian
