@@ -1,6 +1,6 @@
 abstract type AbstractTensor{S <: Tuple, T, N} <: AbstractArray{T, N} end
 
-Base.size(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Dims(Space(S))
+Base.size(::Type{TT}) where {S, TT <: AbstractTensor{S}} = tensorsize(Space(S))
 Base.size(x::AbstractTensor) = size(typeof(x))
 
 # indices
@@ -23,11 +23,11 @@ end
 # to SArray
 @generated function convert_to_SArray(x::AbstractTensor)
     S = Space(x)
-    NewS = Space(Dims(S)) # remove Symmetry
+    NewS = Space(tensorsize(S)) # remove Symmetry
     exps = [getindex_expr(:x, x, i) for i in indices(NewS)]
     quote
         @_inline_meta
-        @inbounds SArray{Tuple{$(Dims(NewS)...)}}(tuple($(exps...)))
+        @inbounds SArray{Tuple{$(tensorsize(NewS)...)}}(tuple($(exps...)))
     end
 end
 

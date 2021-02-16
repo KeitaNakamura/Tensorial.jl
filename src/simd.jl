@@ -3,12 +3,12 @@ const SIMDTypes = Union{Float16, Float32, Float64}
 @generated function contraction(x::Tensor{<: Any, T, order1}, y::Tensor{<: Any, T, order2}, ::Val{N}) where {T <: SIMDTypes, N, order1, order2}
     S1 = Space(x)
     S2 = Space(y)
-    S_Inner = Space((Dims(S2)[i] for i in 1:N)...)
+    S_Inner = Space((tensorsize(S2)[i] for i in 1:N)...)
     S1 = otimes(droplast(S1, Val(N)), S_Inner)
     S2 = otimes(S_Inner, dropfirst(S2, Val(N)))
     s1 = [:(Tuple(x)[$i]) for i in 1:ncomponents(S1)]
     s2 = [:(Tuple(y)[$i]) for i in 1:ncomponents(S2)]
-    K = prod(Dims(S_Inner))
+    K = prod(tensorsize(S_Inner))
     I = length(s1) ÷ K
     J = length(s2) ÷ K
     s1′ = reshape(s1, I, K)
