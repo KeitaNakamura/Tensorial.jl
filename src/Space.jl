@@ -51,14 +51,16 @@ for op in (:dropfirst, :droplast)
     end
 end
 
-# otimes/contraction
-@pure otimes(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
+# contractions
 @pure function contraction(x::Space, y::Space, ::Val{N}) where {N}
     if !(0 ≤ N ≤ tensororder(x) && 0 ≤ N ≤ tensororder(y) && tensorsize(x)[end-N+1:end] === tensorsize(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
     end
     otimes(droplast(x, Val(N)), dropfirst(y, Val(N)))
 end
+@pure otimes(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
+@pure dot(x::Space, y::Space) = contraction(x, y, Val(1))
+@pure double_contraction(x::Space, y::Space) = contraction(x, y, Val(2))
 
 # promote_space
 promote_space(x::Space) = x
