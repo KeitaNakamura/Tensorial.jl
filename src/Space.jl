@@ -20,13 +20,16 @@ _ncomponents(x::Symmetry) = ncomponents(x)
 @pure ncomponents(::Space{S}) where {S} = prod(_ncomponents, S)
 
 @pure Base.Dims(::Space{S}) where {S} = flatten_tuple(map(Dims, S))
-@pure tensorsize(s::Space) = Dims(s)
 @pure Base.Tuple(::Space{S}) where {S} = S
-Base.size(s::Space) = throw(ArgumentError("use `tensorsize` to get size of a tensor instead of `size`"))
 
-@pure Base.ndims(s::Space) = length(tensorsize(s))
 @pure Base.length(s::Space) = length(Tuple(s))
 Base.getindex(s::Space, i::Int) = Tuple(s)[i]
+
+@pure tensorsize(s::Space) = Dims(s)
+@pure tensororder(s::Space) = length(tensorsize(s))
+# don't allow to use `size` and `ndims` because their names are confusing.
+Base.size(s::Space) = throw(ArgumentError("use `tensorsize` to get size of a tensor instead of `size`"))
+Base.ndims(s::Space) = throw(ArgumentError("use `tensororder` to get order of a tensor instead of `ndims`"))
 
 function Base.show(io::IO, ::Space{S}) where {S}
     print(io, "Space", S)
@@ -51,7 +54,7 @@ end
 # otimes/contraction
 @pure otimes(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
 @pure function contraction(x::Space, y::Space, ::Val{N}) where {N}
-    if !(0 ≤ N ≤ ndims(x) && 0 ≤ N ≤ ndims(y) && tensorsize(x)[end-N+1:end] === tensorsize(y)[1:N])
+    if !(0 ≤ N ≤ tensororder(x) && 0 ≤ N ≤ tensororder(y) && tensorsize(x)[end-N+1:end] === tensorsize(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
     end
     otimes(droplast(x, Val(N)), dropfirst(y, Val(N)))
@@ -99,7 +102,7 @@ end
 _typeof(x::Int) = x
 _typeof(x::Symmetry) = typeof(x)
 @pure function tensortype(x::Space)
-    Tensor{Tuple{map(_typeof, Tuple(x))...}, T, ndims(x), ncomponents(x)} where {T}
+    Tensor{Tuple{map(_typeof, Tuple(x))...}, T, tensororder(x), ncomponents(x)} where {T}
 end
 
 # LinearIndices/CartesianIndices

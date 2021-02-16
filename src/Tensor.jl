@@ -8,8 +8,8 @@ end
 
 @generated function check_tensor_parameters(::Type{S}, ::Type{T}, ::Val{N}, ::Val{L}) where {S, T, N, L}
     check_size_parameters(S)
-    if ndims(Space(S)) != N
-        return :(throw(ArgumentError("Number of dimensions must be $(ndims(Space(S))) for $S size, got $N.")))
+    if tensororder(Space(S)) != N
+        return :(throw(ArgumentError("Number of dimensions must be $(tensororder(Space(S))) for $S size, got $N.")))
     end
     if ncomponents(Space(S)) != L
         return :(throw(ArgumentError("Length of tuple data must be $(ncomponents(Space(S))) for $S size, got $L.")))
@@ -26,11 +26,11 @@ const Vec{dim, T} = Tensor{Tuple{dim}, T, 1, dim}
 
 # constructors
 @inline function Tensor{S, T}(data::Tuple{Vararg{Any, L}}) where {S, T, L}
-    N = ndims(Space(S))
+    N = tensororder(Space(S))
     Tensor{S, T, N, L}(data)
 end
 @inline function Tensor{S}(data::Tuple{Vararg{Any, L}}) where {S, L}
-    N = ndims(Space(S))
+    N = tensororder(Space(S))
     T = promote_ntuple_eltype(data)
     Tensor{S, T, N, L}(data)
 end
