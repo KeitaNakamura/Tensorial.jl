@@ -1,5 +1,13 @@
 const SIMDTypes = Union{Float16, Float32, Float64}
 
+@generated function (::Type{TT})(data::SIMD.Vec{L}) where {TT <: Tensor, L}
+    exps = [:(data[$i]) for i in 1:L]
+    quote
+        @_inline_meta
+        @inbounds TT(tuple($(exps...)))
+    end
+end
+
 @generated function contraction(x::Tensor{<: Any, T, order1}, y::Tensor{<: Any, T, order2}, ::Val{N}) where {T <: SIMDTypes, N, order1, order2}
     S1 = Space(x)
     S2 = Space(y)
@@ -51,13 +59,13 @@ end
 
 for op in (:+, :-)
     @eval @inline function Base.$op(x::TT, y::TT) where {T <: SIMDTypes, TT <: Tensor{<: Any, T}}
-        TT(Tuple($op(SIMD.Vec(Tuple(x)), SIMD.Vec(Tuple(y)))))
+        TT($op(SIMD.Vec(Tuple(x)), SIMD.Vec(Tuple(y))))
     end
 end
 
 for op in (:*, :/)
     @eval @inline function Base.$op(x::TT, a::T) where {T <: SIMDTypes, TT <: Tensor{<: Any, T}}
-        TT(Tuple($op(SIMD.Vec(Tuple(x)), a)))
+        TT($op(SIMD.Vec(Tuple(x)), a))
     end
 end
 @inline function Base.:*(a::T, x::TT) where {T <: SIMDTypes, TT <: Tensor{<: Any, T}}
@@ -70,5 +78,5 @@ end
     x′ = SIMD.shufflevector(x, Val((1,2,0)))
     y′ = SIMD.shufflevector(y, Val((1,2,0)))
     v = SIMD.shufflevector(x*y′ - x′*y, Val((1,2,0)))
-    Vec(Tuple(v))
+    Vec(v)
 end
