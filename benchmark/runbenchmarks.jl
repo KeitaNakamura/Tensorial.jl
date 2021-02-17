@@ -99,6 +99,10 @@ let path = "../docs/src/Benchmarks.md"
                            results["Array" ]["inv(Space(3,3))"])
         printrow("inv(S)", results["Tensor"]["inv(Space(Symmetry(3,3)))"],
                            results["Array" ]["inv(Space(Symmetry(3,3)))"])
+        printrow("inv(AA)", results["Tensor"]["inv(Space(3,3,3,3))"],
+                            results["Array" ]["inv(Space(3,3,3,3))"])
+        printrow("inv(SS)", results["Tensor"]["inv(Space(Symmetry(3,3),Symmetry(3,3)))"],
+                            results["Array" ]["inv(Space(Symmetry(3,3),Symmetry(3,3)))"])
 
         # print versioninfo
         println(file,
