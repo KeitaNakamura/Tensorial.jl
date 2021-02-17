@@ -80,3 +80,14 @@ end
     v = SIMD.shufflevector(x*y′ - x′*y, Val((1,2,0)))
     Vec(v)
 end
+
+@generated function __map(f, xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N}
+    exps = [:(SIMD.Vec(Tuple(xs[$i]))) for i in 1:N]
+    quote
+        @_inline_meta
+        Tensor{S, T}(f($(exps...)))
+    end
+end
+
+@inline _map(::typeof(*), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(*, xs...)
+@inline _map(::typeof(/), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(/, xs...)

@@ -1,3 +1,4 @@
+# simd version is defined in simd.jl
 @generated function _map(f, xs::Vararg{AbstractTensor, N}) where {N}
     S = promote_space(map(Space, xs)...)
     exps = map(indices(S)) do i
