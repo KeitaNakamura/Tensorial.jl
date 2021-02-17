@@ -161,6 +161,15 @@ end
             @test (@inferred inv(y))::typeof(y) ⊡ y ≈ one(y)
         end
     end
+    @testset "solve" begin
+        for T in (Float32, Float64), dim in 1:4
+            A = rand(SecondOrderTensor{dim, T})
+            S = rand(SymmetricSecondOrderTensor{dim, T})
+            b = rand(Vec{dim, T})
+            @test (@inferred A \ b)::Vec{dim, T} |> Array ≈ Array(A) \ Array(b)
+            @test (@inferred S \ b)::Vec{dim, T} |> Array ≈ Array(S) \ Array(b)
+        end
+    end
     @testset "cross" begin
         for T in (Float32, Float64), dim in 1:3
             x = rand(Vec{dim, T})
