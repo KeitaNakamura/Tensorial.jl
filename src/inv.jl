@@ -113,6 +113,7 @@ end
     end
 end
 
+# https://en.wikipedia.org/wiki/Block_matrix#Block_matrix_inversion
 function _inv_with_blocks(x::Mat{dim, dim}) where {dim}
     A, B, C, D = toblocks(x)
 
