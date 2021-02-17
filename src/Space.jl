@@ -22,9 +22,14 @@ _ncomponents(x::Symmetry) = ncomponents(x)
 @pure Base.Dims(::Space{S}) where {S} = flatten_tuple(map(Dims, S))
 @pure Base.Tuple(::Space{S}) where {S} = S
 
-@pure Base.ndims(s::Space) = length(Dims(s))
 @pure Base.length(s::Space) = length(Tuple(s))
 Base.getindex(s::Space, i::Int) = Tuple(s)[i]
+
+@pure tensorsize(s::Space) = Dims(s)
+@pure tensororder(s::Space) = length(tensorsize(s))
+# don't allow to use `size` and `ndims` because their names are confusing.
+Base.size(s::Space) = throw(ArgumentError("use `tensorsize` to get size of a tensor instead of `size`"))
+Base.ndims(s::Space) = throw(ArgumentError("use `tensororder` to get order of a tensor instead of `ndims`"))
 
 function Base.show(io::IO, ::Space{S}) where {S}
     print(io, "Space", S)
@@ -46,21 +51,23 @@ for op in (:dropfirst, :droplast)
     end
 end
 
-# otimes/contraction
-@pure otimes(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
+# contractions
 @pure function contraction(x::Space, y::Space, ::Val{N}) where {N}
-    if !(0 ≤ N ≤ ndims(x) && 0 ≤ N ≤ ndims(y) && Dims(x)[end-N+1:end] === Dims(y)[1:N])
+    if !(0 ≤ N ≤ tensororder(x) && 0 ≤ N ≤ tensororder(y) && tensorsize(x)[end-N+1:end] === tensorsize(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
     end
     otimes(droplast(x, Val(N)), dropfirst(y, Val(N)))
 end
+@pure otimes(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
+@pure dot(x::Space, y::Space) = contraction(x, y, Val(1))
+@pure double_contraction(x::Space, y::Space) = contraction(x, y, Val(2))
 
 # promote_space
 promote_space(x::Space) = x
 @generated function promote_space(x::Space{S1}, y::Space{S2}) where {S1, S2}
     S = _promote_space(S1, S2, ())
     quote
-        Dims(x) == Dims(y) || throw(DimensionMismatch("dimensions must match"))
+        tensorsize(x) == tensorsize(y) || throw(DimensionMismatch("dimensions must match"))
         Space($S)
     end
 end
@@ -97,10 +104,10 @@ end
 _typeof(x::Int) = x
 _typeof(x::Symmetry) = typeof(x)
 @pure function tensortype(x::Space)
-    Tensor{Tuple{map(_typeof, Tuple(x))...}, T, ndims(x), ncomponents(x)} where {T}
+    Tensor{Tuple{map(_typeof, Tuple(x))...}, T, tensororder(x), ncomponents(x)} where {T}
 end
 
 # LinearIndices/CartesianIndices
 for IndicesType in (LinearIndices, CartesianIndices)
-    @eval (::Type{$IndicesType})(x::Space) = $IndicesType(Dims(x))
+    @eval (::Type{$IndicesType})(x::Space) = $IndicesType(tensorsize(x))
 end
