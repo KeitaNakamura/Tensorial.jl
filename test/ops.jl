@@ -144,7 +144,7 @@ end
         end
     end
     @testset "det/inv" begin
-        for T in (Float32, Float64), dim in 1:4
+        for T in (Float32, Float64), dim in 1:8
             Random.seed!(1234)
             # second order
             x = rand(SecondOrderTensor{dim, T})
@@ -154,7 +154,7 @@ end
             @test (@inferred inv(x))::typeof(x) |> Array ≈ inv(Array(x))
             @test (@inferred inv(y))::typeof(y) |> Array ≈ inv(Array(y))
             # fourth order
-            dim == 4 && continue
+            dim > 3 && continue
             x = rand(FourthOrderTensor{dim, T})
             y = rand(SymmetricFourthOrderTensor{dim, T})
             @test (@inferred inv(x))::typeof(x) ⊡ x ≈ one(x)
@@ -162,7 +162,7 @@ end
         end
     end
     @testset "solve" begin
-        for T in (Float32, Float64), dim in 1:4
+        for T in (Float32, Float64), dim in 1:8
             A = rand(SecondOrderTensor{dim, T})
             S = rand(SymmetricSecondOrderTensor{dim, T})
             b = rand(Vec{dim, T})
