@@ -145,6 +145,7 @@ Convert a tensor to Mandel form which is equivalent to `tovoigt(A, offdiagscale 
 See also [`tovoigt`](@ref).
 """
 @inline function tomandel(x::Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor})
+    @_propagate_inbounds_meta
     tovoigt(x, offdiagscale = eltype(x)(√2))
 end
 

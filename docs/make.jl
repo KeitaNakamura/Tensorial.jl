@@ -24,6 +24,7 @@ makedocs(;
             # "Constructors.md",
             "Tensor Operations.md",
             "Voigt form.md",
+            "Tensor Inversion.md",
         ],
         "Benchmarks.md",
     ],

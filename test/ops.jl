@@ -143,31 +143,13 @@ end
             @test (@inferred skew(x))::SecondOrderTensor{dim, T} ≈ zero(SecondOrderTensor{dim})
         end
     end
-    @testset "det/inv" begin
+    @testset "det" begin
         for T in (Float32, Float64), dim in 1:4
             Random.seed!(1234)
-            # second order
             x = rand(SecondOrderTensor{dim, T})
             y = rand(SymmetricSecondOrderTensor{dim, T})
             @test (@inferred det(x))::T ≈ det(Array(x))
             @test (@inferred det(y))::T ≈ det(Array(y))
-            @test (@inferred inv(x))::typeof(x) |> Array ≈ inv(Array(x))
-            @test (@inferred inv(y))::typeof(y) |> Array ≈ inv(Array(y))
-            # fourth order
-            dim == 4 && continue
-            x = rand(FourthOrderTensor{dim, T})
-            y = rand(SymmetricFourthOrderTensor{dim, T})
-            @test (@inferred inv(x))::typeof(x) ⊡ x ≈ one(x)
-            @test (@inferred inv(y))::typeof(y) ⊡ y ≈ one(y)
-        end
-    end
-    @testset "solve" begin
-        for T in (Float32, Float64), dim in 1:4
-            A = rand(SecondOrderTensor{dim, T})
-            S = rand(SymmetricSecondOrderTensor{dim, T})
-            b = rand(Vec{dim, T})
-            @test (@inferred A \ b)::Vec{dim, T} |> Array ≈ Array(A) \ Array(b)
-            @test (@inferred S \ b)::Vec{dim, T} |> Array ≈ Array(S) \ Array(b)
         end
     end
     @testset "cross" begin

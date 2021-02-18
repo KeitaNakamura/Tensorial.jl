@@ -61,8 +61,12 @@ for T in (Float64, #=Float32=#)
     # inv
     suite["Tensor"]["inv(Space(3,3))"] = @benchmarkable inv($A3x3)
     suite["Tensor"]["inv(Space(Symmetry(3,3)))"] = @benchmarkable inv($A3x3s)
+    suite["Tensor"]["inv(Space(3,3,3,3))"] = @benchmarkable inv($A3x3x3x3)
+    suite["Tensor"]["inv(Space(Symmetry(3,3),Symmetry(3,3)))"] = @benchmarkable inv($A3x3x3x3s)
     if run_array
         suite["Array"]["inv(Space(3,3))"] = @benchmarkable inv($B3x3)
         suite["Array"]["inv(Space(Symmetry(3,3)))"] = @benchmarkable inv($B3x3s)
+        suite["Array"]["inv(Space(3,3,3,3))"] = @benchmarkable inv($(reshape(B3x3x3x3, 9, 9)))
+        suite["Array"]["inv(Space(Symmetry(3,3),Symmetry(3,3)))"] = @benchmarkable inv($(reshape(B3x3x3x3, 9, 9))) # B3x3x3x3s is not invertible
     end
 end
