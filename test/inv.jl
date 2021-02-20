@@ -1,5 +1,5 @@
 @testset "Inversion of second and fourth order tensors" begin
-    for T in (Float32, Float64), dim in 1:11
+    for T in (Float32, Float64), dim in 1:4
         Random.seed!(1234)
         # second order
         x = rand(SecondOrderTensor{dim, T})
@@ -16,7 +16,7 @@
 end
 
 @testset "Solving linear system" begin
-    for T in (Float32, Float64), dim in 1:11
+    for T in (Float32, Float64), dim in 1:4
         Random.seed!(1234)
         A = rand(SecondOrderTensor{dim, T})
         S = rand(SymmetricSecondOrderTensor{dim, T})
