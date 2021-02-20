@@ -90,11 +90,13 @@ let path = "../docs/src/Benchmarks.md"
         printrow("a × a", results["Tensor"]["Space(3) ⊗ Space(3)"],
                           results["Array" ]["Space(3) ⊗ Space(3)"])
 
-        printheader("Determinant and Inverse")
+        printheader("Determinant")
         printrow("det(A)", results["Tensor"]["det(Space(3,3))"],
                            results["Array" ]["det(Space(3,3))"])
         printrow("det(S)", results["Tensor"]["det(Space(Symmetry(3,3)))"],
                            results["Array" ]["det(Space(Symmetry(3,3)))"])
+
+        printheader("Inverse")
         printrow("inv(A)", results["Tensor"]["inv(Space(3,3))"],
                            results["Array" ]["inv(Space(3,3))"])
         printrow("inv(S)", results["Tensor"]["inv(Space(Symmetry(3,3)))"],
