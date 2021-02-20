@@ -136,13 +136,13 @@ end
 end
 
 # use faster inv for dim ≤ 10
-@inline inv(x::AbstractSquareTensor{4}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{5}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{6}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{7}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{8}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{9}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{10}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{4}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{5}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{6}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{7}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{8}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{9}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{10}) = _inv_with_blocks(x)
 @inline inv(x::AbstractSquareTensor) = _inv(x)
 
 # don't use `voigt` or `mandel` for fast computations
@@ -182,14 +182,14 @@ end
 end
 
 # use faster inv for dim ≤ 10
-@inline Base.:\(A::AbstractSquareTensor{1}, b::AbstractVec{1}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{2}, b::AbstractVec{2}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{3}, b::AbstractVec{3}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{4}, b::AbstractVec{4}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{5}, b::AbstractVec{5}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{6}, b::AbstractVec{6}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{7}, b::AbstractVec{7}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{8}, b::AbstractVec{8}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{9}, b::AbstractVec{9}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{10}, b::AbstractVec{10}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{1}, b::AbstractVec{1}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{2}, b::AbstractVec{2}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{3}, b::AbstractVec{3}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{4}, b::AbstractVec{4}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{5}, b::AbstractVec{5}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{6}, b::AbstractVec{6}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{7}, b::AbstractVec{7}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{8}, b::AbstractVec{8}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{9}, b::AbstractVec{9}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{10}, b::AbstractVec{10}) = inv(A) ⋅ b
 @inline Base.:\(A::AbstractSquareTensor, b::AbstractVec) = _solve(A, b)
