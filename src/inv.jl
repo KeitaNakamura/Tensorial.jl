@@ -31,10 +31,10 @@ function inv end
 end
 
 @generated function _inv(x::AbstractSquareTensor{2})
-    x_11 = getindex_expr(:x, x, 1, 1)
-    x_21 = getindex_expr(:x, x, 2, 1)
-    x_12 = getindex_expr(:x, x, 1, 2)
-    x_22 = getindex_expr(:x, x, 2, 2)
+    x_11 = getindex_expr(x, :x, 1, 1)
+    x_21 = getindex_expr(x, :x, 2, 1)
+    x_12 = getindex_expr(x, :x, 1, 2)
+    x_22 = getindex_expr(x, :x, 2, 2)
     exps = [x_22, :(-$x_21), :(-$x_12), x_11]
     quote
         @_inline_meta
@@ -43,15 +43,15 @@ end
 end
 
 @generated function _inv(x::AbstractSquareTensor{3})
-    x_11 = getindex_expr(:x, x, 1, 1)
-    x_21 = getindex_expr(:x, x, 2, 1)
-    x_31 = getindex_expr(:x, x, 3, 1)
-    x_12 = getindex_expr(:x, x, 1, 2)
-    x_22 = getindex_expr(:x, x, 2, 2)
-    x_32 = getindex_expr(:x, x, 3, 2)
-    x_13 = getindex_expr(:x, x, 1, 3)
-    x_23 = getindex_expr(:x, x, 2, 3)
-    x_33 = getindex_expr(:x, x, 3, 3)
+    x_11 = getindex_expr(x, :x, 1, 1)
+    x_21 = getindex_expr(x, :x, 2, 1)
+    x_31 = getindex_expr(x, :x, 3, 1)
+    x_12 = getindex_expr(x, :x, 1, 2)
+    x_22 = getindex_expr(x, :x, 2, 2)
+    x_32 = getindex_expr(x, :x, 3, 2)
+    x_13 = getindex_expr(x, :x, 1, 3)
+    x_23 = getindex_expr(x, :x, 2, 3)
+    x_33 = getindex_expr(x, :x, 3, 3)
     exps = [:(($x_22*$x_33 - $x_23*$x_32)),
             :(($x_23*$x_31 - $x_21*$x_33)),
             :(($x_21*$x_32 - $x_22*$x_31)),
@@ -93,18 +93,18 @@ end
     exps = Expr[]
     for j in 1:m
         for i in 1:m
-            push!(exps, getindex_expr(:A, A, i, j))
+            push!(exps, getindex_expr(A, :A, i, j))
         end
         for i in 1:n
-            push!(exps, getindex_expr(:C, C, i, j))
+            push!(exps, getindex_expr(C, :C, i, j))
         end
     end
     for j in 1:n
         for i in 1:m
-            push!(exps, getindex_expr(:B, B, i, j))
+            push!(exps, getindex_expr(B, :B, i, j))
         end
         for i in 1:n
-            push!(exps, getindex_expr(:D, D, i, j))
+            push!(exps, getindex_expr(D, :D, i, j))
         end
     end
     quote
