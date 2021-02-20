@@ -4,8 +4,8 @@
         # second order
         x = rand(SecondOrderTensor{dim, T})
         y = rand(SymmetricSecondOrderTensor{dim, T})
-        @test (@inferred inv(x))::typeof(x) |> Array ≈ inv(Array(x))
-        @test (@inferred inv(y))::typeof(y) |> Array ≈ inv(Array(y))
+        @test (@inferred inv(x))::typeof(x) ⋅ x ≈ one(x)
+        @test (@inferred inv(y))::typeof(y) ⋅ y ≈ one(y)
         # fourth order
         dim > 3 && continue
         x = rand(FourthOrderTensor{dim, T})
