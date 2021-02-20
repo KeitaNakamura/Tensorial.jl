@@ -15,7 +15,7 @@ Space(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Space(S)
 Space(::AbstractTensor{S}) where {S} = Space(S)
 
 # getindex_expr
-function getindex_expr(ex::Union{Symbol, Expr}, x::Type{<: AbstractTensor}, i...)
+function getindex_expr(x::Type{<: AbstractTensor}, ex::Union{Symbol, Expr}, i...)
     inds = independent_indices(x)
     :(Tuple($ex)[$(inds[i...])])
 end
@@ -24,7 +24,7 @@ end
 @generated function convert_to_SArray(x::AbstractTensor)
     S = Space(x)
     NewS = Space(tensorsize(S)) # remove Symmetry
-    exps = [getindex_expr(:x, x, i) for i in indices(NewS)]
+    exps = [getindex_expr(x, :x, i) for i in indices(NewS)]
     quote
         @_inline_meta
         @inbounds SArray{Tuple{$(tensorsize(NewS)...)}}(tuple($(exps...)))

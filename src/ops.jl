@@ -25,7 +25,7 @@ end
     tocartesian = CartesianIndices(S)
     exps = map(indices(S)) do i
         i, j = Tuple(tocartesian[i])
-        ex = getindex_expr(:x, x, i, j)
+        ex = getindex_expr(x, :x, i, j)
         return i == j ? :($ex + λ) : ex
     end
     TT = tensortype(S)
@@ -326,7 +326,7 @@ Compute skew-symmetric (anti-symmetric) part of a second order tensor.
 # det
 @generated function extract_vecs(x::AbstractSquareTensor{dim}) where {dim}
     exps = map(1:dim) do j
-        :(Vec($([getindex_expr(:x, x, i, j) for i in 1:dim]...)))
+        :(Vec($([getindex_expr(x, :x, i, j) for i in 1:dim]...)))
     end
     quote
         @_inline_meta

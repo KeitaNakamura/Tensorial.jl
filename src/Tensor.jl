@@ -160,7 +160,7 @@ end
     S = promote_space(Space(TT), Space(x))
     S == Space(TT) ||
         return :(throw(ArgumentError("Cannot `convert` an object of type $(typeof(x)) to an object of type $TT")))
-    exps = [getindex_expr(:x, x, i) for i in indices(S)]
+    exps = [getindex_expr(x, :x, i) for i in indices(S)]
     quote
         @_inline_meta
         @inbounds TT(tuple($(exps...)))
