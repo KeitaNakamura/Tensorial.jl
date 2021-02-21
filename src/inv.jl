@@ -114,8 +114,13 @@ end
 end
 
 # https://en.wikipedia.org/wiki/Block_matrix#Block_matrix_inversion
+# https://core.ac.uk/download/pdf/193046446.pdf
+# https://math.stackexchange.com/questions/411492/inverse-of-a-block-matrix-with-singular-diagonal-blocks
 function _inv_with_blocks(x::Mat{dim, dim}) where {dim}
-    A, B, C, D = toblocks(x)
+    xᵀ = x
+    M = xᵀ ⋅ x
+
+    A, B, C, D = toblocks(M)
 
     A⁻¹ = inv(A)
     A⁻¹B = A⁻¹ ⋅ B
@@ -128,7 +133,7 @@ function _inv_with_blocks(x::Mat{dim, dim}) where {dim}
     Z = -E ⋅ CA⁻¹
     W = E
 
-    fromblocks(X, Y, Z, W)
+    fromblocks(X, Y, Z, W) ⋅ xᵀ
 end
 
 @inline function _inv_with_blocks(x::Tensor{Tuple{@Symmetry{dim, dim}}}) where {dim}
@@ -136,13 +141,12 @@ end
 end
 
 # use faster inv for dim ≤ 10
-@inline inv(x::AbstractSquareTensor{4}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{5}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{6}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{7}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{8}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{9}) = _inv_with_blocks(x)
-@inline inv(x::AbstractSquareTensor{10}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{5, Float64}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{6, Float64}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{7, Float64}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{8, Float64}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{9, Float64}) = _inv_with_blocks(x)
+# @inline inv(x::AbstractSquareTensor{10, Float64}) = _inv_with_blocks(x)
 @inline inv(x::AbstractSquareTensor) = _inv(x)
 
 # don't use `voigt` or `mandel` for fast computations
@@ -182,14 +186,14 @@ end
 end
 
 # use faster inv for dim ≤ 10
-@inline Base.:\(A::AbstractSquareTensor{1}, b::AbstractVec{1}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{2}, b::AbstractVec{2}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{3}, b::AbstractVec{3}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{4}, b::AbstractVec{4}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{5}, b::AbstractVec{5}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{6}, b::AbstractVec{6}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{7}, b::AbstractVec{7}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{8}, b::AbstractVec{8}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{9}, b::AbstractVec{9}) = inv(A) ⋅ b
-@inline Base.:\(A::AbstractSquareTensor{10}, b::AbstractVec{10}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{1, Float64}, b::AbstractVec{1, Float64}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{2, Float64}, b::AbstractVec{2, Float64}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{3, Float64}, b::AbstractVec{3, Float64}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{4, Float64}, b::AbstractVec{4, Float64}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{5, Float64}, b::AbstractVec{5, Float64}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{6, Float64}, b::AbstractVec{6, Float64}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{7, Float64}, b::AbstractVec{7, Float64}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{8, Float64}, b::AbstractVec{8, Float64}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{9, Float64}, b::AbstractVec{9, Float64}) = inv(A) ⋅ b
+# @inline Base.:\(A::AbstractSquareTensor{10, Float64}, b::AbstractVec{10, Float64}) = inv(A) ⋅ b
 @inline Base.:\(A::AbstractSquareTensor, b::AbstractVec) = _solve(A, b)
