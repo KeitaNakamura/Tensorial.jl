@@ -11,6 +11,7 @@ end
 @generated function contraction(x::Tensor{<: Any, T, order1}, y::Tensor{<: Any, T, order2}, ::Val{N}) where {T <: SIMDTypes, N, order1, order2}
     S1 = Space(x)
     S2 = Space(y)
+    S = contraction(S1, S2, Val(N))
     S_Inner = Space((tensorsize(S2)[i] for i in 1:N)...)
     S1 = otimes(droplast(S1, Val(N)), S_Inner)
     S2 = otimes(S_Inner, dropfirst(S2, Val(N)))
@@ -39,7 +40,6 @@ end
     for j in 1:J, i in 1:I
         push!(exps, :($(columns[j])[$i]))
     end
-    S = contraction(S1, S2, Val(N))
     if length(S) == 0
         TT = T
     else
