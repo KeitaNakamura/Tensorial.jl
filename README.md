@@ -42,9 +42,10 @@ See [here](https://keitanakamura.github.io/Tensorial.jl/stable/Cheat%20Sheet/#Al
 | `a ⊗ a` | 2.279 ns | 51.074 ns | ×22.4 |
 | **Cross product** | | | |
 | `a × a` | 2.279 ns | 51.074 ns | ×22.4 |
-| **Determinant and Inverse** | | | |
+| **Determinant** | | | |
 | `det(A)` | 1.783 ns | 225.507 ns | ×126.5 |
 | `det(S)` | 2.029 ns | 227.032 ns | ×111.9 |
+| **Inverse** | | | |
 | `inv(A)` | 6.929 ns | 541.723 ns | ×78.2 |
 | `inv(S)` | 4.979 ns | 517.937 ns | ×104.0 |
 | `inv(AA)` | 894.583 ns | 1.665 μs | ×1.9 |
