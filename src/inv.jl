@@ -120,7 +120,8 @@ function _inv_with_blocks(x::Mat{dim, dim}) where {dim}
     xᵀ = x
     M = xᵀ ⋅ x
 
-    A, B, C, D = toblocks(M)
+    A, B,
+    C, D = toblocks(M)
 
     A⁻¹ = inv(A)
     A⁻¹B = A⁻¹ ⋅ B
@@ -133,21 +134,28 @@ function _inv_with_blocks(x::Mat{dim, dim}) where {dim}
     Z = -E ⋅ CA⁻¹
     W = E
 
-    fromblocks(X, Y, Z, W) ⋅ xᵀ
+    fromblocks(X, Y,
+               Z, W) ⋅ xᵀ
 end
 
 @inline function _inv_with_blocks(x::Tensor{Tuple{@Symmetry{dim, dim}}}) where {dim}
     typeof(x)(_inv_with_blocks(convert(Mat{dim, dim}, x)))
 end
 
-# use faster inv for dim ≤ 10
-# @inline inv(x::AbstractSquareTensor{5, Float64}) = _inv_with_blocks(x)
-# @inline inv(x::AbstractSquareTensor{6, Float64}) = _inv_with_blocks(x)
-# @inline inv(x::AbstractSquareTensor{7, Float64}) = _inv_with_blocks(x)
-# @inline inv(x::AbstractSquareTensor{8, Float64}) = _inv_with_blocks(x)
-# @inline inv(x::AbstractSquareTensor{9, Float64}) = _inv_with_blocks(x)
-# @inline inv(x::AbstractSquareTensor{10, Float64}) = _inv_with_blocks(x)
 @inline inv(x::AbstractSquareTensor) = _inv(x)
+
+# fast inv for dim ≤ 10
+@inline fastinv(x::AbstractSquareTensor{1, Float64}) = _inv(x)
+@inline fastinv(x::AbstractSquareTensor{2, Float64}) = _inv(x)
+@inline fastinv(x::AbstractSquareTensor{3, Float64}) = _inv(x)
+@inline fastinv(x::AbstractSquareTensor{4, Float64}) = _inv(x)
+@inline fastinv(x::AbstractSquareTensor{5, Float64}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{6, Float64}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{7, Float64}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{8, Float64}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{9, Float64}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{10, Float64}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{<: Any, Float64}) = _inv(x)
 
 # don't use `voigt` or `mandel` for fast computations
 @generated function inv(x::FourthOrderTensor{dim}) where {dim}
@@ -185,15 +193,17 @@ end
     end
 end
 
-# use faster inv for dim ≤ 10
-# @inline Base.:\(A::AbstractSquareTensor{1, Float64}, b::AbstractVec{1, Float64}) = inv(A) ⋅ b
-# @inline Base.:\(A::AbstractSquareTensor{2, Float64}, b::AbstractVec{2, Float64}) = inv(A) ⋅ b
-# @inline Base.:\(A::AbstractSquareTensor{3, Float64}, b::AbstractVec{3, Float64}) = inv(A) ⋅ b
-# @inline Base.:\(A::AbstractSquareTensor{4, Float64}, b::AbstractVec{4, Float64}) = inv(A) ⋅ b
-# @inline Base.:\(A::AbstractSquareTensor{5, Float64}, b::AbstractVec{5, Float64}) = inv(A) ⋅ b
-# @inline Base.:\(A::AbstractSquareTensor{6, Float64}, b::AbstractVec{6, Float64}) = inv(A) ⋅ b
-# @inline Base.:\(A::AbstractSquareTensor{7, Float64}, b::AbstractVec{7, Float64}) = inv(A) ⋅ b
-# @inline Base.:\(A::AbstractSquareTensor{8, Float64}, b::AbstractVec{8, Float64}) = inv(A) ⋅ b
-# @inline Base.:\(A::AbstractSquareTensor{9, Float64}, b::AbstractVec{9, Float64}) = inv(A) ⋅ b
-# @inline Base.:\(A::AbstractSquareTensor{10, Float64}, b::AbstractVec{10, Float64}) = inv(A) ⋅ b
 @inline Base.:\(A::AbstractSquareTensor, b::AbstractVec) = _solve(A, b)
+
+# fast solve for dim ≤ 10
+@inline fastsolve(A::AbstractSquareTensor{1, Float64}, b::AbstractVec{1, Float64}) = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{2, Float64}, b::AbstractVec{2, Float64}) = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{3, Float64}, b::AbstractVec{3, Float64}) = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{4, Float64}, b::AbstractVec{4, Float64}) = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{5, Float64}, b::AbstractVec{5, Float64}) = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{6, Float64}, b::AbstractVec{6, Float64}) = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{7, Float64}, b::AbstractVec{7, Float64}) = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{8, Float64}, b::AbstractVec{8, Float64}) = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{9, Float64}, b::AbstractVec{9, Float64}) = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{10, Float64}, b::AbstractVec{10, Float64}) = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{dim, Float64}, b::AbstractVec{dim, Float64}) where {dim} = inv(A) ⋅ b
