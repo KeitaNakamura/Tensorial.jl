@@ -8,7 +8,7 @@ const SIMDTypes = Union{Float16, Float32, Float64}
     end
 end
 
-@generated function contraction(x::Tensor{<: Any, T, order1}, y::Tensor{<: Any, T, order2}, ::Val{N}) where {T <: SIMDTypes, N, order1, order2}
+@generated function contraction(x::Tensor{<: Any, T,}, y::Tensor{<: Any, T}, ::Val{N}) where {T <: SIMDTypes, N}
     S1 = Space(x)
     S2 = Space(y)
     S = contraction(S1, S2, Val(N))
@@ -57,11 +57,18 @@ end
     end
 end
 
-for op in (:+, :-)
-    @eval @inline function Base.$op(x::TT, y::TT) where {T <: SIMDTypes, TT <: Tensor{<: Any, T}}
-        TT($op(SIMD.Vec(Tuple(x)), SIMD.Vec(Tuple(y))))
+@generated function __map(f, xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N}
+    exps = [:(SIMD.Vec(Tuple(xs[$i]))) for i in 1:N]
+    quote
+        @_inline_meta
+        Tensor{S, T}(f($(exps...)))
     end
 end
+
+@inline _map(::typeof(+), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(+, xs...)
+@inline _map(::typeof(-), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(-, xs...)
+@inline _map(::typeof(*), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(*, xs...)
+@inline _map(::typeof(/), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(/, xs...)
 
 for op in (:*, :/)
     @eval @inline function Base.$op(x::TT, a::T) where {T <: SIMDTypes, TT <: Tensor{<: Any, T}}
@@ -80,14 +87,3 @@ end
     v = SIMD.shufflevector(x*y′ - x′*y, Val((1,2,0)))
     Vec(v)
 end
-
-@generated function __map(f, xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N}
-    exps = [:(SIMD.Vec(Tuple(xs[$i]))) for i in 1:N]
-    quote
-        @_inline_meta
-        Tensor{S, T}(f($(exps...)))
-    end
-end
-
-@inline _map(::typeof(*), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(*, xs...)
-@inline _map(::typeof(/), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(/, xs...)
