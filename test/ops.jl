@@ -101,20 +101,13 @@ end
             @test (@inferred dotdot(x, S, y))::Tensor{Tuple{3,3}, T} ≈ A ⊡ (x ⊗ y)
         end
     end
-    @testset "tr/mean/vol/dev" begin
+    @testset "tr" begin
         for T in (Float32, Float64)
             x = rand(SecondOrderTensor{3, T})
             y = rand(SymmetricSecondOrderTensor{3, T})
-            # tr/mean
+            # tr
             @test (@inferred tr(x))::T ≈ tr(Array(x))
             @test (@inferred tr(y))::T ≈ tr(Array(y))
-            @test (@inferred mean(x))::T ≈ tr(Array(x)) / 3
-            @test (@inferred mean(y))::T ≈ tr(Array(y)) / 3
-            # vol/dev
-            @test (@inferred vol(x))::typeof(x) + (@inferred dev(x))::typeof(x) ≈ x
-            @test (@inferred vol(y))::typeof(y) + (@inferred dev(y))::typeof(y) ≈ y
-            @test (@inferred vol(x))::typeof(x) ⊡ (@inferred dev(x))::typeof(x) ≈ zero(T)  atol = sqrt(eps(T))
-            @test (@inferred vol(y))::typeof(y) ⊡ (@inferred dev(y))::typeof(y) ≈ zero(T)  atol = sqrt(eps(T))
         end
     end
     @testset "transpose/adjoint" begin

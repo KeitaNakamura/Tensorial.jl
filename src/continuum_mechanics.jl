@@ -99,12 +99,6 @@ julia> σ = rand(SymmetricSecondOrderTensor{3})
 
 julia> I₁, I₂, I₃ = stress_invariants(σ)
 (I1 = 1.9050765715072775, I2 = -0.3695921176777066, I3 = -0.10054272199258936)
-
-julia> σ^3 - I₁*σ^2 + I₂*σ - I₃*I
-3×3 Tensor{Tuple{Symmetry{Tuple{3,3}}},Float64,2,6}:
-  2.63678e-16  -2.22045e-16  0.0
- -2.22045e-16  -4.16334e-17  2.22045e-16
-  0.0           2.22045e-16  1.38778e-17
 ```
 
 """
@@ -139,12 +133,6 @@ julia> σ = rand(SymmetricSecondOrderTensor{3})
 
 julia> J₁, J₂, J₃ = deviatoric_stress_invariants(σ)
 (J1 = 0.0, J2 = 1.5793643654463476, J3 = 0.6463152097154271)
-
-julia> dev(σ)^3 - J₁*dev(σ)^2 - J₂*dev(σ) - J₃*I
-3×3 Tensor{Tuple{Symmetry{Tuple{3,3}}},Float64,2,6}:
- 3.33067e-16  2.22045e-16  0.0
- 2.22045e-16  1.11022e-16  4.44089e-16
- 0.0          4.44089e-16  3.33067e-16
 ```
 """
 @inline function deviatoric_stress_invariants(σ::AbstractSquareTensor{3})
