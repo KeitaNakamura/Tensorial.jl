@@ -16,6 +16,11 @@
         @test (@inferred +y)::typeof(y) == y
         @test (@inferred -x)::typeof(x) == -Array(x)
         @test (@inferred -y)::typeof(y) == -Array(y)
+        # with Array
+        @test (@inferred x + Array(y))::Tensor{Tuple{size(x)...}, T} == Array(x) + Array(y)
+        @test (@inferred Array(x) + y)::Tensor{Tuple{size(y)...}, T} == Array(x) + Array(y)
+        @test (@inferred x - Array(y))::Tensor{Tuple{size(x)...}, T} == Array(x) - Array(y)
+        @test (@inferred Array(x) - y)::Tensor{Tuple{size(y)...}, T} == Array(x) - Array(y)
         # check eltype promotion
         x = Vec(1, 0)
         y = Vec(T(1), 0)
