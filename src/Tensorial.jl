@@ -42,8 +42,6 @@ export
     contraction,
     otimes,
     dotdot,
-    vol,
-    dev,
     symmetric,
     skew,
     ⊗,
@@ -52,6 +50,11 @@ export
     rotmatx,
     rotmaty,
     rotmatz,
+# continuum mechanics
+    vol,
+    dev,
+    stress_invariants,
+    deviatoric_stress_invariants,
 # voigt
     tovoigt,
     fromvoigt,
@@ -70,6 +73,7 @@ include("einsum.jl")
 include("AbstractTensor.jl")
 include("Tensor.jl")
 include("ops.jl")
+include("continuum_mechanics.jl")
 include("inv.jl")
 include("voigt.jl")
 include("ad.jl")

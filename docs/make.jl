@@ -23,6 +23,7 @@ makedocs(;
             "Tensor Type.md",
             # "Constructors.md",
             "Tensor Operations.md",
+            "Continuum Mechanics.md",
             "Voigt form.md",
             "Tensor Inversion.md",
         ],
