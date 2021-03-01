@@ -44,7 +44,7 @@ end
             for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,2), m in axes(Y,3)
                 Z[i,j,l,m] += X[i,j,k] * Y[k,l,m]
             end
-            @test Array(z) ≈ Z
+            @test z ≈ Z
             # double contraction
             z = (@inferred contraction(x, y, Val(2)))::Tensor{Tuple{3,3}, T}
             X = Array(x);
@@ -53,7 +53,7 @@ end
             for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,3)
                 Z[i,l] += X[i,j,k] * Y[j,k,l]
             end
-            @test Array(z) ≈ Z
+            @test z ≈ Z
             # triple contraction
             z = (@inferred contraction(x, y, Val(3)))::T
             X = Array(x);
@@ -71,7 +71,7 @@ end
             for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,1), m in axes(Y,2), n in axes(Y,3)
                 Z[i,j,k,l,m,n] = X[i,j,k] * Y[l,m,n]
             end
-            @test Array(z) ≈ Z
+            @test z ≈ Z
         end
     end
     @testset "otimes/dot/norm" begin
@@ -80,7 +80,7 @@ end
             x = rand(Vec{3, T})
             y = rand(Vec{3, T})
             z = (@inferred x ⊗ y)::Tensor{Tuple{3,3}, T}
-            @test Array(z) ≈ Array(x) * Array(y)'
+            @test z ≈ Array(x) * Array(y)'
             @test (@inferred x ⋅ y) ≈ Array(x)' * Array(y)
             @test (@inferred norm(x)) ≈ norm(Array(x))
             @test (@inferred norm(z)) ≈ norm(Array(z))
@@ -88,7 +88,7 @@ end
             x = rand(Vec{3, T})
             y = rand(Vec{2, T})
             z = (@inferred x ⊗ y)::Tensor{Tuple{3,2}, T}
-            @test Array(z) ≈ Array(x) * Array(y)'
+            @test z ≈ Array(x) * Array(y)'
             @test (@inferred norm(z)) ≈ norm(Array(z))
         end
     end
@@ -115,7 +115,7 @@ end
             x = rand(SecondOrderTensor{3, T})
             y = rand(SymmetricSecondOrderTensor{3, T})
             xᵀ = (@inferred transpose(x))::typeof(x)
-            @test Array(x') == Array(xᵀ) == Array(x)'
+            @test x' == xᵀ == Array(x)'
             @test (@inferred transpose(y))::typeof(y) == y' == y
         end
     end
@@ -190,9 +190,9 @@ end
             end
             # 2D rotmat
             @test (@inferred rotmat(α))::Mat{2,2,T} ≈ (@inferred rotmat(rad2deg(α), degree = true))
-            @test (@inferred rotmat(α)) |> Array ≈ (@inferred rotmatx(α))[[2,3], [2,3]]
-            @test (@inferred rotmat(α)) |> Array ≈ (@inferred rotmaty(α))[[3,1], [3,1]]
-            @test (@inferred rotmat(α)) |> Array ≈ (@inferred rotmatz(α))[[1,2], [1,2]]
+            @test (@inferred rotmat(α)) ≈ (@inferred rotmatx(α))[[2,3], [2,3]]
+            @test (@inferred rotmat(α)) ≈ (@inferred rotmaty(α))[[3,1], [3,1]]
+            @test (@inferred rotmat(α)) ≈ (@inferred rotmatz(α))[[1,2], [1,2]]
             # 3D rotmat
             @test (@inferred rotmatx(α))::Mat{3,3,T} ≈ (@inferred rotmatx(rad2deg(α), degree = true))::Mat{3,3,T}
             @test (@inferred rotmaty(α))::Mat{3,3,T} ≈ (@inferred rotmaty(rad2deg(α), degree = true))::Mat{3,3,T}
@@ -209,8 +209,8 @@ end
         for T in (Float32, Float64)
             for dim in (2, 3)
                 x = rand(SymmetricSecondOrderTensor{dim, T})
-                @test (@inferred eigvals(x)) |> Array ≈ eigvals(Array(x))
-                @test (@inferred eigen(x)).values |> Array ≈ eigen(Array(x)).values
+                @test (@inferred eigvals(x)) ≈ eigvals(Array(x))
+                @test (@inferred eigen(x)).values ≈ eigen(Array(x)).values
                 @test (@inferred eigen(x)).vectors ≈ (@inferred eigvecs(x))
             end
         end

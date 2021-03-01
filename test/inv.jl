@@ -35,8 +35,8 @@ end
         A = rand(SecondOrderTensor{dim, T})
         S = rand(SymmetricSecondOrderTensor{dim, T})
         b = rand(Vec{dim, T})
-        @test (@inferred A \ b)::Vec{dim, T} |> Array ≈ Array(A) \ Array(b)
-        @test (@inferred S \ b)::Vec{dim, T} |> Array ≈ Array(S) \ Array(b)
+        @test (@inferred A \ b)::Vec{dim, T} ≈ Array(A) \ Array(b)
+        @test (@inferred S \ b)::Vec{dim, T} ≈ Array(S) \ Array(b)
     end
     @testset "Fast version using block matrix algorithm" begin
         for T in (Float32, Float64), dim in 1:11
@@ -45,8 +45,8 @@ end
             S = rand(SymmetricSecondOrderTensor{dim, T})
             b = rand(Vec{dim, T})
             if T == Float64
-                @test (@inferred Tensorial.fastsolve(A, b))::Vec{dim, T} |> Array ≈ Array(A) \ Array(b)
-                @test (@inferred Tensorial.fastsolve(S, b))::Vec{dim, T} |> Array ≈ Array(S) \ Array(b)
+                @test (@inferred Tensorial.fastsolve(A, b))::Vec{dim, T} ≈ Array(A) \ Array(b)
+                @test (@inferred Tensorial.fastsolve(S, b))::Vec{dim, T} ≈ Array(S) \ Array(b)
             else
                 @test_throws Exception Tensorial.fastsolve(A, b)
                 @test_throws Exception Tensorial.fastsolve(S, b)

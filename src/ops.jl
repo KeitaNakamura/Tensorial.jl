@@ -20,6 +20,12 @@ end
 @inline Base.:+(x::AbstractTensor) = x
 @inline Base.:-(x::AbstractTensor) = _map(-, x)
 
+# with AbstractArray
+@generated Base.:+(x::AbstractTensor, y::AbstractArray) = :(@_inline_meta; x + convert($(tensortype(Space(size(x)))), y))
+@generated Base.:+(x::AbstractArray, y::AbstractTensor) = :(@_inline_meta; convert($(tensortype(Space(size(y)))), x) + y)
+@generated Base.:-(x::AbstractTensor, y::AbstractArray) = :(@_inline_meta; x - convert($(tensortype(Space(size(x)))), y))
+@generated Base.:-(x::AbstractArray, y::AbstractTensor) = :(@_inline_meta; convert($(tensortype(Space(size(y)))), x) - y)
+
 @generated function _add_uniform(x::AbstractSquareTensor{dim}, λ::Real) where {dim}
     S = promote_space(Space(x), Space(Symmetry(dim, dim)))
     tocartesian = CartesianIndices(S)
