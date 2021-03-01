@@ -6,13 +6,20 @@ DocTestSetup = :(using Tensorial)
 
 Tensor operations for continuum mechanics.
 
-```@index
-Order = [:function]
-Pages = ["Continuum Mechanics.md"]
+```@docs
+mean(::Tensorial.AbstractSquareTensor)
 ```
 
-```@autodocs
-Modules = [Tensorial]
-Order   = [:function]
-Pages   = ["continuum_mechanics.jl"]
+## Deviatoric--volumetric additive split
+
+```@docs
+vol
+dev
+```
+
+## Stress invariants
+
+```@docs
+stress_invariants
+deviatoric_stress_invariants
 ```
