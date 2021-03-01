@@ -183,16 +183,9 @@ julia> norm(x)
 @inline norm(x::AbstractTensor) = sqrt(contraction(x, x, Val(ndims(x))))
 
 # v_k * S_ikjl * u_l
-@generated function dotdot(v1::Vec{dim}, S::SymmetricFourthOrderTensor{dim}, v2::Vec{dim}) where {dim}
-    v1inds = map(i -> EinsumIndex(:(Tuple(v1)), i), independent_indices(v1))
-    v2inds = map(i -> EinsumIndex(:(Tuple(v2)), i), independent_indices(v2))
-    Sinds = map(i -> EinsumIndex(:(Tuple(S)), i), independent_indices(S))
-    exps = @einsum (i,j) -> v1inds[k] * Sinds[i,k,j,l] * v2inds[l]
-    TT = Tensor{Tuple{dim, dim}}
-    quote
-        @_inline_meta
-        @inbounds $TT($(map(construct_expr, exps)...))
-    end
+@inline function dotdot(v1::Vec{dim}, S::SymmetricFourthOrderTensor{dim}, v2::Vec{dim}) where {dim}
+    S′ = SymmetricFourthOrderTensor{dim}((i,j,k,l) -> @inbounds S[j,i,l,k])
+    v1 ⋅ S′ ⋅ v2
 end
 
 """
