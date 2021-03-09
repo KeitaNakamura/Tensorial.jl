@@ -65,11 +65,8 @@ end
 # promote_space
 promote_space(x::Space) = x
 @generated function promote_space(x::Space{S1}, y::Space{S2}) where {S1, S2}
-    S = _promote_space(S1, S2, ())
-    quote
-        tensorsize(x) == tensorsize(y) || throw(DimensionMismatch("dimensions must match"))
-        Space($S)
-    end
+    tensorsize(Space(S1)) == tensorsize(Space(S2)) || return :(throw(DimensionMismatch("dimensions must match")))
+    :(Space($(_promote_space(S1, S2, ()))))
 end
 promote_space(x::Space, y::Space, z::Space...) = promote_space(promote_space(x, y), z...)
 ## helper functions
