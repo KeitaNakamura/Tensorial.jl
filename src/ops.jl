@@ -514,6 +514,53 @@ function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {d
     2 * (c ⊗ c) / (c ⋅ c) - one(Mat{dim, dim, T})
 end
 
+"""
+    rotate(x::Vec, R::SecondOrderTensor)
+    rotate(x::SecondOrderTensor, R::SecondOrderTensor)
+    rotate(x::SymmetricSecondOrderTensor, R::SecondOrderTensor)
+
+Rotate `x` by rotation matrix `R`.
+This function can hold the symmetry of `SymmetricSecondOrderTensor`.
+
+# Examples
+```jldoctest
+julia> A = rand(SymmetricSecondOrderTensor{3})
+3×3 Tensor{Tuple{Symmetry{Tuple{3,3}}},Float64,2,6}:
+ 0.590845  0.766797  0.566237
+ 0.766797  0.460085  0.794026
+ 0.566237  0.794026  0.854147
+
+julia> R = rotmatz(π/4)
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ 0.707107  -0.707107  0.0
+ 0.707107   0.707107  0.0
+ 0.0        0.0       1.0
+
+julia> rotate(A, R)
+3×3 Tensor{Tuple{Symmetry{Tuple{3,3}}},Float64,2,6}:
+ -0.241332   0.0653796  -0.161071
+  0.0653796  1.29226     0.961851
+ -0.161071   0.961851    0.854147
+
+julia> R ⋅ A ⋅ R'
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ -0.241332   0.0653796  -0.161071
+  0.0653796  1.29226     0.961851
+ -0.161071   0.961851    0.854147
+```
+"""
+@inline rotate(v::Vec, R::SecondOrderTensor) = v ⋅ R
+@inline rotate(A::SecondOrderTensor, R::SecondOrderTensor) = R ⋅ A ⋅ R'
+@generated function rotate(A::SymmetricSecondOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim}
+    exps = contraction_exprs(Space(R), dot(Space(A), Space(R)), Val(1))
+    quote
+        @_inline_meta
+        x = R
+        y = A ⋅ R'
+        @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices(SymmetricSecondOrderTensor{dim})]...))
+    end
+end
+
 # eigvals/eigen (just call methos in StaticArrays.jl)
 @inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
     Tensor(eigvals(Symmetric(convert_to_SArray(x)); permute, scale))

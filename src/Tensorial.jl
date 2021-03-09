@@ -50,6 +50,7 @@ export
     rotmatx,
     rotmaty,
     rotmatz,
+    rotate,
 # continuum mechanics
     vol,
     dev,
