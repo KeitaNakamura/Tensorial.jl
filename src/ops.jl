@@ -188,6 +188,8 @@ julia> norm(x)
 """
 @inline norm(x::AbstractTensor) = sqrt(contraction(x, x, Val(ndims(x))))
 
+@inline normalize(x::AbstractTensor) = x / norm(x)
+
 # v_k * S_ikjl * u_l
 @inline function dotdot(v1::Vec{dim}, S::SymmetricFourthOrderTensor{dim}, v2::Vec{dim}) where {dim}
     S′ = SymmetricFourthOrderTensor{dim}((i,j,k,l) -> @inbounds S[j,i,l,k])
@@ -493,11 +495,11 @@ The norms of two vectors must be the same.
 
 # Examples
 ```jldoctest
-julia> a = rand(Vec{3}); a /= norm(a);
+julia> a = normalize(rand(Vec{3}))
 
-julia> b = rand(Vec{3}); b /= norm(b);
+julia> b = normalize(rand(Vec{3}))
 
-julia> R = rotmat(a => b);
+julia> R = rotmat(a => b)
 
 julia> R ⋅ a ≈ b
 true
