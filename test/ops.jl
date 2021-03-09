@@ -140,6 +140,14 @@ end
             x = rand(SymmetricSecondOrderTensor{dim, T})
             @test (@inferred skew(x))::SecondOrderTensor{dim, T} ≈ zero(SecondOrderTensor{dim})
         end
+        for T in (Float32, Float64)
+            ω = rand(Vec{3, T})
+            @test (@inferred skew(ω))::SecondOrderTensor{3, T} ≈ [ 0    -ω[3]  ω[2]
+                                                                   ω[3]  0    -ω[1]
+                                                                  -ω[2]  ω[1]  0]
+            x = rand(Vec{3, T})
+            @test skew(ω) ⋅ x ≈ ω × x
+        end
     end
     @testset "det" begin
         for T in (Float32, Float64), dim in 1:4

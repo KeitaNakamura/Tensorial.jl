@@ -228,6 +228,40 @@ Compute skew-symmetric (anti-symmetric) part of a second order tensor.
 @inline skew(x::AbstractSecondOrderTensor) = (x - x') / 2
 @inline skew(x::AbstractSymmetricSecondOrderTensor{dim, T}) where {dim, T} = zero(SecondOrderTensor{dim, T})
 
+"""
+    skew(ω::Vec{3})
+
+Construct a skew-symmetric (anti-symmetric) tensor `W` from a vector `ω` as
+
+```math
+\\bm{\\omega} = \\begin{Bmatrix}
+    \\omega_1 \\\\
+    \\omega_2 \\\\
+    \\omega_3
+\\end{Bmatrix}, \\quad
+\\bm{W} = \\begin{bmatrix}
+     0         & -\\omega_3 &  \\omega_2 \\\\
+     \\omega_3 & 0          & -\\omega_1 \\\\
+    -\\omega_2 &  \\omega_1 &  0
+\\end{bmatrix}
+```
+
+# Examples
+```jldoctest
+julia> skew(Vec(1,2,3))
+3×3 Tensor{Tuple{3,3},Int64,2,9}:
+  0  -3   2
+  3   0  -1
+ -2   1   0
+```
+"""
+@inline function skew(ω::Vec{3})
+    z = zero(eltype(ω))
+    @inbounds @Mat [ z    -ω[3]  ω[2]
+                     ω[3]     z -ω[1]
+                    -ω[2]  ω[1]     z]
+end
+
 # transpose/adjoint
 @inline transpose(x::AbstractTensor{Tuple{@Symmetry{dim, dim}}}) where {dim} = x
 @inline transpose(x::AbstractTensor{Tuple{m, n}}) where {m, n} = Tensor{Tuple{n, m}}((i,j) -> @inbounds x[j,i])
