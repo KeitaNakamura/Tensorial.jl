@@ -221,6 +221,33 @@ end
 @inline tr(x::AbstractSquareTensor{2}) = @inbounds x[1,1] + x[2,2]
 @inline tr(x::AbstractSquareTensor{3}) = @inbounds x[1,1] + x[2,2] + x[3,3]
 
+# symmetric
+@inline symmetric(x::AbstractSymmetricSecondOrderTensor) = x
+@inline function symmetric(x::AbstractSymmetricSecondOrderTensor, uplo::Symbol)
+    if uplo == :U || uplo == :L
+        return x
+    end
+    throw(ArgumentError("uplo argument must be either :U (upper) or :L (lower)"))
+end
+## :L or :U
+@inline function symmetric(x::AbstractSecondOrderTensor{dim}, uplo::Symbol) where {dim}
+    if uplo == :U
+        return SymmetricSecondOrderTensor{dim}((i,j) -> @inbounds i ≤ j ? x[i,j] : x[j,i])
+    elseif uplo == :L
+        return SymmetricSecondOrderTensor{dim}((i,j) -> @inbounds i ≥ j ? x[i,j] : x[j,i])
+    end
+    throw(ArgumentError("uplo argument must be either :U (upper) or :L (lower)"))
+end
+## no uplo
+@inline symmetric(x::AbstractSecondOrderTensor{dim}) where {dim} =
+    SymmetricSecondOrderTensor{dim}((i,j) -> @inbounds i == j ? x[i,j] : (x[i,j] + x[j,i]) / 2)
+@inline symmetric(x::AbstractSecondOrderTensor{1}) =
+    @inbounds SymmetricSecondOrderTensor{1}(x[1,1])
+@inline symmetric(x::AbstractSecondOrderTensor{2}) =
+    @inbounds SymmetricSecondOrderTensor{2}(x[1,1], (x[2,1]+x[1,2])/2, x[2,2])
+@inline symmetric(x::AbstractSecondOrderTensor{3}) =
+    @inbounds SymmetricSecondOrderTensor{3}(x[1,1], (x[2,1]+x[1,2])/2, (x[3,1]+x[1,3])/2, x[2,2], (x[3,2]+x[2,3])/2, x[3,3])
+
 """
     skew(::AbstractSecondOrderTensor)
     skew(::AbstractSymmetricSecondOrderTensor)
@@ -268,17 +295,6 @@ end
 @inline transpose(x::AbstractTensor{Tuple{@Symmetry{dim, dim}}}) where {dim} = x
 @inline transpose(x::AbstractTensor{Tuple{m, n}}) where {m, n} = Tensor{Tuple{n, m}}((i,j) -> @inbounds x[j,i])
 @inline adjoint(x::AbstractTensor) = transpose(x)
-
-# symmetric
-@inline symmetric(x::AbstractSymmetricSecondOrderTensor) = x
-@inline symmetric(x::AbstractSecondOrderTensor{dim}) where {dim} =
-    SymmetricSecondOrderTensor{dim}((i,j) -> @inbounds i == j ? x[i,j] : (x[i,j] + x[j,i]) / 2)
-@inline symmetric(x::AbstractSecondOrderTensor{1}) =
-    @inbounds SymmetricSecondOrderTensor{1}(x[1,1])
-@inline symmetric(x::AbstractSecondOrderTensor{2}) =
-    @inbounds SymmetricSecondOrderTensor{2}(x[1,1], (x[2,1]+x[1,2])/2, x[2,2])
-@inline symmetric(x::AbstractSecondOrderTensor{3}) =
-    @inbounds SymmetricSecondOrderTensor{3}(x[1,1], (x[2,1]+x[1,2])/2, (x[3,1]+x[1,3])/2, x[2,2], (x[3,2]+x[2,3])/2, x[3,3])
 
 # det
 @generated function extract_vecs(x::AbstractSquareTensor{dim}) where {dim}

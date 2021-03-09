@@ -1,6 +1,7 @@
 using Tensorial
 using Test, Random
 
+using LinearAlgebra: Symmetric
 using StaticArrays: SArray, SVector
 
 include("Space.jl")
