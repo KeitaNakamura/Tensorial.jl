@@ -218,6 +218,19 @@ end
         end
         @test_throws Exception rotmat(Vec(1,0) => Vec(1,1)) # length of two vectors must be the same
     end
+    @testset "rotate" begin
+        for T in (Float32, Float64), dim in 2:3
+            a = rand(Vec{dim, T}); a /= norm(a)
+            b = rand(Vec{dim, T}); b /= norm(b)
+            R = rotmat(a => b)
+            v = rand(Vec{dim, T})
+            A = rand(SecondOrderTensor{dim, T})
+            S = rand(SymmetricSecondOrderTensor{dim, T})
+            @test (@inferred rotate(v, R))::Vec{dim, T} ≈ v ⋅ R
+            @test (@inferred rotate(A, R))::SecondOrderTensor{dim, T} ≈ R ⋅ A ⋅ R'
+            @test (@inferred rotate(S, R))::SymmetricSecondOrderTensor{dim, T} ≈ R ⋅ S ⋅ R'
+        end
+    end
     @testset "eigen" begin
         for T in (Float32, Float64)
             for dim in (2, 3)
