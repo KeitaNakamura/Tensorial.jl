@@ -79,7 +79,7 @@ end
             @test z ≈ Z
         end
     end
-    @testset "otimes/dot/norm" begin
+    @testset "otimes/dot/norm/normalize" begin
         for T in (Float32, Float64)
             # square
             x = rand(Vec{3, T})
@@ -89,12 +89,15 @@ end
             @test (@inferred x ⋅ y) ≈ Array(x)' * Array(y)
             @test (@inferred norm(x)) ≈ norm(Array(x))
             @test (@inferred norm(z)) ≈ norm(Array(z))
+            @test (@inferred normalize(x))::typeof(x) ≈ normalize(Array(x))
+            @test (@inferred normalize(z))::typeof(z) ≈ normalize(Array(z))
             # nonsquare
             x = rand(Vec{3, T})
             y = rand(Vec{2, T})
             z = (@inferred x ⊗ y)::Tensor{Tuple{3,2}, T}
             @test z ≈ Array(x) * Array(y)'
             @test (@inferred norm(z)) ≈ norm(Array(z))
+            @test (@inferred normalize(z))::typeof(z) ≈ normalize(Array(z))
         end
     end
     @testset "dotdot" begin
@@ -211,8 +214,8 @@ end
             @test (@inferred rotmaty(α))::Mat{3,3,T} ≈ (@inferred rotmaty(rad2deg(α), degree = true))::Mat{3,3,T}
             @test (@inferred rotmatz(α))::Mat{3,3,T} ≈ (@inferred rotmatz(rad2deg(α), degree = true))::Mat{3,3,T}
             for dim in (2, 3)
-                a = rand(Vec{dim, T}); a /= norm(a)
-                b = rand(Vec{dim, T}); b /= norm(b)
+                a = normalize(rand(Vec{dim, T}))
+                b = normalize(rand(Vec{dim, T}))
                 @test (@inferred rotmat(a => b))::Mat{dim, dim, T} ⋅ a ≈ b
             end
         end
@@ -220,8 +223,8 @@ end
     end
     @testset "rotate" begin
         for T in (Float32, Float64), dim in 2:3
-            a = rand(Vec{dim, T}); a /= norm(a)
-            b = rand(Vec{dim, T}); b /= norm(b)
+            a = normalize(rand(Vec{dim, T}))
+            b = normalize(rand(Vec{dim, T}))
             R = rotmat(a => b)
             v = rand(Vec{dim, T})
             A = rand(SecondOrderTensor{dim, T})
