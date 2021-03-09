@@ -129,7 +129,13 @@ end
             x = rand(SecondOrderTensor{dim, T})
             y = rand(SymmetricSecondOrderTensor{dim, T})
             @test (@inferred symmetric(x))::SymmetricSecondOrderTensor{dim, T} ≈ (x + x')/2
+            @test (@inferred symmetric(x, :U))::SymmetricSecondOrderTensor{dim, T} ≈ Symmetric(Array(x), :U)
+            @test (@inferred symmetric(x, :L))::SymmetricSecondOrderTensor{dim, T} ≈ Symmetric(Array(x), :L)
             @test (@inferred symmetric(y))::typeof(y) == y
+            @test (@inferred symmetric(y, :U))::typeof(y) == y
+            @test (@inferred symmetric(y, :L))::typeof(y) == y
+            @test_throws Exception symmetric(x, :X)
+            @test_throws Exception symmetric(y, :X)
         end
     end
     @testset "skew" begin
