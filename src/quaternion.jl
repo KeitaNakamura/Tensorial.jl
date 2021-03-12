@@ -119,7 +119,7 @@ end
 end
 
 @inline Base.conj(q::Quaternion) = @inbounds Quaternion(q[1], -q[2], -q[3], -q[4])
-@inline Base.abs2(q::Quaternion) = @inbounds (qvec = Vec(q); dot(qvec, qvec))
+@inline Base.abs2(q::Quaternion) = (v = Vec(q); dot(v, v))
 @inline Base.abs(q::Quaternion) = sqrt(abs2(q))
 @inline norm(q::Quaternion) = abs(q)
 @inline inv(q::Quaternion) = conj(q) / abs2(q)
