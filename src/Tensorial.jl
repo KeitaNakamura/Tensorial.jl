@@ -63,7 +63,10 @@ export
     frommandel,
 # ad
     gradient,
-    hessian
+    hessian,
+# quaternion
+    Quaternion,
+    quaternion
 
 
 include("utils.jl")
@@ -79,6 +82,8 @@ include("inv.jl")
 include("voigt.jl")
 include("ad.jl")
 include("simd.jl")
+
+include("quaternion.jl")
 
 const ⊗ = otimes
 const ⊡ = double_contraction
