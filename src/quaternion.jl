@@ -78,6 +78,7 @@ function quaternion(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = 
 end
 
 Base.length(::Quaternion) = 4
+Base.size(::Quaternion) = (length(4),)
 
 @inline function Base.getindex(q::Quaternion, i::Int)
     @_propagate_inbounds_meta
