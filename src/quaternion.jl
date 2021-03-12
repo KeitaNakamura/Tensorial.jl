@@ -96,11 +96,11 @@ end
 @inline Base.:-(q::Quaternion, p::Quaternion) = Quaternion(Vec(q) - Vec(p))
 @inline Base.:/(q::Quaternion, p::Quaternion) = q * inv(p)
 @inline function Base.:*(q::Quaternion, p::Quaternion)
-    q1, q2, q3, q4 = Tuple(q)
-    A = @Mat [ q1 -q2 -q3 -q4
-               q2  q1 -q4  q3
-               q3  q4  q1 -q2
-               q4 -q3  q2  q1 ]
+    q₁, q₂, q₃, q₄ = Tuple(q)
+    A = @Mat [ q₁ -q₂ -q₃ -q₄
+               q₂  q₁ -q₄  q₃
+               q₃  q₄  q₁ -q₂
+               q₄ -q₃  q₂  q₁ ]
     Quaternion(A ⋅ Vec(p))
 end
 
@@ -138,25 +138,23 @@ end
 
 @inline normalize(q::Quaternion) = q / norm(q)
 
-@inline rotmat(q::Quaternion) = rotmat_normalized(normalize(q))
-
 function rotmat_normalized(q::Quaternion)
-    s = 1 / norm(q)
-    q1, q2, q3, q4 = Tuple(q)
-    q1² = q1 * q1
-    q2² = q2 * q2
-    q3² = q3 * q3
-    q4² = q4 * q4
-    q1q2 = q1 * q2
-    q2q3 = q2 * q3
-    q3q4 = q3 * q4
-    q1q3 = q1 * q3
-    q1q4 = q1 * q4
-    q2q4 = q2 * q4
-    @Mat [1-2s*(q3²+q4²) 2(q2q3-q1q4)   2(q2q4+q1q3)
-          2(q2q3+q1q4)   1-2s*(q2²+q4²) 2(q3q4-q1q2)
-          2(q2q4-q1q3)   2(q3q4+q1q2)   1-2s*(q2²+q3²)]
+    q₁, q₂, q₃, q₄ = Tuple(q)
+    q₁² = q₁ * q₁
+    q₂² = q₂ * q₂
+    q₃² = q₃ * q₃
+    q₄² = q₄ * q₄
+    q₁q₂ = q₁ * q₂
+    q₂q₃ = q₂ * q₃
+    q₃q₄ = q₃ * q₄
+    q₁q₃ = q₁ * q₃
+    q₁q₄ = q₁ * q₄
+    q₂q₄ = q₂ * q₄
+    @Mat [q₁²+q₂²-q₃²-q₄² 2(q₂q₃-q₁q₄)    2(q₂q₄+q₁q₃)
+          2(q₂q₃+q₁q₄)    q₁²-q₂²+q₃²-q₄² 2(q₃q₄-q₁q₂)
+          2(q₂q₄-q₁q₃)    2(q₃q₄+q₁q₂)    q₁²-q₂²-q₃²+q₄²]
 end
+@inline rotmat(q::Quaternion) = rotmat_normalized(normalize(q))
 
 function Base.show(io::IO, q::Quaternion)
     pm(x) = x < 0 ? " - $(-x)" : " + $x"
