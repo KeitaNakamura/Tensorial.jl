@@ -6,7 +6,15 @@
         @test (@inferred Quaternion{T}(1,2,3,4))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
         @test (@inferred Quaternion(1,2,3,T(4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
 
-        @test propertynames(Quaternion(1,2,3,4)) == (:scalar, :vector, :data)
+        # properties
+        q = Quaternion{T}(1,2,3,4)
+        @test propertynames(q) == (:scalar, :vector, :data)
+        get_scalar = q -> q.scalar
+        get_vector = q -> q.vector
+        get_data = q -> q.data
+        @test (@inferred get_scalar(q))::T == T(1)
+        @test (@inferred get_vector(q))::Vec{3, T} == Vec{3, T}(2,3,4)
+        @test (@inferred get_data(q))::NTuple{4, T} == map(T, (1,2,3,4))
 
         # quaternion
         q = (@inferred quaternion(T(π/4), Vec{3, T}(1,2,3)))::Quaternion{T}
