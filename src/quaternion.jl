@@ -1,13 +1,21 @@
-# experimental
-struct Quaternion{T} <: AbstractVector{T}
+"""
+`Quaternion` represents ``q_1 + q_2 \\bm{i} + q_3 \\bm{j} + q_4 \\bm{k}``.
+
+!!! note
+
+    `Quaternion` is experimental and could change or disappear in future versions of Tensorial.
+"""
+struct Quaternion{T} <: Number
     data::NTuple{4, T}
-    function Quaternion{T}(data::NTuple{4, Any}) where {T}
+    function Quaternion{T}(data::NTuple{4, Real}) where {T}
         new{T}(convert_ntuple(T, data))
     end
 end
 
 @inline Quaternion(data::NTuple{4, Any}) = Quaternion{promote_ntuple_eltype(data)}(data)
 @inline (::Type{T})(data::Vararg{Any}) where {T <: Quaternion} = T(data)
+
+# Quaternion <-> Vec
 @inline Quaternion(v::Vec{4}) = Quaternion(Tuple(v))
 @inline Vec(q::Quaternion) = Vec(Tuple(q))
 
@@ -21,36 +29,47 @@ end
 
 Base.propertynames(q::Quaternion) = (:scalar, :vector, :data)
 
+# conversion
+function Base.convert(::Type{Quaternion{T}}, x::Real) where {T}
+    Quaternion(convert(T, x), convert(T, 0), convert(T, 0), convert(T, 0))
+end
+
+# used for `isapprox`
+Base.real(q::Quaternion) = q.scalar
+Base.isfinite(q::Quaternion) = prod(map(isfinite, Tuple(q)))
+
 """
-    quaternion(x, θ; [degree = false])
+    quaternion(θ, x::Vec; [normalize = true, degree = false])
 
 Construct `Quaternion` from direction `x` and angle `θ`.
-The constructed quaternion is normalized such as `norm(q) ≈ 1`.
+The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
 """
-function quaternion(x::Vec{3}, θ::Real; degree::Bool = false)
+function quaternion(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false)
     if degree
         θ = deg2rad(θ)
     end
     ϕ = θ / 2
     sinϕ = sin(ϕ)
-    n = normalize(x) * sinϕ
+    if normalize
+        n = LinearAlgebra.normalize(x) * sinϕ
+    else
+        n = x * sinϕ
+    end
     @inbounds Quaternion(cos(ϕ), n[1], n[2], n[3])
 end
 
 Base.size(::Quaternion) = (4,)
 
 @inline function Base.getindex(q::Quaternion, i::Int)
-    @boundscheck checkbounds(q, i)
+    @_propagate_inbounds_meta
     @inbounds Tuple(q)[i]
 end
 
+# quaternion vs quaternion
+@inline Base.:-(q::Quaternion) = Quaternion(-Vec(q))
 @inline Base.:+(q::Quaternion, p::Quaternion) = Quaternion(Vec(q) + Vec(p))
 @inline Base.:-(q::Quaternion, p::Quaternion) = Quaternion(Vec(q) - Vec(p))
-
-@inline Base.:*(a::Number, q::Quaternion) = Quaternion(a * Vec(q))
-@inline Base.:*(q::Quaternion, a::Number) = Quaternion(Vec(q) * a)
-@inline Base.:/(q::Quaternion, a::Number) = Quaternion(Vec(q) / a)
-
+@inline Base.:/(q::Quaternion, p::Quaternion) = q * inv(p)
 @inline function Base.:*(q::Quaternion, p::Quaternion)
     q1, q2, q3, q4 = Tuple(q)
     A = @Mat [ q1 -q2 -q3 -q4
@@ -60,6 +79,12 @@ end
     Quaternion(A ⋅ Vec(p))
 end
 
+# quaternion vs number
+@inline Base.:*(a::Number, q::Quaternion) = Quaternion(a * Vec(q))
+@inline Base.:*(q::Quaternion, a::Number) = Quaternion(Vec(q) * a)
+@inline Base.:/(q::Quaternion, a::Number) = Quaternion(Vec(q) / a)
+
+# quaternion vs vector
 @inline function Base.:*(q::Quaternion, v::Vec{3, T}) where {T}
     @inbounds q * Quaternion(zero(T), v[1], v[2], v[3])
 end
@@ -67,12 +92,26 @@ end
     @inbounds Quaternion(zero(T), v[1], v[2], v[3]) * q
 end
 
-@inline norm(q::Quaternion) = norm(Vec(q))
+@inline Base.conj(q::Quaternion) = @inbounds Quaternion(q[1], -q[2], -q[3], -q[4])
+@inline Base.abs2(q::Quaternion) = @inbounds (qvec = Vec(q); dot(qvec, qvec))
+@inline Base.abs(q::Quaternion) = sqrt(abs2(q))
+@inline norm(q::Quaternion) = abs(q)
+@inline inv(q::Quaternion) = conj(q) / abs2(q)
 
-@inline function inv(q::Quaternion)
-    qvec = Vec(q)
-    @inbounds Quaternion(q[1], -q[2], -q[3], -q[4]) / dot(qvec, qvec)
+function Base.exp(q::Quaternion)
+    v = q.vector
+    norm_v = norm(v)
+    exp(q.scalar) * quaternion(2norm_v, v/norm_v; normalize = false)
 end
+
+function Base.log(q::Quaternion)
+    norm_q = norm(q)
+    v = q.vector
+    norm_v = norm(v)
+    Quaternion(log(norm_q), Tuple(v/norm_v * acos(q.scalar/norm_q))...)
+end
+
+normalize(q::Quaternion) = q / norm(q)
 
 function rotmat(q::Quaternion)
     s = 1 / norm(q)
@@ -90,4 +129,9 @@ function rotmat(q::Quaternion)
     @Mat [1-2s*(q3²+q4²) 2(q2q3-q1q4)   2(q2q4+q1q3)
           2(q2q3+q1q4)   1-2s*(q2²+q4²) 2(q3q4-q1q2)
           2(q2q4-q1q3)   2(q3q4+q1q2)   1-2s*(q2²+q3²)]
+end
+
+function Base.show(io::IO, q::Quaternion)
+    pm(x) = x < 0 ? " - $(-x)" : " + $x"
+    print(io, q[1], pm(q[2]), "𝙞", pm(q[3]), "𝙟", pm(q[4]), "𝙠")
 end
