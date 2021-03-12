@@ -74,11 +74,10 @@ function quaternion(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = 
         θ = deg2rad(θ)
     end
     ϕ = θ / 2
-    sinϕ = sin(ϕ)
     if normalize
-        n = LinearAlgebra.normalize(x) * sinϕ
+        n = LinearAlgebra.normalize(x) * sin(ϕ)
     else
-        n = x * sinϕ
+        n = x * sin(ϕ)
     end
     @inbounds Quaternion(cos(ϕ), n[1], n[2], n[3])
 end
