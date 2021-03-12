@@ -42,6 +42,7 @@
         Rp = rotmat(p)
         r = p * q
         @test (q * v / q).vector ≈ Rq ⋅ v
+        @test (p * v / p).vector ≈ Rp ⋅ v
         @test (r * v / r).vector ≈ Rp ⋅ Rq ⋅ v
     end
 end
