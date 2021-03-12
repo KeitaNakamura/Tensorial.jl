@@ -31,6 +31,10 @@ end
 Base.propertynames(q::Quaternion) = (:scalar, :vector, :data)
 
 # conversion
+Base.convert(::Type{Quaternion{T}}, x::Quaternion{T}) where {T} = x
+function Base.convert(::Type{Quaternion{T}}, x::Quaternion{U}) where {T, U}
+    @inbounds Quaternion(convert(T, x[1]), convert(T, x[2]), convert(T, x[3]), convert(T, x[4]))
+end
 function Base.convert(::Type{Quaternion{T}}, x::Real) where {T}
     Quaternion(convert(T, x), convert(T, 0), convert(T, 0), convert(T, 0))
 end
@@ -38,6 +42,8 @@ end
 # promotion
 Base.promote_rule(::Type{Quaternion{T}}, ::Type{T}) where {T <: Real} = Quaternion{T}
 Base.promote_rule(::Type{Quaternion{T}}, ::Type{U}) where {T <: Real, U <: Real} = Quaternion{promote_type(T, U)}
+Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{T}}) where {T <: Real} = Quaternion{T}
+Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{U}}) where {T <: Real, U <: Real} = Quaternion{promote_type(T, U)}
 
 # used for `isapprox`
 Base.real(q::Quaternion) = q.scalar

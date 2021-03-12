@@ -6,6 +6,8 @@
         @test (@inferred Quaternion{T}(1,2,3,4))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
         @test (@inferred Quaternion(1,2,3,T(4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
 
+        @test propertynames(Quaternion(1,2,3,4)) == (:scalar, :vector, :data)
+
         # quaternion
         q = (@inferred quaternion(T(π/4), Vec{3, T}(1,2,3)))::Quaternion{T}
         @test length(q) == 4
@@ -19,6 +21,14 @@
 
         q = quaternion(rand(T), rand(Vec{3, T}))
         p = quaternion(rand(T), rand(Vec{3, T}), normalize = false)
+
+        # promotion
+        @test (@inferred promote_rule(Quaternion{T}, T)) == Quaternion{T}
+        @test (@inferred promote_rule(Quaternion{T}, Int)) == Quaternion{T}
+        @test (@inferred promote_rule(Quaternion{T}, Quaternion{T})) == Quaternion{T}
+        @test (@inferred promote_rule(Quaternion{T}, Quaternion{Int})) == Quaternion{T}
+        @test ((@inferred promote(q, T(3)))::NTuple{2, Quaternion{T}})[2] == Quaternion(3.0,0,0,0)
+        @test ((@inferred promote(q, 3))::NTuple{2, Quaternion{T}})[2] == Quaternion(3.0,0,0,0)
 
         # math operations
         @test (@inferred +q)::Quaternion{T} === q
