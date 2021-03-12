@@ -1,5 +1,6 @@
 """
 `Quaternion` represents ``q_1 + q_2 \\bm{i} + q_3 \\bm{j} + q_4 \\bm{k}``.
+The salar part and vector part can be accessed by `q.scalar` and `q.vector`, respectively.
 
 !!! note
 
@@ -47,6 +48,20 @@ Base.isfinite(q::Quaternion) = prod(map(isfinite, Tuple(q)))
 
 Construct `Quaternion` from direction `x` and angle `θ`.
 The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
+
+```jldoctest
+julia> q = quaternion(π/4, Vec(0,0,1))
+0.9238795325112867 + 0.0𝙞 + 0.0𝙟 + 0.3826834323650898𝙠
+
+julia> v = rand(Vec{3})
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.5908446386657102
+ 0.7667970365022592
+ 0.5662374165061859
+
+julia> (q * v / q).vector ≈ rotmatz(π/4) ⋅ v
+true
+```
 """
 function quaternion(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false)
     if degree

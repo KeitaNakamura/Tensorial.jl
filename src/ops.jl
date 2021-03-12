@@ -512,10 +512,22 @@ The norms of two vectors must be the same.
 # Examples
 ```jldoctest
 julia> a = normalize(rand(Vec{3}))
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.526847334217759
+ 0.683741457787621
+ 0.5049054419691867
 
 julia> b = normalize(rand(Vec{3}))
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.36698690362212083
+ 0.6333543148133657
+ 0.6813097125956302
 
 julia> R = rotmat(a => b)
+3×3 Tensor{Tuple{3,3},Float64,2,9}:
+ -0.594528   0.597477   0.538106
+  0.597477  -0.119597   0.792917
+  0.538106   0.792917  -0.285875
 
 julia> R ⋅ a ≈ b
 true
