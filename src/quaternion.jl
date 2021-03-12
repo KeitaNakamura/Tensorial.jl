@@ -34,6 +34,10 @@ function Base.convert(::Type{Quaternion{T}}, x::Real) where {T}
     Quaternion(convert(T, x), convert(T, 0), convert(T, 0), convert(T, 0))
 end
 
+# promotion
+Base.promote_rule(::Type{Quaternion{T}}, ::Type{T}) where {T <: Real} = Quaternion{T}
+Base.promote_rule(::Type{Quaternion{T}}, ::Type{U}) where {T <: Real, U <: Real} = Quaternion{promote_type(T, U)}
+
 # used for `isapprox`
 Base.real(q::Quaternion) = q.scalar
 Base.isfinite(q::Quaternion) = prod(map(isfinite, Tuple(q)))
@@ -113,7 +117,9 @@ end
 
 normalize(q::Quaternion) = q / norm(q)
 
-function rotmat(q::Quaternion)
+rotmat(q::Quaternion) = rotmat_normalized(normalize(q))
+
+function rotmat_normalized(q::Quaternion)
     s = 1 / norm(q)
     q1, q2, q3, q4 = Tuple(q)
     q1² = q1 * q1
