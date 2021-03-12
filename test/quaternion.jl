@@ -46,5 +46,9 @@
         @test (q * v / q).vector ≈ Rq ⋅ v
         @test (p * v / p).vector ≈ Rp ⋅ v
         @test (r * v / r).vector ≈ Rp ⋅ Rq ⋅ v
+
+        q = quaternion(π/4, Vec(0,0,1))
+        @test  (q * v * inv(q)).vector ≈ rotmatz(π/4) ⋅ v
+        @test  (inv(q) * v * q).vector ≈ rotmatz(-π/4) ⋅ v
     end
 end
