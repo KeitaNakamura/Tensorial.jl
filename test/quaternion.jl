@@ -30,6 +30,10 @@
         q = quaternion(rand(T), rand(Vec{3, T}))
         p = quaternion(rand(T), rand(Vec{3, T}), normalize = false)
 
+        # conversion
+        @test (@inferred convert(Quaternion{T}, q))::Quaternion{T} == q
+        @test (@inferred convert(Quaternion{T}, 3))::Quaternion{T} == Quaternion{T}(3,0,0,0)
+
         # promotion
         @test (@inferred promote_rule(Quaternion{T}, T)) == Quaternion{T}
         @test (@inferred promote_rule(Quaternion{T}, Int)) == Quaternion{T}
