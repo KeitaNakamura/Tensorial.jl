@@ -137,9 +137,9 @@ function Base.log(q::Quaternion)
     Quaternion(log(norm_q), Tuple(v/norm_v * acos(q.scalar/norm_q))...)
 end
 
-normalize(q::Quaternion) = q / norm(q)
+@inline normalize(q::Quaternion) = q / norm(q)
 
-rotmat(q::Quaternion) = rotmat_normalized(normalize(q))
+@inline rotmat(q::Quaternion) = rotmat_normalized(normalize(q))
 
 function rotmat_normalized(q::Quaternion)
     s = 1 / norm(q)
