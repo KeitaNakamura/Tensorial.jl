@@ -65,11 +65,19 @@
         @test (@inferred exp(log(q)))::Quaternion{T} ≈ q
         @test (@inferred exp(log(p)))::Quaternion{T} ≈ p
 
-        # rotation
-        v = rand(Vec{3, T})
         Rq = rotmat(q)
         Rp = rotmat(p)
         r = p * q
+
+        # rotation in 2D
+        v2d = rand(Vec{2, T})
+        v = Vec(v2d[1], v2d[2], 0)
+        @test (q * v / q).vector ≈ Rq ⋅ v
+        @test (p * v / p).vector ≈ Rp ⋅ v
+        @test (r * v / r).vector ≈ Rp ⋅ Rq ⋅ v
+
+        # rotation in 3D
+        v = rand(Vec{3, T})
         @test (q * v / q).vector ≈ Rq ⋅ v
         @test (p * v / p).vector ≈ Rp ⋅ v
         @test (r * v / r).vector ≈ Rp ⋅ Rq ⋅ v

@@ -121,6 +121,13 @@ end
 @inline function Base.:*(v::Vec{3, T}, q::Quaternion) where {T}
     @inbounds Quaternion(zero(T), v[1], v[2], v[3]) * q
 end
+# in 2D, expand vector to 3D first
+@inline function Base.:*(q::Quaternion, v::Vec{2, T}) where {T}
+    @inbounds q * Quaternion(zero(T), v[1], v[2], zero(T))
+end
+@inline function Base.:*(v::Vec{2, T}, q::Quaternion) where {T}
+    @inbounds Quaternion(zero(T), v[1], v[2], zero(T)) * q
+end
 
 @inline Base.conj(q::Quaternion) = @inbounds Quaternion(q[1], -q[2], -q[3], -q[4])
 @inline Base.abs2(q::Quaternion) = (v = Vec(q); dot(v, v))
