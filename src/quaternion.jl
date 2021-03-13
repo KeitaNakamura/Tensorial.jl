@@ -19,6 +19,7 @@ end
 # Quaternion <-> Vec
 @inline Quaternion(v::Vec{4}) = Quaternion(Tuple(v))
 @inline Vec(q::Quaternion) = Vec(Tuple(q))
+@inline (::Type{T})(x::Vec{3}) where {T <: Quaternion} = @inbounds T(zero(eltype(x)), x[1], x[2], x[3])
 
 Base.Tuple(q::Quaternion) = getfield(q, :data)
 

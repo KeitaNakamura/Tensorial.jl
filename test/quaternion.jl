@@ -5,6 +5,8 @@
         @test (@inferred Quaternion((1,2,3,T(4))))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
         @test (@inferred Quaternion{T}(1,2,3,4))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
         @test (@inferred Quaternion(1,2,3,T(4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
+        @test (@inferred Quaternion(Vec(1,2,T(3))))::Quaternion{T} |> Tuple === map(T, (0,1,2,3))
+        @test (@inferred Quaternion{T}(Vec(1,2,3)))::Quaternion{T} |> Tuple === map(T, (0,1,2,3))
 
         # properties
         q = Quaternion{T}(1,2,3,4)
