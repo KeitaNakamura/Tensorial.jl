@@ -138,7 +138,12 @@ end
 function Base.exp(q::Quaternion)
     v = q.vector
     norm_v = norm(v)
-    exp(q.scalar) * quaternion(2norm_v, v/norm_v; normalize = false)
+    if norm_v > 0
+        n = v / norm_v
+    else
+        n = zero(v)
+    end
+    exp(q.scalar) * quaternion(2norm_v, n; normalize = false)
 end
 
 function Base.log(q::Quaternion)
