@@ -49,14 +49,28 @@ Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{U}}) where {T <: Real
 Base.real(q::Quaternion) = q.scalar
 Base.isfinite(q::Quaternion) = prod(map(isfinite, Tuple(q)))
 
+function (::Type{Quat})(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {Quat <: Quaternion}
+    if degree
+        θ = deg2rad(θ)
+    end
+    ϕ = θ / 2
+    if normalize
+        n = LinearAlgebra.normalize(x) * sin(ϕ)
+    else
+        n = x * sin(ϕ)
+    end
+    @inbounds Quat(cos(ϕ), n[1], n[2], n[3])
+end
+
 """
     quaternion(θ, x::Vec; [normalize = true, degree = false])
+    quaternion(T, θ, x::Vec; [normalize = true, degree = false])
 
 Construct `Quaternion` from direction `x` and angle `θ`.
 The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
 
 ```jldoctest
-julia> q = quaternion(π/4, Vec(0,0,1))
+julia> q = Quaternion(π/4, Vec(0,0,1))
 0.9238795325112867 + 0.0𝙞 + 0.0𝙟 + 0.3826834323650898𝙠
 
 julia> v = rand(Vec{3})
@@ -69,18 +83,8 @@ julia> (q * v / q).vector ≈ rotmatz(π/4) ⋅ v
 true
 ```
 """
-function quaternion(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false)
-    if degree
-        θ = deg2rad(θ)
-    end
-    ϕ = θ / 2
-    if normalize
-        n = LinearAlgebra.normalize(x) * sin(ϕ)
-    else
-        n = x * sin(ϕ)
-    end
-    @inbounds Quaternion(cos(ϕ), n[1], n[2], n[3])
-end
+quaternion(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) = Quaternion(θ, x; normalize, degree)
+quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {T} = Quaternion{T}(θ, x; normalize, degree)
 
 Base.length(::Quaternion) = 4
 Base.size(::Quaternion) = (4,)
