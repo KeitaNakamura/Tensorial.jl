@@ -70,7 +70,7 @@ Construct `Quaternion` from direction `x` and angle `θ`.
 The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
 
 ```jldoctest
-julia> q = Quaternion(π/4, Vec(0,0,1))
+julia> q = quaternion(π/4, Vec(0,0,1))
 0.9238795325112867 + 0.0𝙞 + 0.0𝙟 + 0.3826834323650898𝙠
 
 julia> v = rand(Vec{3})
