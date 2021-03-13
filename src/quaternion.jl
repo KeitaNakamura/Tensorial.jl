@@ -19,6 +19,7 @@ end
 # Quaternion <-> Vec
 @inline Quaternion(v::Vec{4}) = Quaternion(Tuple(v))
 @inline Vec(q::Quaternion) = Vec(Tuple(q))
+@inline (::Type{T})(x::Vec{3}) where {T <: Quaternion} = @inbounds T(zero(eltype(x)), x[1], x[2], x[3])
 
 Base.Tuple(q::Quaternion) = getfield(q, :data)
 
@@ -120,6 +121,13 @@ end
 @inline function Base.:*(v::Vec{3, T}, q::Quaternion) where {T}
     @inbounds Quaternion(zero(T), v[1], v[2], v[3]) * q
 end
+# in 2D, expand vector to 3D first
+@inline function Base.:*(q::Quaternion, v::Vec{2, T}) where {T}
+    @inbounds q * Quaternion(zero(T), v[1], v[2], zero(T))
+end
+@inline function Base.:*(v::Vec{2, T}, q::Quaternion) where {T}
+    @inbounds Quaternion(zero(T), v[1], v[2], zero(T)) * q
+end
 
 @inline Base.conj(q::Quaternion) = @inbounds Quaternion(q[1], -q[2], -q[3], -q[4])
 @inline Base.abs2(q::Quaternion) = (v = Vec(q); dot(v, v))
@@ -130,7 +138,12 @@ end
 function Base.exp(q::Quaternion)
     v = q.vector
     norm_v = norm(v)
-    exp(q.scalar) * quaternion(2norm_v, v/norm_v; normalize = false)
+    if norm_v > 0
+        n = v / norm_v
+    else
+        n = zero(v)
+    end
+    exp(q.scalar) * quaternion(2norm_v, n; normalize = false)
 end
 
 function Base.log(q::Quaternion)
