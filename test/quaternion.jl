@@ -69,14 +69,6 @@
         Rp = rotmat(p)
         r = p * q
 
-        # rotation in 2D
-        v2d = rand(Vec{2, T})
-        v = Vec(v2d[1], v2d[2], 0)
-        @test (q * v / q).vector ≈ Rq ⋅ v
-        @test (p * v / p).vector ≈ Rp ⋅ v
-        @test (r * v / r).vector ≈ Rp ⋅ Rq ⋅ v
-
-        # rotation in 3D
         v = rand(Vec{3, T})
         @test (q * v / q).vector ≈ Rq ⋅ v
         @test (p * v / p).vector ≈ Rp ⋅ v
@@ -87,5 +79,12 @@
         @test  (q * (v * inv(q))).vector ≈ rotmatz(π/4) ⋅ v
         @test  ((inv(q) * v) * q).vector ≈ rotmatz(-π/4) ⋅ v
         @test  (inv(q) * (v * q)).vector ≈ rotmatz(-π/4) ⋅ v
+
+        v2d = rand(Vec{2, T})
+        v3d = Vec(v2d[1], v2d[2], 0)
+        @test  ((q * v2d) * inv(q)).vector ≈ rotmatz(π/4) ⋅ v3d
+        @test  (q * (v2d * inv(q))).vector ≈ rotmatz(π/4) ⋅ v3d
+        @test  ((inv(q) * v2d) * q).vector ≈ rotmatz(-π/4) ⋅ v3d
+        @test  (inv(q) * (v2d * q)).vector ≈ rotmatz(-π/4) ⋅ v3d
     end
 end
