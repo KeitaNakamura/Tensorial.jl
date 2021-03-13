@@ -64,6 +64,7 @@
         @test (@inferred norm(p))::T ≈ (@inferred abs(p))::T
         @test (@inferred exp(log(q)))::Quaternion{T} ≈ q
         @test (@inferred exp(log(p)))::Quaternion{T} ≈ p
+        @test (@inferred exp(Quaternion{T}(1,0,0,0)))::Quaternion{T} ≈ exp(1)
 
         Rq = rotmat(q)
         Rp = rotmat(p)
