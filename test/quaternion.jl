@@ -18,14 +18,17 @@
 
         # quaternion
         q = (@inferred quaternion(T(π/4), Vec{3, T}(1,2,3)))::Quaternion{T}
+        q = (@inferred quaternion(T, π/4, Vec(1,2,3)))::Quaternion{T}
         @test length(q) == 4
         @test size(q) == (4,)
         @test norm(q) ≈ 1
         @test q/q ≈ 1
         q = (@inferred quaternion(T(π/4), Vec{3, T}(1,2,3), normalize = false))::Quaternion{T}
+        q = (@inferred quaternion(T, π/4, Vec(1,2,3), normalize = false))::Quaternion{T}
         @test !(norm(q) ≈ 1)
         @test q/q ≈ 1
         @test q ≈ (@inferred quaternion(T(45), Vec{3, T}(1,2,3), normalize = false, degree = true))::Quaternion{T}
+        @test q ≈ (@inferred quaternion(T, 45, Vec(1,2,3), normalize = false, degree = true))::Quaternion{T}
 
         q = quaternion(rand(T), rand(Vec{3, T}))
         p = quaternion(rand(T), rand(Vec{3, T}), normalize = false)
