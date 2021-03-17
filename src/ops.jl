@@ -545,6 +545,40 @@ function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {d
 end
 
 """
+    rotmat(θ, n::Vec; degree::Bool = false)
+
+Construct rotation matrix from angle `θ` and direction `n`.
+
+```jldoctest
+julia> x = Vec(1.0, 0.0, 0.0)
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 1.0
+ 0.0
+ 0.0
+
+julia> n = Vec(0.0, 0.0, 1.0)
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.0
+ 0.0
+ 1.0
+
+julia> rotmat(π/2, n) ⋅ x
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 1.1102230246251565e-16
+ 1.0
+ 0.0
+```
+"""
+function rotmat(θ::Real, x::Vec{3}; degree::Bool = false)
+    if degree
+        θ = deg2rad(θ)
+    end
+    n = normalize(x)
+    W = skew(n)
+    I + W*sin(θ) + W^2*(1-cos(θ))
+end
+
+"""
     rotate(x::Vec, R::SecondOrderTensor)
     rotate(x::SecondOrderTensor, R::SecondOrderTensor)
     rotate(x::SymmetricSecondOrderTensor, R::SecondOrderTensor)
