@@ -129,6 +129,28 @@ end
     @inbounds Quaternion(zero(T), v[1], v[2], zero(T)) * q
 end
 
+"""
+    rotate(x::Vec, q::Quaternion)
+
+Rotate `x` by quaternion `q`.
+
+# Examples
+```jldoctest
+julia> v = Vec(1.0, 0.0, 0.0)
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 1.0
+ 0.0
+ 0.0
+
+julia> rotate(v, quaternion(π/4, Vec(0,0,1)))
+3-element Tensor{Tuple{3},Float64,1,3}:
+ 0.7071067811865475
+ 0.7071067811865476
+ 0.0
+```
+"""
+@inline rotate(v::Vec, q::Quaternion) = (q * v / q).vector
+
 @inline Base.conj(q::Quaternion) = @inbounds Quaternion(q[1], -q[2], -q[3], -q[4])
 @inline Base.abs2(q::Quaternion) = (v = Vec(q); dot(v, v))
 @inline Base.abs(q::Quaternion) = sqrt(abs2(q))
