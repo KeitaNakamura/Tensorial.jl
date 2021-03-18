@@ -26,21 +26,7 @@ end
 @generated Base.:-(x::AbstractTensor, y::AbstractArray) = :(@_inline_meta; x - convert($(tensortype(Space(size(x)))), y))
 @generated Base.:-(x::AbstractArray, y::AbstractTensor) = :(@_inline_meta; convert($(tensortype(Space(size(y)))), x) - y)
 
-@generated function _add_uniform(x::AbstractSquareTensor{dim}, λ::Real) where {dim}
-    S = promote_space(Space(x), Space(Symmetry(dim, dim)))
-    tocartesian = CartesianIndices(S)
-    exps = map(indices(S)) do i
-        i, j = Tuple(tocartesian[i])
-        ex = getindex_expr(x, :x, i, j)
-        return i == j ? :($ex + λ) : ex
-    end
-    TT = tensortype(S)
-    return quote
-        @_inline_meta
-        @inbounds $TT($(exps...))
-    end
-end
-
+@inline _add_uniform(x::AbstractSquareTensor, λ::Real) = x + λ * one(x)
 @inline Base.:+(x::AbstractTensor, y::UniformScaling) = _add_uniform( x,  y.λ)
 @inline Base.:-(x::AbstractTensor, y::UniformScaling) = _add_uniform( x, -y.λ)
 @inline Base.:+(x::UniformScaling, y::AbstractTensor) = _add_uniform( y,  x.λ)
