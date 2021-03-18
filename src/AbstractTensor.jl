@@ -1,7 +1,7 @@
 abstract type AbstractTensor{S <: Tuple, T, N} <: AbstractArray{T, N} end
 
-Base.size(::Type{TT}) where {S, TT <: AbstractTensor{S}} = tensorsize(Space(S))
-Base.size(x::AbstractTensor) = size(typeof(x))
+Base.size(x::Type{TT}) where {TT <: AbstractTensor} = tensorsize(Space(x))
+Base.size(x::AbstractTensor) = tensorsize(Space(x))
 
 # indices
 for func in (:independent_indices, :indices, :duplicates)
