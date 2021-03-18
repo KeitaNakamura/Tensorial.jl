@@ -223,6 +223,11 @@ end
     end
 end
 
+@testset "Promotion" begin
+    @test (@inferred promote_rule(Vec{2, Float64}, Vec{2, Float32})) === Vec{2, Float64}
+    @test (@inferred promote_rule(Mat{2, 2, Int, 4}, Mat{2, 2, Float32, 4})) === Mat{2, 2, Float32, 4}
+end
+
 @testset "Tensor misc" begin
     # size
     TT = Tensor{Tuple{2, 3}}

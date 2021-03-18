@@ -185,3 +185,7 @@ end
         tuple($(exps...))
     end
 end
+
+function Base.promote_rule(::Type{Tensor{S, T, N, L}}, ::Type{Tensor{S, U, N, L}}) where {S, T, U, N, L}
+    Tensor{S, promote_type(T, U), N, L}
+end
