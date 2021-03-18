@@ -166,6 +166,7 @@ end
         @inbounds TT(tuple($(exps...)))
     end
 end
+@inline Base.convert(::Type{TT}, x::Tuple) where {TT <: Tensor} = TT(x)
 
 # promotion
 @inline convert_eltype(::Type{T}, x::Real) where {T <: Real} = T(x)
