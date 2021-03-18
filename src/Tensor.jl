@@ -131,6 +131,11 @@ end
     TT((i,j,k,l) -> (δ(i,k)*δ(j,l) + δ(i,l)*δ(j,k))/2)
 end
 
+# UniformScaling
+@inline function (TT::Type{<: Tensor})(I::UniformScaling)
+    TT((i,j) -> I[i,j])
+end
+
 # for AbstractArray interface
 Base.IndexStyle(::Type{<: Tensor}) = IndexLinear()
 

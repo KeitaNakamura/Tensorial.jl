@@ -148,6 +148,14 @@
                 @test (IIs ⊡ As)::SymmetricSecondOrderTensor{dim} ≈ As
             end
         end
+        @testset "UniformScaling" begin
+            for T in (Float32, Float64)
+                @test (@inferred Mat{2, 2}(I))::Mat{2, 2, Bool} == Matrix(I, 2, 2)
+                @test (@inferred Mat{2, 2}(2I))::Mat{2, 2, Int} == Matrix(2I, 2, 2)
+                @test (@inferred Mat{2, 2, T}(2I))::Mat{2, 2, T} == Matrix(2I, 2, 2)
+                @test (@inferred Mat{2, 3, T}(2I))::Mat{2, 3, T} == Matrix(2I, 2, 3)
+            end
+        end
     end
 end
 
