@@ -221,6 +221,15 @@ end
             @test (@inferred convert(Vec{2, T}, v))::Vec{2, T} |> Tuple == vdata
         end
     end
+    @testset "Tuple -> Tensor" begin
+        for T in (Float32, Float64)
+            Adata = map(T, (1,2,3,4))
+            @test (@inferred convert(Vec{4, T}, Adata))::Vec{4, T} |> Tuple == Adata
+            @test (@inferred convert(Vec{4}, Adata))::Vec{4, T} |> Tuple == Adata
+            @test (@inferred convert(Mat{2, 2, T}, Adata))::Mat{2, 2, T} |> Tuple == Adata
+            @test (@inferred convert(Mat{2, 2}, Adata))::Mat{2, 2, T} |> Tuple == Adata
+        end
+    end
 end
 
 @testset "Tensor misc" begin
