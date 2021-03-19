@@ -1,3 +1,6 @@
+ToVec3(x::Vec{3}) = x
+ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
+
 @testset "Quaternion" begin
     for T in (Float32, Float64)
         # basic constructors
@@ -70,34 +73,30 @@
         Rp = rotmat(p)
         r = p * q
 
-        # check multiplications and rotmat
-        v = rand(Vec{3, T})
-        @test (q * v / q).vector ≈ Rq ⋅ v
-        @test (p * v / p).vector ≈ Rp ⋅ v
-        @test (r * v / r).vector ≈ Rp ⋅ Rq ⋅ v
-        @test rotate(v, q) ≈ Rq ⋅ v
-        @test rotate(v, p) ≈ Rp ⋅ v
-        @test rotate(v, r) ≈ Rp ⋅ Rq ⋅ v
-
-        # check order of multiplications
-        q = quaternion(π/4, Vec(0,0,1))
-        @test  ((q * v) * inv(q)).vector ≈ rotmatz(π/4) ⋅ v
-        @test  (q * (v * inv(q))).vector ≈ rotmatz(π/4) ⋅ v
-        @test  ((inv(q) * v) * q).vector ≈ rotmatz(-π/4) ⋅ v
-        @test  (inv(q) * (v * q)).vector ≈ rotmatz(-π/4) ⋅ v
-        @test rotate(v, q) ≈ rotmatz(π/4) ⋅ v
-        @test rotate(v, inv(q)) ≈ rotmatz(-π/4) ⋅ v
-
-        # check 2D case
-        v2d = rand(Vec{2, T})
-        v3d = Vec(v2d[1], v2d[2], 0)
-        @test  ((q * v2d) * inv(q)).vector ≈ rotmatz(π/4) ⋅ v3d
-        @test  (q * (v2d * inv(q))).vector ≈ rotmatz(π/4) ⋅ v3d
-        @test  ((inv(q) * v2d) * q).vector ≈ rotmatz(-π/4) ⋅ v3d
-        @test  (inv(q) * (v2d * q)).vector ≈ rotmatz(-π/4) ⋅ v3d
-        @test rotate(v2d, q) ≈ rotmatz(π/4) ⋅ v3d
-        @test rotate(v2d, inv(q)) ≈ rotmatz(-π/4) ⋅ v3d
-
+        for dim in (2, 3)
+            dim == 2 && continue
+            # check multiplications
+            v = rand(Vec{dim, T})
+            v3 = ToVec3(v)
+            @test (q * v / q).vector ≈ Rq ⋅ v3
+            @test (p * v / p).vector ≈ Rp ⋅ v3
+            @test (r * v / r).vector ≈ Rp ⋅ Rq ⋅ v3
+            @test (q * v * inv(q)).vector ≈ Rq ⋅ v3
+            @test (p * v * inv(p)).vector ≈ Rp ⋅ v3
+            @test (r * v * inv(r)).vector ≈ Rp ⋅ Rq ⋅ v3
+            # inverse of rotation
+            @test (inv(q) * v * q).vector ≈ inv(Rq) ⋅ v3
+            # check order of multiplications
+            @test ((q * v) / q).vector ≈ Rq ⋅ v3
+            @test (q * (v / q)).vector ≈ Rq ⋅ v3
+            # rotate
+            @test rotate(v, q) ≈ rotate(v, Rq)
+            @test rotate(v, p) ≈ rotate(v, Rp)
+            @test rotate(v, r) ≈ rotate(v, Rp ⋅ Rq)
+            @test rotate(v, inv(q)) ≈ rotate(v, inv(Rq))
+            @test rotate(v, inv(p)) ≈ rotate(v, inv(Rp))
+            @test rotate(v, inv(r)) ≈ rotate(v, inv(Rp ⋅ Rq))
+        end
         # test with rotmat(θ, n)
         θ = rand(T)
         n = rand(Vec{3, T})
