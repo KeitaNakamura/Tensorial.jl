@@ -86,6 +86,8 @@ true
 """
 quaternion(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) = Quaternion(θ, x; normalize, degree)
 quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {T} = Quaternion{T}(θ, x; normalize, degree)
+quaternion(θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) = @inbounds Quaternion(θ, Vec(x[1], x[2], 0); normalize, degree)
+quaternion(::Type{T}, θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) where {T} = @inbounds Quaternion{T}(θ, Vec(x[1], x[2], 0); normalize, degree)
 
 Base.length(::Quaternion) = 4
 Base.size(::Quaternion) = (4,)
@@ -129,6 +131,8 @@ end
     @inbounds Quaternion(zero(T), v[1], v[2], zero(T)) * q
 end
 
+@inline Base.:/(v::Vec, q::Quaternion) = v * inv(q)
+
 """
     rotate(x::Vec, q::Quaternion)
 
@@ -149,7 +153,8 @@ julia> rotate(v, quaternion(π/4, Vec(0,0,1)))
  0.0
 ```
 """
-@inline rotate(v::Vec, q::Quaternion) = (q * v / q).vector
+@inline rotate(v::Vec{3}, q::Quaternion) = (q * v / q).vector
+@inline rotate(v::Vec{2}, q::Quaternion) = (v = (q * v / q).vector; @inbounds Vec(v[1], v[2]))
 
 @inline Base.conj(q::Quaternion) = @inbounds Quaternion(q[1], -q[2], -q[3], -q[4])
 @inline Base.abs2(q::Quaternion) = (v = Vec(q); dot(v, v))
