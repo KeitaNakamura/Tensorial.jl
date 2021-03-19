@@ -67,7 +67,7 @@ end
     quaternion(θ, x::Vec; [normalize = true, degree = false])
     quaternion(T, θ, x::Vec; [normalize = true, degree = false])
 
-Construct `Quaternion` from direction `x` and angle `θ`.
+Construct `Quaternion` from angle `θ` and direction `x`.
 The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
 
 ```jldoctest

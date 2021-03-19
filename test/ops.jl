@@ -224,6 +224,8 @@ end
                 b = normalize(rand(Vec{dim, T}))
                 @test (@inferred rotmat(a => b))::Mat{dim, dim, T} ⋅ a ≈ b
             end
+            @test (@inferred rotmat(T(π/3), Vec{3, T}(0,0,1)))::Mat{3,3,T} ⋅ Vec(1,0,0) ≈ [cos(π/3), sin(π/3), 0]
+            @test (@inferred rotmat(T(60), Vec{3, T}(0,0,1); degree = true))::Mat{3,3,T} ⋅ Vec(1,0,0) ≈ [cos(π/3), sin(π/3), 0]
         end
         @test_throws Exception rotmat(Vec(1,0) => Vec(1,1)) # length of two vectors must be the same
     end
