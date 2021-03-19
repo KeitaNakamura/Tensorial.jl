@@ -22,6 +22,8 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
         @test (@inferred get_data(q))::NTuple{4, T} == map(T, (1,2,3,4))
 
         # quaternion
+        @test (@inferred quaternion(T(π/4), Vec{2, T}(1,2)))::Quaternion{T} == (@inferred quaternion(T(π/4), Vec{3, T}(1,2,0)))::Quaternion{T}
+        @test (@inferred quaternion(T, π/4, Vec(1,2)))::Quaternion{T} == (@inferred quaternion(T, π/4, Vec(1,2,0)))::Quaternion{T}
         q = (@inferred quaternion(T(π/4), Vec{3, T}(1,2,3)))::Quaternion{T}
         q = (@inferred quaternion(T, π/4, Vec(1,2,3)))::Quaternion{T}
         @test length(q) == 4
@@ -74,7 +76,6 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
         r = p * q
 
         for dim in (2, 3)
-            dim == 2 && continue
             # check multiplications
             v = rand(Vec{dim, T})
             v3 = ToVec3(v)

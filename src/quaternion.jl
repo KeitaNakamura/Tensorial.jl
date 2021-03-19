@@ -86,6 +86,8 @@ true
 """
 quaternion(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) = Quaternion(θ, x; normalize, degree)
 quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {T} = Quaternion{T}(θ, x; normalize, degree)
+quaternion(θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) = @inbounds Quaternion(θ, Vec(x[1], x[2], 0); normalize, degree)
+quaternion(::Type{T}, θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) where {T} = @inbounds Quaternion{T}(θ, Vec(x[1], x[2], 0); normalize, degree)
 
 Base.length(::Quaternion) = 4
 Base.size(::Quaternion) = (4,)
