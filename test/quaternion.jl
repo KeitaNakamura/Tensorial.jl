@@ -75,6 +75,9 @@
         @test (q * v / q).vector ≈ Rq ⋅ v
         @test (p * v / p).vector ≈ Rp ⋅ v
         @test (r * v / r).vector ≈ Rp ⋅ Rq ⋅ v
+        @test rotate(v, q) ≈ Rq ⋅ v
+        @test rotate(v, p) ≈ Rp ⋅ v
+        @test rotate(v, r) ≈ Rp ⋅ Rq ⋅ v
 
         # check order of multiplications
         q = quaternion(π/4, Vec(0,0,1))
@@ -82,6 +85,8 @@
         @test  (q * (v * inv(q))).vector ≈ rotmatz(π/4) ⋅ v
         @test  ((inv(q) * v) * q).vector ≈ rotmatz(-π/4) ⋅ v
         @test  (inv(q) * (v * q)).vector ≈ rotmatz(-π/4) ⋅ v
+        @test rotate(v, q) ≈ rotmatz(π/4) ⋅ v
+        @test rotate(v, inv(q)) ≈ rotmatz(-π/4) ⋅ v
 
         # check 2D case
         v2d = rand(Vec{2, T})
@@ -90,6 +95,8 @@
         @test  (q * (v2d * inv(q))).vector ≈ rotmatz(π/4) ⋅ v3d
         @test  ((inv(q) * v2d) * q).vector ≈ rotmatz(-π/4) ⋅ v3d
         @test  (inv(q) * (v2d * q)).vector ≈ rotmatz(-π/4) ⋅ v3d
+        @test rotate(v2d, q) ≈ rotmatz(π/4) ⋅ v3d
+        @test rotate(v2d, inv(q)) ≈ rotmatz(-π/4) ⋅ v3d
 
         # test with rotmat(θ, n)
         θ = rand(T)

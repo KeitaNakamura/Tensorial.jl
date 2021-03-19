@@ -230,16 +230,22 @@ end
         @test_throws Exception rotmat(Vec(1,0) => Vec(1,1)) # length of two vectors must be the same
     end
     @testset "rotate" begin
-        for T in (Float32, Float64), dim in 2:3
-            a = normalize(rand(Vec{dim, T}))
-            b = normalize(rand(Vec{dim, T}))
-            R = rotmat(a => b)
-            v = rand(Vec{dim, T})
-            A = rand(SecondOrderTensor{dim, T})
-            S = rand(SymmetricSecondOrderTensor{dim, T})
-            @test (@inferred rotate(v, R))::Vec{dim, T} ≈ v ⋅ R
-            @test (@inferred rotate(A, R))::SecondOrderTensor{dim, T} ≈ R ⋅ A ⋅ R'
-            @test (@inferred rotate(S, R))::SymmetricSecondOrderTensor{dim, T} ≈ R ⋅ S ⋅ R'
+        for T in (Float32, Float64)
+            for dim in 2:3
+                a = normalize(rand(Vec{dim, T}))
+                b = normalize(rand(Vec{dim, T}))
+                R = rotmat(a => b)
+                v = rand(Vec{dim, T})
+                A = rand(SecondOrderTensor{dim, T})
+                S = rand(SymmetricSecondOrderTensor{dim, T})
+                @test (@inferred rotate(v, R))::Vec{dim, T} ≈ v ⋅ R
+                @test (@inferred rotate(A, R))::SecondOrderTensor{dim, T} ≈ R ⋅ A ⋅ R'
+                @test (@inferred rotate(S, R))::SymmetricSecondOrderTensor{dim, T} ≈ R ⋅ S ⋅ R'
+            end
+            # v in 2D, R in 3D
+            v = Vec{2, T}(1,0)
+            R = rotmatz(T(π/4))
+            @test (@inferred rotate(v, R))::Vec{2, T} ≈ (x = rotate(Vec(v[1], v[2], 0), R); Vec(x[1], x[2]))
         end
     end
     @testset "eigen" begin
