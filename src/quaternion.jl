@@ -129,6 +129,8 @@ end
     @inbounds Quaternion(zero(T), v[1], v[2], zero(T)) * q
 end
 
+@inline Base.:/(v::Vec, q::Quaternion) = v * inv(q)
+
 """
     rotate(x::Vec, q::Quaternion)
 
