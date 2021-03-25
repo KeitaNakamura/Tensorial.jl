@@ -11,5 +11,6 @@ include("continuum_mechanics.jl")
 include("inv.jl")
 include("voigt.jl")
 include("ad.jl")
+include("broadcast.jl")
 
 include("quaternion.jl")
