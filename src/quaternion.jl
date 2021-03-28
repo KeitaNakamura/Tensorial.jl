@@ -32,6 +32,8 @@ end
 @inline Vec(q::Quaternion) = Vec(Tuple(q))
 @inline (::Type{T})(x::Vec{3}) where {T <: Quaternion} = @inbounds T(zero(eltype(x)), x[1], x[2], x[3])
 
+@inline Quaternion(x::Real) = Quaternion(x, zero(x), zero(x), zero(x))
+
 Base.Tuple(q::Quaternion) = getfield(q, :data)
 
 @inline function Base.getproperty(q::Quaternion, name::Symbol)
