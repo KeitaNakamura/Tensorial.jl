@@ -70,12 +70,13 @@ end
 Construct `Quaternion` from angle `θ` and direction `x`.
 The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
 
+# Examples
 ```jldoctest
 julia> q = quaternion(π/4, Vec(0,0,1))
 0.9238795325112867 + 0.0𝙞 + 0.0𝙟 + 0.3826834323650898𝙠
 
 julia> v = rand(Vec{3})
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.5908446386657102
  0.7667970365022592
  0.5662374165061859
@@ -141,13 +142,13 @@ Rotate `x` by quaternion `q`.
 # Examples
 ```jldoctest
 julia> v = Vec(1.0, 0.0, 0.0)
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  1.0
  0.0
  0.0
 
 julia> rotate(v, quaternion(π/4, Vec(0,0,1)))
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.7071067811865475
  0.7071067811865476
  0.0

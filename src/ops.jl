@@ -69,7 +69,7 @@ julia> B = rand(Tensor{Tuple{3,3,3}});
 julia> C = rand(Tensor{Tuple{3,3,3}});
 
 julia> A = contraction(B, C, Val(2))
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  1.36912   1.86751  1.32531
  1.61744   2.34426  1.94101
  0.929252  1.89656  1.79015
@@ -106,19 +106,19 @@ Compute tensor product such as ``A_{ij} = x_i y_j``.
 # Examples
 ```jldoctest
 julia> x = rand(Vec{3})
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.5908446386657102
  0.7667970365022592
  0.5662374165061859
 
 julia> y = rand(Vec{3})
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.4600853424625171
  0.7940257103317943
  0.8541465903790502
 
 julia> A = x ⊗ y
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.271839  0.469146  0.504668
  0.352792  0.608857  0.654957
  0.260518  0.449607  0.48365
@@ -137,13 +137,13 @@ This is equivalent to [`contraction(::AbstractTensor, ::AbstractTensor, Val(1))`
 # Examples
 ```jldoctest
 julia> x = rand(Vec{3})
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.5908446386657102
  0.7667970365022592
  0.5662374165061859
 
 julia> y = rand(Vec{3})
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.4600853424625171
  0.7940257103317943
  0.8541465903790502
@@ -163,7 +163,7 @@ Compute norm of a tensor.
 # Examples
 ```jldoctest
 julia> x = rand(Mat{3, 3})
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
@@ -191,7 +191,7 @@ Compute the trace of a square tensor.
 # Examples
 ```jldoctest
 julia> x = rand(Mat{3,3})
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
@@ -264,7 +264,7 @@ Construct a skew-symmetric (anti-symmetric) tensor `W` from a vector `ω` as
 # Examples
 ```jldoctest
 julia> skew(Vec(1,2,3))
-3×3 Tensor{Tuple{3,3},Int64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Int64, 2, 9}:
   0  -3   2
   3   0  -1
  -2   1   0
@@ -317,21 +317,22 @@ The vectors are expanded to 3D frist for dimensions 1 and 2.
 The infix operator `×` (written `\\times`) can also be used.
 `x × y` (where `×` can be typed by `\\times<tab>`) is a synonym for `cross(x, y)`.
 
+# Examples
 ```jldoctest
 julia> x = rand(Vec{3})
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.5908446386657102
  0.7667970365022592
  0.5662374165061859
 
 julia> y = rand(Vec{3})
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.4600853424625171
  0.7940257103317943
  0.8541465903790502
 
 julia> x × y
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
   0.20535000738340053
  -0.24415039787171888
   0.11635375677388776
@@ -380,7 +381,7 @@ Construct 2D rotation matrix.
 # Examples
 ```jldoctest
 julia> rotmat(30, degree = true)
-2×2 Tensor{Tuple{2,2},Float64,2,4}:
+2×2 Tensor{Tuple{2, 2}, Float64, 2, 4}:
  0.866025  -0.5
  0.5        0.866025
 ```
@@ -498,19 +499,19 @@ The norms of two vectors must be the same.
 # Examples
 ```jldoctest
 julia> a = normalize(rand(Vec{3}))
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.526847334217759
  0.683741457787621
  0.5049054419691867
 
 julia> b = normalize(rand(Vec{3}))
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.36698690362212083
  0.6333543148133657
  0.6813097125956302
 
 julia> R = rotmat(a => b)
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  -0.594528   0.597477   0.538106
   0.597477  -0.119597   0.792917
   0.538106   0.792917  -0.285875
@@ -535,21 +536,22 @@ end
 
 Construct rotation matrix from angle `θ` and direction `n`.
 
+# Examples
 ```jldoctest
 julia> x = Vec(1.0, 0.0, 0.0)
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  1.0
  0.0
  0.0
 
 julia> n = Vec(0.0, 0.0, 1.0)
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  0.0
  0.0
  1.0
 
 julia> rotmat(π/2, n) ⋅ x
-3-element Tensor{Tuple{3},Float64,1,3}:
+3-element Vec{3, Float64}:
  1.1102230246251565e-16
  1.0
  0.0
@@ -575,25 +577,25 @@ This function can hold the symmetry of `SymmetricSecondOrderTensor`.
 # Examples
 ```jldoctest
 julia> A = rand(SymmetricSecondOrderTensor{3})
-3×3 Tensor{Tuple{Symmetry{Tuple{3,3}}},Float64,2,6}:
+3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
 
 julia> R = rotmatz(π/4)
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.707107  -0.707107  0.0
  0.707107   0.707107  0.0
  0.0        0.0       1.0
 
 julia> rotate(A, R)
-3×3 Tensor{Tuple{Symmetry{Tuple{3,3}}},Float64,2,6}:
+3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
  -0.241332   0.0653796  -0.161071
   0.0653796  1.29226     0.961851
  -0.161071   0.961851    0.854147
 
 julia> R ⋅ A ⋅ R'
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  -0.241332   0.0653796  -0.161071
   0.0653796  1.29226     0.961851
  -0.161071   0.961851    0.854147

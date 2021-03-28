@@ -9,13 +9,13 @@ Compute the inverse of a tensor.
 # Examples
 ```jldoctest
 julia> x = rand(SecondOrderTensor{3})
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
 
 julia> inv(x)
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
   19.7146   -19.2802    7.30384
    6.73809  -10.7687    7.55198
  -68.541     81.4917  -38.8361
