@@ -13,6 +13,6 @@ BroadcastStyle(x::TensorStyle, ::BroadcastStyle) = x
 # special version between AbstractVec and Tuple
 # only this case returns Broadcasted{TensorStyle{1}}
 @inline broadcasted(x::TensorStyle{1}, f, args::Vararg{Union{AbstractVec, Tuple}}) = Broadcasted{TensorStyle{1}}(f, args)
-_vec(x::Tuple) = Vec(x)
-_vec(x::AbstractVec) = x
-@inline Base.copy(bc::Broadcasted{TensorStyle{1}}) = bc.f(map(_vec, bc.args)...)
+@inline _tuple(x::Tuple) = x
+@inline _tuple(x::AbstractVec) = Tuple(x)
+@inline Base.copy(bc::Broadcasted{TensorStyle{1}}) = Vec(broadcast(bc.f, map(_tuple, bc.args)...))
