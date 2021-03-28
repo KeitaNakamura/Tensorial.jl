@@ -30,8 +30,8 @@ end
 Convert a tensor to Voigt form.
 
 Keyword arguments:
- - `offdiagscale`: determines the scaling factor for the offdiagonal elements.
- - `order`: vector of cartesian indices (`Tuple{Int, Int}`) determining the Voigt order.
+ - `offdiagscale`: Determines the scaling factor for the offdiagonal elements.
+ - `order`: A vector of cartesian indices (`Tuple{Int, Int}`) determining the Voigt order.
    The default order is `[(1,1), (2,2), (3,3), (2,3), (1,3), (1,2), (3,2), (3,1), (2,1)]`
 
 See also [`fromvoigt`](@ref).
@@ -151,15 +151,20 @@ end
 
 
 """
-    fromvoigt(S::Type{<: Union{SecondOrderTensor, FourthOrderTensor}}, A::AbstractArray{T})
-    fromvoigt(S::Type{<: Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor}}, A::AbstractArray{T}; [offdiagscale])
+    fromvoigt(S::Type{<: Union{SecondOrderTensor, FourthOrderTensor}}, A::AbstractArray{T}; [order])
+    fromvoigt(S::Type{<: Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor}}, A::AbstractArray{T}; [order, offdiagscale])
 
 Converts an array `A` stored in Voigt format to a Tensor of type `S`.
 
 Keyword arguments:
- - `offdiagscale`: determines the scaling factor for the offdiagonal elements.
- - `order`: vector of cartesian indices (`Tuple{Int, Int}`) determining the Voigt order.
+ - `offdiagscale`: Determines the scaling factor for the offdiagonal elements.
+ - `order`: A vector of cartesian indices (`Tuple{Int, Int}`) determining the Voigt order.
    The default order is `[(1,1), (2,2), (3,3), (2,3), (1,3), (1,2), (3,2), (3,1), (2,1)]`
+
+!!! note
+    Since `offdiagscale` is the scaling factor for the offdiagonal elements in **Voigt form**,
+    they are multiplied by `1/offdiagscale` in `fromvoigt` unlike [`tovoigt`](@ref).
+    Thus `fromvoigt(tovoigt(x, offdiagscale = 2), offdiagscale = 2)` returns original `x`.
 
 See also [`tovoigt`](@ref).
 
