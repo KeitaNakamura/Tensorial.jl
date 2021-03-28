@@ -7,7 +7,7 @@ Compute the mean value of diagonal entries of a square tensor.
 # Examples
 ```jldoctest
 julia> x = rand(Mat{3,3})
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
@@ -28,13 +28,13 @@ Support only for tensors in 3D.
 # Examples
 ```jldoctest
 julia> x = rand(Mat{3,3})
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
 
 julia> vol(x)
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.543903  0.0       0.0
  0.0       0.543903  0.0
  0.0       0.0       0.543903
@@ -59,13 +59,13 @@ Support only for tensors in 3D.
 # Examples
 ```jldoctest
 julia> x = rand(Mat{3,3})
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.590845  0.460085  0.200586
  0.766797  0.794026  0.298614
  0.566237  0.854147  0.246837
 
 julia> dev(x)
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.0469421  0.460085   0.200586
  0.766797   0.250123   0.298614
  0.566237   0.854147  -0.297065
@@ -92,7 +92,7 @@ I_3(\\bm{\\sigma}) &= \\det(\\bm{\\sigma})
 
 ```jldoctest
 julia> σ = rand(SymmetricSecondOrderTensor{3})
-3×3 Tensor{Tuple{Symmetry{Tuple{3,3}}},Float64,2,6}:
+3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147
@@ -126,7 +126,7 @@ J_3(\\bm{\\sigma}) &= \\frac{1}{3} \\mathrm{tr}(\\mathrm{dev}(\\bm{\\sigma})^3)
 
 ```jldoctest
 julia> σ = rand(SymmetricSecondOrderTensor{3})
-3×3 Tensor{Tuple{Symmetry{Tuple{3,3}}},Float64,2,6}:
+3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
  0.590845  0.766797  0.566237
  0.766797  0.460085  0.794026
  0.566237  0.794026  0.854147

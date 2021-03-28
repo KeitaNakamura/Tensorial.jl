@@ -38,13 +38,13 @@ See also [`fromvoigt`](@ref).
 
 ```jldoctest
 julia> x = Mat{3,3}(1:9...)
-3×3 Tensor{Tuple{3,3},Int64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Int64, 2, 9}:
  1  4  7
  2  5  8
  3  6  9
 
 julia> tovoigt(x)
-9-element StaticArrays.SArray{Tuple{9},Int64,1,9} with indices SOneTo(9):
+9-element StaticArrays.SVector{9, Int64} with indices SOneTo(9):
  1
  5
  9
@@ -56,14 +56,14 @@ julia> tovoigt(x)
  2
 
 julia> x = SymmetricSecondOrderTensor{3}(1:6...)
-3×3 Tensor{Tuple{Symmetry{Tuple{3,3}}},Int64,2,6}:
+3×3 SymmetricSecondOrderTensor{3, Int64, 6}:
  1  2  3
  2  4  5
  3  5  6
 
 julia> tovoigt(x; offdiagscale = 2,
                   order = [(1,1), (2,2), (3,3), (1,2), (1,3), (2,3)])
-6-element StaticArrays.SArray{Tuple{6},Int64,1,6} with indices SOneTo(6):
+6-element StaticArrays.SVector{6, Int64} with indices SOneTo(6):
   1
   4
   6
@@ -170,7 +170,7 @@ See also [`tovoigt`](@ref).
 
 ```jldoctest
 julia> fromvoigt(Mat{3,3}, 1.0:1.0:9.0)
-3×3 Tensor{Tuple{3,3},Float64,2,9}:
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  1.0  6.0  5.0
  9.0  2.0  4.0
  8.0  7.0  3.0
@@ -179,7 +179,7 @@ julia> fromvoigt(SymmetricSecondOrderTensor{3},
                  1.0:1.0:6.0,
                  offdiagscale = 2.0,
                  order = [(1,1), (2,2), (3,3), (1,2), (1,3), (2,3)])
-3×3 Tensor{Tuple{Symmetry{Tuple{3,3}}},Float64,2,6}:
+3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
  1.0  2.0  2.5
  2.0  2.0  3.0
  2.5  3.0  3.0
