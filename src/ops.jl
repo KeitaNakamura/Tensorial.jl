@@ -317,6 +317,7 @@ The vectors are expanded to 3D frist for dimensions 1 and 2.
 The infix operator `×` (written `\\times`) can also be used.
 `x × y` (where `×` can be typed by `\\times<tab>`) is a synonym for `cross(x, y)`.
 
+# Examples
 ```jldoctest
 julia> x = rand(Vec{3})
 3-element Vec{3, Float64}:
@@ -535,6 +536,7 @@ end
 
 Construct rotation matrix from angle `θ` and direction `n`.
 
+# Examples
 ```jldoctest
 julia> x = Vec(1.0, 0.0, 0.0)
 3-element Vec{3, Float64}:

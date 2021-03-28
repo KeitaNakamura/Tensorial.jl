@@ -36,6 +36,7 @@ Keyword arguments:
 
 See also [`fromvoigt`](@ref).
 
+# Examples
 ```jldoctest
 julia> x = Mat{3,3}(1:9...)
 3×3 Tensor{Tuple{3, 3}, Int64, 2, 9}:
@@ -168,6 +169,7 @@ Keyword arguments:
 
 See also [`tovoigt`](@ref).
 
+# Examples
 ```jldoctest
 julia> fromvoigt(Mat{3,3}, 1.0:1.0:9.0)
 3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
