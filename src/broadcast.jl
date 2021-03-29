@@ -8,6 +8,7 @@ BroadcastStyle(x::TensorStyle, ::BroadcastStyle) = x
 # basically AbstractTensor behaves like scalar in broadcast
 @inline _ref(x::AbstractTensor) = Ref(x)
 @inline _ref(x::Any) = x
+@inline _ref(x::Broadcasted{TensorStyle{1}}) = Ref(copy(x)) # avoid StackOverflowError in `broadcasted(::TensorStyle, op, ::Broadcasted{TensorStyle{1}}, ::Broadcasted)`
 @inline broadcasted(x::TensorStyle, f, args...) = broadcasted(f, map(_ref, args)...)
 
 # special version between AbstractVec and Tuple
