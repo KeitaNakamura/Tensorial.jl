@@ -10,14 +10,15 @@ end
 # Space
 
 @generated function _permutedims(::Space{S}, ::Val{perm}) where {S, perm}
-    # numbering
+    # numbering each dimension
     num = Int[]
     for (i, s) in enumerate(S)
         append!(num, fill(i, length(s)))
     end
-    num = num[collect(perm)] # allow to use invalid permutation
+    num = num[collect(perm)] # allow to use invalid permutation in `_permutedims`
     # permute!(num, collect(perm))
 
+    # collect the same number of group
     groups = [[num[1]]]
     for i in 2:length(num)
         if groups[end][end] == num[i] # check number
@@ -27,14 +28,17 @@ end
         end
     end
 
+    # apply `Symmetry` if needed
     newspace = map(groups) do group
         space_num = group[end]
         s = S[space_num]
         if length(group) == 1
-            first(s) # if Symmetry, just extract first dimension
+            # if Symmetry, extract first dimension
+            # if Real, just return it
+            s[1]
         else
             if s isa Symmetry
-                Symmetry(fill(first(s), length(group))...)
+                Symmetry(fill(s[1], length(group))...)
             else
                 error() # unreachable
             end
@@ -63,11 +67,13 @@ end
     end
 end
 
-@inline function Base.permutedims(x::AbstractTensor, ::Val{perm}) where {perm}
-    ispermuted(Val(ndims(x)), Val(perm)) && return x
-    S = permutedims(Space(x), Val(perm))
+@generated _revperm(::Val{perm}) where {perm} = :(@_inline_meta; tuple($(sortperm(collect(perm))...)))
+
+@inline function Base.permutedims(x::AbstractTensor, perm::Val)
+    ispermuted(Val(ndims(x)), perm) && return x
+    S = permutedims(Space(x), perm)
     tensortype(S)() do ij...
         @_inline_meta
-        @inbounds x[getindex.(Ref(ij), perm)...]
+        @inbounds x[getindex.(Ref(ij), _revperm(perm))...]
     end
 end
