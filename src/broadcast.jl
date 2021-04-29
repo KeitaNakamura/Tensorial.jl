@@ -1,19 +1,42 @@
-import Base.Broadcast: BroadcastStyle, Style, Broadcasted, broadcastable, broadcasted
+import Base.Broadcast: BroadcastStyle, Broadcasted, broadcasted, broadcastable, materialize!
 
-struct TensorStyle{N} <: BroadcastStyle end
+struct TensorStyle <: BroadcastStyle end
+struct TensorAsScalarStyle <: BroadcastStyle end
 
-BroadcastStyle(::Type{<: AbstractTensor{<: Any, <: Any, N}}) where {N} = TensorStyle{N}()
-BroadcastStyle(x::TensorStyle, ::BroadcastStyle) = x
+BroadcastStyle(::Type{<: AbstractTensor}) = TensorStyle()
+BroadcastStyle(x::TensorStyle, ::Broadcast.DefaultArrayStyle{0}) = x
+BroadcastStyle(x::TensorStyle, ::Broadcast.Style{Tuple}) = x
+BroadcastStyle(x::TensorStyle, ::BroadcastStyle) = TensorAsScalarStyle()
+BroadcastStyle(x::TensorAsScalarStyle, ::BroadcastStyle) = TensorAsScalarStyle()
 
-# basically AbstractTensor behaves like scalar in broadcast
+broadcastable(bc::Broadcasted{<: TensorStyle}) = copy(bc)
+
+@generated function _promote_space_for_broadcast(x::Tuple)
+    spaces = [Space(t) for t in x.parameters if t <: AbstractTensor]
+    quote
+        @_inline_meta
+        promote_space($(spaces...))
+    end
+end
+
+_broadcastable_for_tensorstyle(x::Any, ::Type{TT}) where {TT} = x
+_broadcastable_for_tensorstyle(x::AbstractTensor, ::Type{TT}) where {TT} = Tuple(convert(TT, x))
+broadcastable_for_tensorstyle(x::Tuple{Any}, ::Type{TT}) where {TT} = (_broadcastable_for_tensorstyle(x[1], TT),)
+broadcastable_for_tensorstyle(x::Tuple{Any, Any}, ::Type{TT}) where {TT} = (_broadcastable_for_tensorstyle(x[1], TT), _broadcastable_for_tensorstyle(x[2], TT))
+broadcastable_for_tensorstyle(x::Tuple, ::Type{TT}) where {TT} = (_broadcastable_for_tensorstyle(x[1], TT), broadcastable_for_tensorstyle(Base.tail(x), TT)...)
+@inline function Base.copy(bc::Broadcasted{TensorStyle})
+    S = _promote_space_for_broadcast(bc.args)
+    TT = tensortype(S)
+    TT(broadcast(bc.f, broadcastable_for_tensorstyle(bc.args, TT)...))
+end
+
 @inline _ref(x::AbstractTensor) = Ref(x)
 @inline _ref(x::Any) = x
-@inline _ref(x::Broadcasted{TensorStyle{1}}) = Ref(copy(x)) # avoid StackOverflowError in `broadcasted(::TensorStyle, op, ::Broadcasted{TensorStyle{1}}, ::Broadcasted)`
-@inline broadcasted(x::TensorStyle, f, args...) = broadcasted(f, map(_ref, args)...)
+@inline function broadcasted(::TensorAsScalarStyle, f, args...)
+    broadcasted(f, map(_ref, args)...)
+end
 
-# special version between AbstractVec and Tuple
-# only this case returns Broadcasted{TensorStyle{1}}
-@inline broadcasted(x::TensorStyle{1}, f, args::Vararg{Union{AbstractVec, Tuple}}) = Broadcasted{TensorStyle{1}}(f, args)
-@inline _tuple(x::Tuple) = x
-@inline _tuple(x::AbstractVec) = Tuple(x)
-@inline Base.copy(bc::Broadcasted{TensorStyle{1}}) = Vec(broadcast(bc.f, map(_tuple, bc.args)...))
+# for broadcast!(op, ::Array, ::AbstractTensor)
+function materialize!(dest, bc::Broadcasted{TensorStyle})
+    materialize!(dest, (copy(bc),))
+end
