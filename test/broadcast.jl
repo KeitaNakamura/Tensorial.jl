@@ -8,9 +8,11 @@
         @test (@inferred(v .+ vs))::Vector{Vec{3, T}} ≈ map(y -> v + y, vs)
         @test (@inferred(v .- vs))::Vector{Vec{3, T}} ≈ map(y -> v - y, vs)
         @test (@inferred(v .+ vs .- vs .+ v))::Vector{Vec{3, T}} ≈ map(y -> v + y - y + v, vs)
+        @test (vs .= v)::Vector{Vec{3, T}} ≈ map(y -> v, vs)
         @test (@inferred(A .+ As))::Vector{Mat{2, 3, T, 6}} ≈ map(y -> A + y, As)
         @test (@inferred(A .- As))::Vector{Mat{2, 3, T, 6}} ≈ map(y -> A - y, As)
         @test (@inferred(A .+ As .- As .+ A))::Vector{Mat{2, 3, T, 6}} ≈ map(y -> A + y - y + A, As)
+        @test (As .= A)::Vector{Mat{2, 3, T, 6}} ≈ map(y -> A, As)
         # with scalar
         @test (@inferred(v .+ 1))::Vec{3, T} ≈ map(y -> y + 1, v)
         @test (@inferred(A .+ 1))::Mat{2, 3, T} ≈ map(y -> y + 1, A)

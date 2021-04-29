@@ -1,4 +1,4 @@
-import Base.Broadcast: BroadcastStyle, Broadcasted, instantiate, broadcasted, broadcastable
+import Base.Broadcast: BroadcastStyle, Broadcasted, broadcasted, broadcastable, materialize!
 
 struct TensorStyle <: BroadcastStyle end
 struct TensorAsScalarStyle <: BroadcastStyle end
@@ -34,4 +34,9 @@ end
 @inline _ref(x::Any) = x
 @inline function broadcasted(::TensorAsScalarStyle, f, args...)
     broadcasted(f, map(_ref, args)...)
+end
+
+# for broadcast!(op, ::Array, ::AbstractTensor)
+function materialize!(dest, bc::Broadcasted{TensorStyle})
+    materialize!(dest, (copy(bc),))
 end
