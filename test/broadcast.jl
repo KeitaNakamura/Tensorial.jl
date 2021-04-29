@@ -8,10 +8,12 @@
         @test (@inferred(v .+ vs))::Vector{Vec{3, T}} ≈ map(y -> v + y, vs)
         @test (@inferred(v .- vs))::Vector{Vec{3, T}} ≈ map(y -> v - y, vs)
         @test (@inferred(v .+ vs .- vs .+ v))::Vector{Vec{3, T}} ≈ map(y -> v + y - y + v, vs)
+        @test (@inferred(broadcast(+, v, vs, vs, v)))::Vector{Vec{3, T}} ≈ map(y -> v + y + y + v, vs)
         @test (vs .= v)::Vector{Vec{3, T}} ≈ map(y -> v, vs)
         @test (@inferred(A .+ As))::Vector{Mat{2, 3, T, 6}} ≈ map(y -> A + y, As)
         @test (@inferred(A .- As))::Vector{Mat{2, 3, T, 6}} ≈ map(y -> A - y, As)
         @test (@inferred(A .+ As .- As .+ A))::Vector{Mat{2, 3, T, 6}} ≈ map(y -> A + y - y + A, As)
+        @test (@inferred(broadcast(+, A, As, As, A)))::Vector{Mat{2, 3, T, 6}} ≈ map(y -> A + y + y + A, As)
         @test (As .= A)::Vector{Mat{2, 3, T, 6}} ≈ map(y -> A, As)
         # with scalar
         @test (@inferred(v .+ 1))::Vec{3, T} ≈ map(y -> y + 1, v)
@@ -21,5 +23,8 @@
         # with tuple
         @test (@inferred(v .+ (1,2,3)))::Vec{3, T} ≈ map(+, v, (1,2,3))
         @test (@inferred(v .- (1,2,3)))::Vec{3, T} ≈ map(-, v, (1,2,3))
+        # others
+        @test (@inferred(broadcast(sqrt, v)))::Vec{3, T} ≈ map(sqrt, v)
+        @test (@inferred(broadcast(sqrt, A)))::Mat{2, 3, T} ≈ map(sqrt, A)
     end
 end
