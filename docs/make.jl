@@ -26,6 +26,7 @@ makedocs(;
             "Continuum Mechanics.md",
             "Voigt form.md",
             "Tensor Inversion.md",
+            "Broadcast.md",
             "Quaternion.md",
         ],
         "Benchmarks.md",
