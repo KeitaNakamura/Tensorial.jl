@@ -4,7 +4,7 @@ DocTestSetup = :(using Tensorial)
 
 # Broadcast
 
-In Tensorial.jl, subtypes of `AbstractTensor` basically behave like scalars rather than `Array` except broadcasting with scalars and tuples.
+In Tensorial.jl, subtypes of `AbstractTensor` basically behave like scalars rather than `Array`.
 For example, broadcasting operations on tensors and arrays of tensors will be performed as
 
 ```jldoctest
