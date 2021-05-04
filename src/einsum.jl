@@ -93,7 +93,7 @@ function anonymous_args_body(func::Expr)
     body = func.args[2]
     if Meta.isexpr(lhs, :tuple)
         args = lhs.args
-    elseif fargs isa Symbol
+    elseif lhs isa Symbol
         args = [lhs]
     else
         throw(ArgumentError("wrong arguments in anonymous function expression"))
@@ -121,6 +121,8 @@ function _findindices!(allinds::Dict{Symbol, Expr}, dummyinds::Set{Symbol}, expr
     nothing
 end
 
+
+# einsum for AbstractTensor
 macro einsum(ex)
     freeinds, code = anonymous_args_body(ex)
     tensors = findtensors!(code)
