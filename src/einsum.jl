@@ -122,7 +122,69 @@ function _findindices!(allinds::Dict{Symbol, Expr}, dummyinds::Set{Symbol}, expr
 end
 
 
-# einsum for AbstractTensor
+"""
+    @einsum (i,j...) -> expr
+    @einsum expr
+
+Macro conducts computation based on Einstein summation conversion.
+The arguments of the anonymous function are regard as **free indices**.
+If arguments are not given, then it is regarded as no free indices.
+
+# Examples
+```jldoctest
+julia> A = rand(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> B = rand(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.579672   0.066423  0.112486
+ 0.648882   0.956753  0.276021
+ 0.0109059  0.646691  0.651664
+
+julia> @einsum (i,j) -> A[i,k] * B[k,j]
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.643225  0.609151  0.32417
+ 0.962977  1.00373   0.500018
+ 0.885164  1.01445   0.460311
+
+julia> @einsum A[i,j] * B[i,j]
+2.454690093453888
+```
+
+This macro currently does not support summation of tensors.
+So, you need to divide the equation into terms and then apply this macro to each term as follows:
+
+```jldoctest
+julia> A = rand(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.590845  0.460085  0.200586
+ 0.766797  0.794026  0.298614
+ 0.566237  0.854147  0.246837
+
+julia> B = rand(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.579672   0.066423  0.112486
+ 0.648882   0.956753  0.276021
+ 0.0109059  0.646691  0.651664
+
+julia> @einsum (i,j) -> A[i,k]*B[k,j] + A[j,k]*B[k,i] # not supported
+ERROR: LoadError: @einsum: unsupported computation
+[...]
+
+julia> (@einsum (i,j) -> A[i,k]*B[k,j]) + (@einsum (i,j) -> A[j,k]*B[k,i]) # this is ok
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 1.28645  1.57213  1.20933
+ 1.57213  2.00746  1.51446
+ 1.20933  1.51446  0.920622
+```
+
+!!! note
+
+    `@einsum` is experimental and could change or disappear in future versions of Tensorial.
+"""
 macro einsum(ex)
     freeinds, code = anonymous_args_body(ex)
     tensors = findtensors!(code)
