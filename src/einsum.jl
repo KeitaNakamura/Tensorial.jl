@@ -70,7 +70,7 @@ end
 
 
 # NOTE: only multiplication is supported
-macro einsum(ex)
+macro einsum_array(ex)
     freeinds, code = anonymous_args_body(ex)
     allinds = Dict{Symbol, Expr}()
     dummyinds = Set{Symbol}()
