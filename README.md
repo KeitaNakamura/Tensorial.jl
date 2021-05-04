@@ -100,7 +100,7 @@ randn(Tensor{Tuple{2,3}})
 @Tensor rand(2,2,2)
 
 # contraction and tensor product
-x = rand(Tensor{Tuple{2,2}})
+x = rand(Mat{2,2})
 y = rand(Tensor{Tuple{@Symmetry{2,2}}})
 x ⊗ y isa Tensor{Tuple{2,2,@Symmetry{2,2}}} # tensor product
 x ⋅ y isa Tensor{Tuple{2,2}}                # single contraction (x_ij * y_jk)
@@ -126,6 +126,12 @@ AA = rand(FourthOrderTensor{3})          # equal to one(Tensor{Tuple{3,3,3,3}})
 SS = rand(SymmetricFourthOrderTensor{3}) # equal to one(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}})
 inv(AA) ⊡ AA ≈ one(AA)
 inv(SS) ⊡ SS ≈ one(SS)
+
+# Einstein summation convention (experimental)
+A = rand(Mat{3,3})
+B = rand(Mat{3,3})
+@einsum (i,j) -> A[i,k] * B[k,j]
+@einsum A[i,j] * B[i,j]
 ```
 
 ## Other tensor packages
