@@ -1,7 +1,12 @@
 abstract type AbstractTensor{S <: Tuple, T, N} <: AbstractArray{T, N} end
 
 Base.size(x::Type{TT}) where {TT <: AbstractTensor} = tensorsize(Space(x))
+Base.size(x::Type{TT}, i) where {TT <: AbstractTensor} = size(x)[i]
 Base.size(x::AbstractTensor) = tensorsize(Space(x))
+Base.size(x::AbstractTensor, i) = size(x)[i]
+
+Base.axes(x::Type{TT}) where {TT <: AbstractTensor} = Base.OneTo.(size(x))
+Base.axes(x::Type{TT}, i) where {TT <: AbstractTensor} = Base.OneTo(size(x, i))
 
 # indices
 for func in (:independent_indices, :indices, :duplicates)
