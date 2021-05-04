@@ -86,7 +86,9 @@ macro einsum_array(ex)
 end
 
 function anonymous_args_body(func::Expr)
-    @assert Meta.isexpr(func, :->)
+    if !Meta.isexpr(func, :->)
+        func = Expr(:->, Expr(:tuple), Expr(:block, func))
+    end
     lhs = func.args[1]
     body = func.args[2]
     if Meta.isexpr(lhs, :tuple)
@@ -117,4 +119,129 @@ function _findindices!(allinds::Dict{Symbol, Expr}, dummyinds::Set{Symbol}, expr
         end
     end
     nothing
+end
+
+macro einsum(ex)
+    freeinds, code = anonymous_args_body(ex)
+    tensors = findtensors!(code)
+    tensor_exprs = [Val((t.args...,)) for t in tensors]
+    f = :(($([Symbol(:tensor, i) for i in 1:length(tensors)]...),) -> $code)
+    dummyinds = setdiff(vcat([collect(t.args[2:end]) for t in tensors]...), freeinds)
+    tensor_symbols = [t.args[1] for t in tensors]
+    quote
+        $einsum($f, tuple(($(tensor_exprs...))), $(Val((freeinds...,))), $(Val((dummyinds...,))), tuple($(tensor_symbols...)))
+    end |> esc
+end
+
+findtensors!(ex::Expr) = _findtensors!(Expr[], ex)
+_findtensors!(tensors::Vector{Expr}, ::Any) = tensors
+function _findtensors!(tensors::Vector{Expr}, expr::Expr)
+    for i in eachindex(expr.args)
+        ex = expr.args[i]
+
+        # check for not `*` operator
+        if Meta.isexpr(ex, :call)
+            if ex.args[1] == :/ # devide by scalar is ok
+                check_no_ref_exprs(ex.args[3])
+            elseif ex.args[1] != :*
+                foreach(check_no_ref_exprs, ex.args) # ok if arguments are not tensors
+            end
+        end
+
+        if Meta.isexpr(ex, :ref)
+            push!(tensors, ex)
+            expr.args[i] = Symbol(:tensor, length(tensors))
+        else
+            _findtensors!(tensors, ex)
+        end
+    end
+    tensors
+end
+
+check_no_ref_exprs(ex) = nothing
+function check_no_ref_exprs(ex::Expr)
+    Meta.isexpr(ex, :ref) && error("@einsum: unsupported computation")
+    foreach(check_no_ref_exprs, ex.args)
+end
+
+@generated function einsum(f, tensor_exprs::Tuple{Vararg{Val}}, ::Val{freeinds}, ::Val{dummyinds}, tensors::Tuple) where {freeinds, dummyinds}
+    @assert unique([freeinds..., dummyinds]) == [freeinds..., dummyinds]
+
+    texps = map(p -> p.parameters[1], tensor_exprs.parameters)
+    allinds = [freeinds..., dummyinds...]
+
+    # check dimensions
+    dummyaxes = Base.OneTo{Int}[]
+    for symbol in dummyinds
+        dim = 0
+        count = 0
+        for (i, t) in enumerate(texps)
+            indices = findall(==(symbol), t)
+            for I in indices
+                @assert I != 1 # 1 is for tensor name
+                if dim == 0
+                    dim = size(tensors.parameters[i], I-1)
+                    push!(dummyaxes, axes(tensors.parameters[i], I-1))
+                else
+                    size(tensors.parameters[i], I-1) == dim || error("@einsum: dimension mismatch")
+                end
+                count += 1
+            end
+        end
+        count > 1 || error("@einsum: wrong dummy indices")
+    end
+
+    # tensor -> global indices
+    whichindices = Vector{Int}[]
+    for t in texps
+        inds = map(t[2:end]) do index
+            I = findfirst(==(index), allinds)
+            @assert I !== nothing
+            I
+        end
+        push!(whichindices, collect(inds))
+    end
+
+    if freeinds == ()
+        freeaxes = ()
+    else
+        perm = map(freeinds) do index
+            only(findall(==(index), vcat([collect(t[2:end]) for t in texps]...)))
+        end
+        TT = _permutedims(otimes(map(Space, tensors.parameters)...), Val(perm)) |> tensortype
+        freeaxes = axes(TT)
+    end
+
+    sumexps = map(CartesianIndices(freeaxes)) do finds
+        xs = map(collect(CartesianIndices(Tuple(dummyaxes)))) do dinds
+            ainds = [Tuple(finds)..., Tuple(dinds)...]
+            exps = map(enumerate(tensors.parameters)) do (i, t)
+                inds = ainds[whichindices[i]]
+                I = independent_indices(t)[inds...]
+                :(Tuple(tensors[$i])[$I])
+            end
+            Expr(:tuple, exps...)
+        end
+        :($sumargs(f, $(xs...)))
+    end
+
+    if freeinds == ()
+        quote
+            @_inline_meta
+            $(only(sumexps))
+        end
+    else
+        quote
+            @_inline_meta
+            $TT($(sumexps[indices(TT)]...))
+        end
+    end
+end
+
+function sumargs(f, x, ys...)
+    ret = f(x...)
+    @simd for i in eachindex(ys)
+        @inbounds ret += f(ys[i]...)
+    end
+    ret
 end
