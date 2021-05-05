@@ -86,19 +86,20 @@ macro einsum_array(ex)
 end
 
 function anonymous_args_body(func::Expr)
-    if !Meta.isexpr(func, :->)
-        func = Expr(:->, Expr(:tuple), Expr(:block, func))
-    end
-    lhs = func.args[1]
-    body = func.args[2]
-    if Meta.isexpr(lhs, :tuple)
-        args = lhs.args
-    elseif lhs isa Symbol
-        args = [lhs]
+    if Meta.isexpr(func, :->)
+        lhs = func.args[1]
+        body = func.args[2]
+        if Meta.isexpr(lhs, :tuple)
+            args = lhs.args
+        elseif lhs isa Symbol
+            args = [lhs]
+        else
+            throw(ArgumentError("wrong arguments in anonymous function expression"))
+        end
+        args, body
     else
-        throw(ArgumentError("wrong arguments in anonymous function expression"))
+        nothing, Expr(:block, func)
     end
-    args, body
 end
 
 _findindices!(allinds::Dict{Symbol, Expr}, dummyinds::Set{Symbol}, ::Any) = nothing
@@ -126,9 +127,9 @@ end
     @einsum (i,j...) -> expr
     @einsum expr
 
-Macro conducts computation based on Einstein summation conversion.
+Conducts tensor computation based on Einstein summation conversion.
 The arguments of the anonymous function are regard as **free indices**.
-If arguments are not given, then it is regarded as no free indices.
+If arguments are not given, they are guessed based on the order that indices appears from left to right.
 
 # Examples
 ```jldoctest
@@ -150,11 +151,17 @@ julia> @einsum (i,j) -> A[i,k] * B[k,j]
  0.962977  1.00373   0.500018
  0.885164  1.01445   0.460311
 
+julia> @einsum A[i,k] * B[k,j] # same as above
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.643225  0.609151  0.32417
+ 0.962977  1.00373   0.500018
+ 0.885164  1.01445   0.460311
+
 julia> @einsum A[i,j] * B[i,j]
 2.454690093453888
 ```
 
-This macro currently does not support summation of tensors.
+Currently, this macro does not support summation of tensors.
 So, you need to divide the equation into terms and then apply this macro to each term as follows:
 
 ```jldoctest
@@ -189,7 +196,13 @@ macro einsum(ex)
     freeinds, code = anonymous_args_body(ex)
     tensors = findtensors!(code)
     tensor_exprs = [ValTuple(t.args...) for t in tensors]
-    dummyinds = setdiff(vcat([collect(t.args[2:end]) for t in tensors]...), freeinds)
+
+    allinds = vcat([collect(t.args[2:end]) for t in tensors]...)
+    if freeinds === nothing
+        freeinds = [index for index in unique(allinds) if length(findall(==(index), allinds)) == 1]
+    end
+    dummyinds = setdiff(allinds, freeinds)
+
     tensor_symbols = [t.args[1] for t in tensors]
     quote
         $einsum(tensors -> $code, tuple($(tensor_exprs...)), $(ValTuple(freeinds...)), $(ValTuple(dummyinds...)), tuple($(tensor_symbols...)))
@@ -253,12 +266,13 @@ end
                 count += 1
             end
         end
-        count > 1 || error("@einsum: wrong dummy indices")
+        count == 2 || error("@einsum: index $symbol appears more than twice")
     end
 
-    # tensor -> global indices
+    # tensor -> global indices (connectivities)
     whichindices = Vector{Int}[]
-    for t in texps
+    for (i, t) in enumerate(texps)
+        length(t[2:end]) == ndims(tensors.parameters[i]) || error("@einsum: wrong getindex expression $(t[1])[$(t[2:end]...)]")
         inds = map(t[2:end]) do index
             I = findfirst(==(index), allinds)
             @assert I !== nothing
