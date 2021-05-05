@@ -188,14 +188,15 @@ julia> (@einsum (i,j) -> A[i,k]*B[k,j]) + (@einsum (i,j) -> A[j,k]*B[k,i]) # thi
 macro einsum(ex)
     freeinds, code = anonymous_args_body(ex)
     tensors = findtensors!(code)
-    tensor_exprs = [Val((t.args...,)) for t in tensors]
-    f = :(($([Symbol(:tensor, i) for i in 1:length(tensors)]...),) -> $code)
+    tensor_exprs = [ValTuple(t.args...) for t in tensors]
     dummyinds = setdiff(vcat([collect(t.args[2:end]) for t in tensors]...), freeinds)
     tensor_symbols = [t.args[1] for t in tensors]
     quote
-        $einsum($f, tuple(($(tensor_exprs...))), $(Val((freeinds...,))), $(Val((dummyinds...,))), tuple($(tensor_symbols...)))
+        $einsum(tensors -> $code, tuple($(tensor_exprs...)), $(ValTuple(freeinds...)), $(ValTuple(dummyinds...)), tuple($(tensor_symbols...)))
     end |> esc
 end
+
+ValTuple(x...) = Val(x)
 
 findtensors!(ex::Expr) = _findtensors!(Expr[], ex)
 _findtensors!(tensors::Vector{Expr}, ::Any) = tensors
@@ -214,7 +215,7 @@ function _findtensors!(tensors::Vector{Expr}, expr::Expr)
 
         if Meta.isexpr(ex, :ref)
             push!(tensors, ex)
-            expr.args[i] = Symbol(:tensor, length(tensors))
+            expr.args[i] = :(tensors[$(length(tensors))])
         else
             _findtensors!(tensors, ex)
         end
@@ -277,7 +278,7 @@ end
     end
 
     sumexps = map(CartesianIndices(freeaxes)) do finds
-        xs = map(collect(CartesianIndices(Tuple(dummyaxes)))) do dinds
+        xs = map(CartesianIndices(Tuple(dummyaxes))) do dinds
             ainds = [Tuple(finds)..., Tuple(dinds)...]
             exps = map(enumerate(tensors.parameters)) do (i, t)
                 inds = ainds[whichindices[i]]
@@ -303,9 +304,9 @@ end
 end
 
 function sumargs(f, x, ys...)
-    ret = f(x...)
+    ret = f(x)
     @simd for i in eachindex(ys)
-        @inbounds ret += f(ys[i]...)
+        @inbounds ret += f(ys[i])
     end
     ret
 end
