@@ -78,8 +78,8 @@ pkg> add Tensorial
 
 ```julia
 # identity tensors
-one(Tensor{Tuple{3,3}})            == Matrix(I,3,3) # second-order identity tensor
-one(Tensor{Tuple{@Symmetry{3,3}}}) == Matrix(I,3,3) # symmetric second-order identity tensor
+one(Tensor{Tuple{3,3}})            == Matrix(1I,3,3) # second-order identity tensor
+one(Tensor{Tuple{@Symmetry{3,3}}}) == Matrix(1I,3,3) # symmetric second-order identity tensor
 I  = one(Tensor{NTuple{4,3}})               # fourth-order identity tensor
 Is = one(Tensor{NTuple{2, @Symmetry{3,3}}}) # symmetric fourth-order identity tensor
 
