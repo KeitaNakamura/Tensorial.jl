@@ -272,7 +272,7 @@ end
     # tensor -> global indices (connectivities)
     whichindices = Vector{Int}[]
     for (i, t) in enumerate(texps)
-        length(t[2:end]) == ndims(tensors.parameters[i]) || error("@einsum: wrong getindex expression $(t[1])[$(t[2:end]...)]")
+        length(t[2:end]) == ndims(tensors.parameters[i]) || error("@einsum: the number of indices does not match the number of dimensions in expression $(t[1])[$(join(t[2:end], ","))]")
         inds = map(t[2:end]) do index
             I = findfirst(==(index), allinds)
             @assert I !== nothing
