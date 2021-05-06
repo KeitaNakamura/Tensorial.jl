@@ -127,7 +127,7 @@ end
     @einsum (i,j...) -> expr
     @einsum expr
 
-Conducts tensor computation based on Einstein summation conversion.
+Conducts tensor computation based on [Einstein summation convention](https://en.wikipedia.org/wiki/Einstein_notation).
 The arguments of the anonymous function are regard as **free indices**.
 If arguments are not given, they are guessed based on the order that indices appears from left to right.
 
