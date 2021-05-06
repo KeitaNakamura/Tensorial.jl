@@ -51,7 +51,7 @@ function contraction_exprs(S1::Space, S2::Space, ::Val{N}) where {N}
     J = length(s2) ÷ K
     s1′ = reshape(s1, I, K)
     s2′ = reshape(s2, K, J)
-    s′ = @einsum (i,j) -> s1′[i,k] * s2′[k,j]
+    s′ = @einsum_array (i,j) -> s1′[i,k] * s2′[k,j]
     s = reshape(s′, size(s1)[1:end-N]..., size(s2)[N+1:end]...)
     map(construct_expr, s[indices(S)])
 end

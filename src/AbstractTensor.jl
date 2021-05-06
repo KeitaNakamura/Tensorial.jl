@@ -1,7 +1,17 @@
 abstract type AbstractTensor{S <: Tuple, T, N} <: AbstractArray{T, N} end
 
-Base.size(x::Type{TT}) where {TT <: AbstractTensor} = tensorsize(Space(x))
-Base.size(x::AbstractTensor) = tensorsize(Space(x))
+@pure Base.size(::Type{TT}) where {TT <: AbstractTensor} = tensorsize(Space(TT))
+@inline function Base.size(TT::Type{<: AbstractTensor}, d::Int)
+    S = size(TT)
+    d > length(S) ? 1 : S[d]
+end
+@inline Base.size(x::AbstractTensor) = tensorsize(Space(x))
+
+@pure Base.axes(::Type{TT}) where {TT <: AbstractTensor} = map(Base.OneTo, size(TT))
+function Base.axes(TT::Type{<: AbstractTensor}, d::Int)
+    A = axes(TT)
+    d > length(A) ? Base.OneTo(1) : A[d]
+end
 
 # indices
 for func in (:independent_indices, :indices, :duplicates)

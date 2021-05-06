@@ -38,6 +38,7 @@ export
     @Vec,
     @Mat,
     @Tensor,
+    @einsum,
 # operations
     contraction,
     otimes,
@@ -73,8 +74,8 @@ include("utils.jl")
 include("Symmetry.jl")
 include("Space.jl")
 include("indexing.jl")
-include("einsum.jl")
 include("AbstractTensor.jl")
+include("einsum.jl")
 include("Tensor.jl")
 include("permute.jl")
 include("ops.jl")

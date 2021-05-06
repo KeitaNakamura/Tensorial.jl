@@ -78,8 +78,8 @@ pkg> add Tensorial
 
 ```julia
 # identity tensors
-one(Tensor{Tuple{3,3}})            == Matrix(I,3,3) # second-order identity tensor
-one(Tensor{Tuple{@Symmetry{3,3}}}) == Matrix(I,3,3) # symmetric second-order identity tensor
+one(Tensor{Tuple{3,3}})            == Matrix(1I,3,3) # second-order identity tensor
+one(Tensor{Tuple{@Symmetry{3,3}}}) == Matrix(1I,3,3) # symmetric second-order identity tensor
 I  = one(Tensor{NTuple{4,3}})               # fourth-order identity tensor
 Is = one(Tensor{NTuple{2, @Symmetry{3,3}}}) # symmetric fourth-order identity tensor
 
@@ -100,7 +100,7 @@ randn(Tensor{Tuple{2,3}})
 @Tensor rand(2,2,2)
 
 # contraction and tensor product
-x = rand(Tensor{Tuple{2,2}})
+x = rand(Mat{2,2})
 y = rand(Tensor{Tuple{@Symmetry{2,2}}})
 x ⊗ y isa Tensor{Tuple{2,2,@Symmetry{2,2}}} # tensor product
 x ⋅ y isa Tensor{Tuple{2,2}}                # single contraction (x_ij * y_jk)
@@ -126,6 +126,12 @@ AA = rand(FourthOrderTensor{3})          # equal to one(Tensor{Tuple{3,3,3,3}})
 SS = rand(SymmetricFourthOrderTensor{3}) # equal to one(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}})
 inv(AA) ⊡ AA ≈ one(AA)
 inv(SS) ⊡ SS ≈ one(SS)
+
+# Einstein summation convention (experimental)
+A = rand(Mat{3,3})
+B = rand(Mat{3,3})
+@einsum (i,j) -> A[i,k] * B[k,j]
+@einsum A[i,j] * B[i,j]
 ```
 
 ## Other tensor packages

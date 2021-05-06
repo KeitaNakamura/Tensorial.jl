@@ -58,7 +58,9 @@ end
     end
     otimes(droplast(x, Val(N)), dropfirst(y, Val(N)))
 end
+@pure otimes(x::Space) = x
 @pure otimes(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
+@pure otimes(x::Space, y::Space, z::Space...) = otimes(otimes(x, y), z...)
 @pure dot(x::Space, y::Space) = contraction(x, y, Val(1))
 @pure double_contraction(x::Space, y::Space) = contraction(x, y, Val(2))
 
