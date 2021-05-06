@@ -132,7 +132,7 @@ The arguments of the anonymous function are regard as **free indices**.
 If arguments are not given, they are guessed based on the order that indices appears from left to right.
 
 # Examples
-```jldoctest
+```jldoctest einsum
 julia> A = rand(Mat{3,3})
 3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.590845  0.460085  0.200586
@@ -164,19 +164,7 @@ julia> @einsum A[i,j] * B[i,j]
 Currently, this macro does not support summation of tensors.
 So, you need to divide the equation into terms and then apply this macro to each term as follows:
 
-```jldoctest
-julia> A = rand(Mat{3,3})
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 0.590845  0.460085  0.200586
- 0.766797  0.794026  0.298614
- 0.566237  0.854147  0.246837
-
-julia> B = rand(Mat{3,3})
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 0.579672   0.066423  0.112486
- 0.648882   0.956753  0.276021
- 0.0109059  0.646691  0.651664
-
+```jldoctest einsum
 julia> @einsum (i,j) -> A[i,k]*B[k,j] + A[j,k]*B[k,i] # not supported
 ERROR: LoadError: @einsum: unsupported computation
 [...]
