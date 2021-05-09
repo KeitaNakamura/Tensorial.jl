@@ -67,9 +67,9 @@ end
         @test_throws Exception (@einsum (i) -> S1[i,j] * v[j])
         # @test_throws Exception (@einsum (i,j) -> S1[i,j] + S1[i,j])
         # @test_throws Exception (@einsum (i,j) -> S1[i,j] - S1[i,j])
-        @test_throws Exception (@einsum (i,j) -> S1[i,j] * S1[i,j])
-        @test_throws Exception (@einsum (k) -> S1[i,j] * S1[i,j])
-        @test_throws Exception (@einsum (j) -> S1[i,i] * S1[i,j])
-        @test_throws Exception (@einsum S1[i,i] * S1[i,j])
+        # @test_throws Exception (@einsum (i,j) -> S1[i,j] * S1[i,j])
+        # @test_throws Exception (@einsum (k) -> S1[i,j] * S1[i,j])
+        # @test_throws Exception (@einsum (j) -> S1[i,i] * S1[i,j])
+        # @test_throws Exception (@einsum S1[i,i] * S1[i,j])
     end
 end
