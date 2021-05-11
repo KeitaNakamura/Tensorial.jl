@@ -170,21 +170,6 @@ julia> @einsum A[i,j] * B[i,j]
 2.454690093453888
 ```
 
-Currently, this macro does not support summation of tensors.
-So, you need to divide the equation into terms and then apply this macro to each term as follows:
-
-```jldoctest einsum
-julia> @einsum (i,j) -> A[i,k]*B[k,j] + A[j,k]*B[k,i] # not supported
-ERROR: LoadError: @einsum: unsupported computation
-[...]
-
-julia> (@einsum (i,j) -> A[i,k]*B[k,j]) + (@einsum (i,j) -> A[j,k]*B[k,i]) # this is ok
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 1.28645  1.57213  1.20933
- 1.57213  2.00746  1.51446
- 1.20933  1.51446  0.920622
-```
-
 !!! note
 
     `@einsum` is experimental and could change or disappear in future versions of Tensorial.
