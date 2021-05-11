@@ -97,13 +97,7 @@ function anonymous_args_body(func::Expr)
             throw(ArgumentError("wrong arguments in anonymous function expression"))
         end
         if Meta.isexpr(body, :block)
-            if body.args[1] isa LineNumberNode
-                @assert length(body.args) == 2
-                body = body.args[2]
-            else
-                @assert length(body.args) == 1
-                body = body.args[1]
-            end
+            body = only([x for x in body.args if !(x isa LineNumberNode)])
         end
         freeinds, body
     else
