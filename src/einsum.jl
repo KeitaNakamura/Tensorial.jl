@@ -90,15 +90,18 @@ function anonymous_args_body(func::Expr)
         lhs = func.args[1]
         body = func.args[2]
         if Meta.isexpr(lhs, :tuple)
-            args = lhs.args
+            freeinds = lhs.args
         elseif lhs isa Symbol
-            args = [lhs]
+            freeinds = [lhs]
         else
             throw(ArgumentError("wrong arguments in anonymous function expression"))
         end
-        args, body
+        if Meta.isexpr(body, :block)
+            body = only([x for x in body.args if !(x isa LineNumberNode)])
+        end
+        freeinds, body
     else
-        nothing, Expr(:block, func)
+        nothing, func
     end
 end
 
@@ -161,79 +164,123 @@ julia> @einsum A[i,j] * B[i,j]
 2.454690093453888
 ```
 
-Currently, this macro does not support summation of tensors.
-So, you need to divide the equation into terms and then apply this macro to each term as follows:
-
-```jldoctest einsum
-julia> @einsum (i,j) -> A[i,k]*B[k,j] + A[j,k]*B[k,i] # not supported
-ERROR: LoadError: @einsum: unsupported computation
-[...]
-
-julia> (@einsum (i,j) -> A[i,k]*B[k,j]) + (@einsum (i,j) -> A[j,k]*B[k,i]) # this is ok
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 1.28645  1.57213  1.20933
- 1.57213  2.00746  1.51446
- 1.20933  1.51446  0.920622
-```
-
 !!! note
 
     `@einsum` is experimental and could change or disappear in future versions of Tensorial.
 """
-macro einsum(ex)
-    freeinds, code = anonymous_args_body(ex)
-    tensors = findtensors!(code)
-    tensor_exprs = [ValTuple(t.args...) for t in tensors]
-
-    allinds = vcat([collect(t.args[2:end]) for t in tensors]...)
-    if freeinds === nothing
-        freeinds = [index for index in unique(allinds) if length(findall(==(index), allinds)) == 1]
-    end
-    dummyinds = setdiff(allinds, freeinds)
-
-    tensor_symbols = [t.args[1] for t in tensors]
-    quote
-        $einsum(tensors -> $code, tuple($(tensor_exprs...)), $(ValTuple(freeinds...)), $(ValTuple(dummyinds...)), tuple($(tensor_symbols...)))
-    end |> esc
+macro einsum(expr)
+    freeinds, body = anonymous_args_body(expr)
+    einex = einsum_instantiate(body)
+    freeinds === nothing && return einex.ex
+    isempty(freeinds) && return einex.ex
+    perm = find_perm(einex.freeinds => freeinds)
+    :(permutedims($(einex.ex), $(ValTuple(perm...))))
 end
 
 ValTuple(x...) = Val(x)
 
-findtensors!(ex::Expr) = _findtensors!(Expr[], ex)
-_findtensors!(tensors::Vector{Expr}, ::Any) = tensors
-function _findtensors!(tensors::Vector{Expr}, expr::Expr)
-    for i in eachindex(expr.args)
-        ex = expr.args[i]
-
-        # check for not `*` operator
-        if Meta.isexpr(ex, :call)
-            if ex.args[1] == :/ # devide by scalar is ok
-                check_no_ref_exprs(ex.args[3])
-            elseif ex.args[1] != :*
-                foreach(check_no_ref_exprs, ex.args) # ok if arguments are not tensors
-            end
-        end
-
-        if Meta.isexpr(ex, :ref)
-            push!(tensors, ex)
-            expr.args[i] = :(tensors[$(length(tensors))])
-        else
-            _findtensors!(tensors, ex)
-        end
+function find_perm((inds, freeinds)::Pair)::Vector{Int}
+    map(freeinds) do index
+        I = findall(==(index), inds)
+        @assert I !== nothing
+        only(I)
     end
-    tensors
 end
 
-check_no_ref_exprs(ex) = nothing
-function check_no_ref_exprs(ex::Expr)
-    Meta.isexpr(ex, :ref) && error("@einsum: unsupported computation")
-    foreach(check_no_ref_exprs, ex.args)
+function find_freeindices(allinds::Vector)
+    freeinds = []
+    for index in unique(allinds)
+        x = findall(==(index), allinds)
+        length(x) > 2 && error("@einsum: index $index appears more than twice")
+        length(x) == 1 && push!(freeinds, index)
+    end
+    freeinds
 end
 
-@generated function einsum(f, tensor_exprs::Tuple{Vararg{Val}}, ::Val{freeinds}, ::Val{dummyinds}, tensors::Tuple) where {freeinds, dummyinds}
-    @assert unique([freeinds..., dummyinds]) == [freeinds..., dummyinds]
+struct EinsumExpr
+    ex::Any
+    freeinds::Vector
+    allinds::Vector
+    function EinsumExpr(ex, freeinds, allinds)
+        find_freeindices(allinds) # check dummy indices
+        new(ex, freeinds, allinds)
+    end
+end
 
-    texps = map(p -> p.parameters[1], tensor_exprs.parameters)
+isscalarexpr(x::EinsumExpr) = isempty(x.freeinds)
+
+function einsum_instantiate(expr)
+    if Meta.isexpr(expr, :call)
+        if expr.args[1] == :*
+            einex = einsum_instantiate(expr.args[2])
+            for ex in expr.args[3:end]
+                einex = einsum_instantiate_contraction(einex, einsum_instantiate(ex))
+            end
+            return einex
+        elseif expr.args[1] == :/
+            lhs = einsum_instantiate(expr.args[2])
+            rhs = einsum_instantiate(expr.args[3])
+            return einsum_instantiate_division(lhs, rhs)
+        elseif expr.args[1] == :+ || expr.args[1] == :-
+            einex = einsum_instantiate(expr.args[2])
+            for ex in expr.args[3:end]
+                einex = einsum_instantiate_addition(expr.args[1], einex, einsum_instantiate(ex))
+            end
+            return einex
+        end
+    elseif Meta.isexpr(expr, :ref)
+        return einsum_instantiate_tensor(esc(expr.args[1]), expr.args[2:end])
+    end
+    EinsumExpr(expr, [], [])
+end
+
+# ref case
+function einsum_instantiate_tensor(tensor, inds)
+    freeinds = find_freeindices(inds)
+    if isempty(freeinds) # handle `A[i,i]`
+        ex = :($einsum_contraction(Val(()), ($tensor,), ($(ValTuple(inds...)),)))
+        return EinsumExpr(ex, freeinds, inds)
+    else
+        return EinsumExpr(tensor, inds, inds)
+    end
+end
+
+# division
+function einsum_instantiate_division(lhs::EinsumExpr, rhs::EinsumExpr)
+    @assert isempty(rhs.freeinds)
+    ex = Expr(:call, :/, lhs.ex, rhs.ex)
+    EinsumExpr(ex, lhs.freeinds, lhs.allinds) # is it ok to ignore indices of `rhs`?
+end
+
+# summation
+function einsum_instantiate_addition(op::Symbol, lhs::EinsumExpr, rhs::EinsumExpr)
+    @assert Set(lhs.freeinds) == Set(rhs.freeinds)
+    perm = find_perm(rhs.freeinds => lhs.freeinds)
+    ex = Expr(:call, op, lhs.ex, :(permutedims($(rhs.ex), $(ValTuple(perm...)))))
+    EinsumExpr(ex, lhs.freeinds, lhs.freeinds) # reset allinds
+end
+
+# contraction
+function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr)
+    if isempty(lhs.freeinds)
+        ex = Expr(:call, :*, lhs.ex, rhs.ex)
+        return EinsumExpr(ex, rhs.freeinds, vcat(lhs.allinds, rhs.allinds))
+    elseif isempty(rhs.freeinds)
+        ex = Expr(:call, :*, lhs.ex, rhs.ex)
+        return EinsumExpr(ex, lhs.freeinds, vcat(lhs.allinds, rhs.allinds))
+    else
+        freeinds = find_freeindices(vcat(lhs.freeinds, rhs.freeinds))
+        allinds = vcat(lhs.allinds, rhs.allinds)
+        ex = :($einsum_contraction($(ValTuple(freeinds...)), ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
+        return EinsumExpr(ex, freeinds, allinds)
+    end
+end
+
+@generated function einsum_contraction(::Val{freeinds}, tensors::Tuple, _tensorinds::Tuple{Vararg{Val}}) where {freeinds}
+    tensorinds = map(p -> p.parameters[1], _tensorinds.parameters)
+
+    allinds = vcat([collect(x) for x in tensorinds]...)
+    dummyinds = setdiff(allinds, freeinds)
     allinds = [freeinds..., dummyinds...]
 
     # check dimensions
@@ -241,15 +288,13 @@ end
     for symbol in dummyinds
         dim = 0
         count = 0
-        for (i, t) in enumerate(texps)
-            indices = findall(==(symbol), t)
-            for I in indices
-                @assert I != 1 # 1 is for tensor name
+        for (i, inds) in enumerate(tensorinds)
+            for I in findall(==(symbol), inds)
                 if dim == 0
-                    dim = size(tensors.parameters[i], I-1)
-                    push!(dummyaxes, axes(tensors.parameters[i], I-1))
+                    dim = size(tensors.parameters[i], I)
+                    push!(dummyaxes, axes(tensors.parameters[i], I))
                 else
-                    size(tensors.parameters[i], I-1) == dim || error("@einsum: dimension mismatch")
+                    size(tensors.parameters[i], I) == dim || error("@einsum: dimension mismatch")
                 end
                 count += 1
             end
@@ -259,21 +304,21 @@ end
 
     # tensor -> global indices (connectivities)
     whichindices = Vector{Int}[]
-    for (i, t) in enumerate(texps)
-        length(t[2:end]) == ndims(tensors.parameters[i]) || error("@einsum: the number of indices does not match the number of dimensions in expression $(t[1])[$(join(t[2:end], ","))]")
-        inds = map(t[2:end]) do index
-            I = findfirst(==(index), allinds)
+    for (i, inds) in enumerate(tensorinds)
+        length(inds) == ndims(tensors.parameters[i]) || error("@einsum: the number of indices does not match the number of dimensions")
+        whichinds = map(inds) do index
+            I = findall(==(index), allinds)
             @assert I !== nothing
-            I
+            only(I)
         end
-        push!(whichindices, collect(inds))
+        push!(whichindices, collect(whichinds))
     end
 
     if freeinds == ()
         freeaxes = ()
     else
         perm = map(freeinds) do index
-            only(findall(==(index), vcat([collect(t[2:end]) for t in texps]...)))
+            only(findall(==(index), vcat(map(collect, tensorinds)...)))
         end
         TT = _permutedims(otimes(map(Space, tensors.parameters)...), Val(perm)) |> tensortype
         freeaxes = axes(TT)
@@ -289,7 +334,7 @@ end
             end
             Expr(:tuple, exps...)
         end
-        :($sumargs(f, $(xs...)))
+        :($sumargs($(xs...)))
     end
 
     if freeinds == ()
@@ -305,10 +350,10 @@ end
     end
 end
 
-function sumargs(f, x, ys...)
-    ret = f(x)
+function sumargs(x, ys...)
+    ret = *(x...)
     @simd for i in eachindex(ys)
-        @inbounds ret += f(ys[i])
+        @inbounds ret += *(ys[i]...)
     end
     ret
 end

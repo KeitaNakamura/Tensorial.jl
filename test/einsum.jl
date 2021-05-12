@@ -47,6 +47,7 @@ end
         check_value_and_type((@einsum S1[i,j] * S2[j,i]), S1 ⊡ S2', only(@tensor t[] := Array(S1)[i,j] * Array(S2)[j,i]))
         check_value_and_type((@einsum S1[i,i]), tr(S1), only(@tensor t[] := Array(S1)[i,i]))
         check_value_and_type((@einsum S1[i,i]/3), mean(S1), only(@tensor t[] := Array(S1)[i,i]/3))
+        check_value_and_type((@einsum S1[i,i]/S2[j,j]), tr(S1)/tr(S2), tr(Array(S1))/tr(Array(S2))) # not allowed in TensorOperations
     end
     @testset "mixed" begin
         S1 = rand(SymmetricSecondOrderTensor{3})
@@ -54,6 +55,8 @@ end
         check_value_and_type((@einsum (i,j) -> S1[i,k] * S2[k,j]), S1 ⋅ S2, (@tensor t[i,j] := Array(S1)[i,k] * Array(S2)[k,j]))
         check_value_and_type((@einsum (i,j) -> S1[i,k] * S2[j,k]), S1 ⋅ S2', (@tensor t[i,j] := Array(S1)[i,k] * Array(S2)[j,k]))
         check_value_and_type((@einsum S1[i,k] * S2[k,j]), S1 ⋅ S2, (@tensor t[i,j] := Array(S1)[i,k] * Array(S2)[k,j]))
+        check_value_and_type((@einsum (i,j) -> S1[i,k] * S2[j,k] + S1[j,k] * S2[i,k]), S1 ⋅ S2' + S2 ⋅ S1', (@tensor t[i,j] := Array(S1)[i,k] * Array(S2)[j,k] + Array(S1)[j,k] * Array(S2)[i,k]))
+        check_value_and_type((@einsum (i,j) -> S1[i,k] * (S2[j,k] + S1[k,j] * S2[i,i])), S1 ⋅ (S2' + S1 * tr(S2)), (@tensor t[i,j] := Array(S1)[i,k] * (Array(S2)[j,k] + Array(S1)[k,j] * Array(S2)[i,i])))
 
         S3 = rand(Tensor{Tuple{@Symmetry{3,3,3}}})
         v1 = rand(Vec{3})
@@ -67,9 +70,9 @@ end
         @test_throws Exception (@einsum (i) -> S1[i,j] * v[j])
         # @test_throws Exception (@einsum (i,j) -> S1[i,j] + S1[i,j])
         # @test_throws Exception (@einsum (i,j) -> S1[i,j] - S1[i,j])
-        @test_throws Exception (@einsum (i,j) -> S1[i,j] * S1[i,j])
-        @test_throws Exception (@einsum (k) -> S1[i,j] * S1[i,j])
-        @test_throws Exception (@einsum (j) -> S1[i,i] * S1[i,j])
-        @test_throws Exception (@einsum S1[i,i] * S1[i,j])
+        # @test_throws Exception (@einsum (i,j) -> S1[i,j] * S1[i,j])
+        # @test_throws Exception (@einsum (k) -> S1[i,j] * S1[i,j])
+        # @test_throws Exception (@einsum (j) -> S1[i,i] * S1[i,j])
+        # @test_throws Exception (@einsum S1[i,i] * S1[i,j])
     end
 end
