@@ -1,26 +1,8 @@
-# default voigt order
-# not sure appropriate order for dim ≥ 4
-@generated function default_voigt_order(::Val{dim}) where {dim}
-    inds = Vector{Tuple{Int, Int}}(undef, dim*dim)
-    count = 0
-    for i in 1:dim
-        @inbounds inds[count+=1] = (i,i)
-    end
-    # upper
-    for j in dim:-1:1
-        for i in j-1:-1:1
-            @inbounds inds[count+=1] = (i,j)
-        end
-    end
-    # lower
-    for i in dim:-1:1
-        for j in i-1:-1:1
-            @inbounds inds[count+=1] = (i,j)
-        end
-    end
-    quote
-        SVector{$(length(inds))}($inds)
-    end
+function default_voigt_order(::Val{dim}) where {dim}
+    dim == 1 && return @SVector[(1,1)]
+    dim == 2 && return @SVector[(1,1), (2,2), (1,2), (2,1)]
+    dim == 3 && return @SVector[(1,1), (2,2), (3,3), (2,3), (1,3), (1,2), (3,2), (3,1), (2,1)]
+    throw(ArgumentError("no default Voigt order for `dim > 3`"))
 end
 
 """
@@ -32,7 +14,7 @@ Convert a tensor to Voigt form.
 Keyword arguments:
  - `offdiagscale`: Determines the scaling factor for the offdiagonal elements.
  - `order`: A vector of cartesian indices (`Tuple{Int, Int}`) determining the Voigt order.
-   The default order is `[(1,1), (2,2), (3,3), (2,3), (1,3), (1,2), (3,2), (3,1), (2,1)]`
+   The default order is `[(1,1), (2,2), (3,3), (2,3), (1,3), (1,2), (3,2), (3,1), (2,1)]` for `dim=3`.
 
 See also [`fromvoigt`](@ref).
 
@@ -160,7 +142,7 @@ Converts an array `A` stored in Voigt format to a Tensor of type `S`.
 Keyword arguments:
  - `offdiagscale`: Determines the scaling factor for the offdiagonal elements.
  - `order`: A vector of cartesian indices (`Tuple{Int, Int}`) determining the Voigt order.
-   The default order is `[(1,1), (2,2), (3,3), (2,3), (1,3), (1,2), (3,2), (3,1), (2,1)]`
+   The default order is `[(1,1), (2,2), (3,3), (2,3), (1,3), (1,2), (3,2), (3,1), (2,1)]` for `dim=3`.
 
 !!! note
     Since `offdiagscale` is the scaling factor for the offdiagonal elements in **Voigt form**,

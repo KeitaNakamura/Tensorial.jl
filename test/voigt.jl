@@ -23,5 +23,8 @@
         @test (@inferred frommandel(SymmetricFourthOrderTensor{dim}, tomandel(AA_sym)))::SymmetricFourthOrderTensor{dim, T} ≈ AA_sym
         @test (@inferred frommandel(SymmetricSecondOrderTensor{dim, Float64}, tomandel(A_sym)))::SymmetricSecondOrderTensor{dim, Float64} ≈ A_sym
         @test (@inferred frommandel(SymmetricFourthOrderTensor{dim, Float64}, tomandel(AA_sym)))::SymmetricFourthOrderTensor{dim, Float64} ≈ AA_sym
+        # error
+        @test_throws Exception Tensorial.default_voigt_order(Val(4))
+        @test_throws Exception tovoigt(rand(Mat{4,4}))
     end
 end
