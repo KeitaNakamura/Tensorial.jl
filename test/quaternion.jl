@@ -27,21 +27,19 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
 
         # properties
         q = Quaternion{T}(1,2,3,4)
-        @test propertynames(q) == (:scalar, :vector, :w, :x, :y, :z, :data)
-        get_scalar = q -> q.scalar
-        get_vector = q -> q.vector
-        get_data = q -> q.data
+        @test propertynames(q) == (:w, :x, :y, :z, :v, :data)
         get_w = q -> q.w
         get_x = q -> q.x
         get_y = q -> q.y
         get_z = q -> q.z
-        @test (@inferred get_scalar(q))::T == T(1)
-        @test (@inferred get_vector(q))::Vec{3, T} == Vec{3, T}(2,3,4)
-        @test (@inferred get_data(q))::NTuple{4, T} == map(T, (1,2,3,4))
+        get_v = q -> q.v
+        get_data = q -> q.data
         @test (@inferred get_w(q))::T == T(1)
         @test (@inferred get_x(q))::T == T(2)
         @test (@inferred get_y(q))::T == T(3)
         @test (@inferred get_z(q))::T == T(4)
+        @test (@inferred get_v(q))::Vec{3, T} == Vec{3, T}(2,3,4)
+        @test (@inferred get_data(q))::NTuple{4, T} == map(T, (1,2,3,4))
 
         # quaternion
         @test (@inferred quaternion(T(π/4), Vec{2, T}(1,2)))::Quaternion{T} == (@inferred quaternion(T(π/4), Vec{3, T}(1,2,0)))::Quaternion{T}
@@ -105,26 +103,26 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
 
         for dim in (2, 3)
             # check multiplications
-            v = rand(Vec{dim, T})
-            v3 = ToVec3(v)
-            @test (q * v / q).vector ≈ Rq ⋅ v3
-            @test (p * v / p).vector ≈ Rp ⋅ v3
-            @test (r * v / r).vector ≈ Rp ⋅ Rq ⋅ v3
-            @test (q * v * inv(q)).vector ≈ Rq ⋅ v3
-            @test (p * v * inv(p)).vector ≈ Rp ⋅ v3
-            @test (r * v * inv(r)).vector ≈ Rp ⋅ Rq ⋅ v3
+            x = rand(Vec{dim, T})
+            x3 = ToVec3(x)
+            @test (q * x / q).v ≈ Rq ⋅ x3
+            @test (p * x / p).v ≈ Rp ⋅ x3
+            @test (r * x / r).v ≈ Rp ⋅ Rq ⋅ x3
+            @test (q * x * inv(q)).v ≈ Rq ⋅ x3
+            @test (p * x * inv(p)).v ≈ Rp ⋅ x3
+            @test (r * x * inv(r)).v ≈ Rp ⋅ Rq ⋅ x3
             # inverse of rotation
-            @test (inv(q) * v * q).vector ≈ inv(Rq) ⋅ v3
+            @test (inv(q) * x * q).v ≈ inv(Rq) ⋅ x3
             # check order of multiplications
-            @test ((q * v) / q).vector ≈ Rq ⋅ v3
-            @test (q * (v / q)).vector ≈ Rq ⋅ v3
+            @test ((q * x) / q).v ≈ Rq ⋅ x3
+            @test (q * (x / q)).v ≈ Rq ⋅ x3
             # rotate
-            @test rotate(v, q) ≈ rotate(v, Rq)
-            @test rotate(v, p) ≈ rotate(v, Rp)
-            @test rotate(v, r) ≈ rotate(v, Rp ⋅ Rq)
-            @test rotate(v, inv(q)) ≈ rotate(v, inv(Rq))
-            @test rotate(v, inv(p)) ≈ rotate(v, inv(Rp))
-            @test rotate(v, inv(r)) ≈ rotate(v, inv(Rp ⋅ Rq))
+            @test rotate(x, q) ≈ rotate(x, Rq)
+            @test rotate(x, p) ≈ rotate(x, Rp)
+            @test rotate(x, r) ≈ rotate(x, Rp ⋅ Rq)
+            @test rotate(x, inv(q)) ≈ rotate(x, inv(Rq))
+            @test rotate(x, inv(p)) ≈ rotate(x, inv(Rp))
+            @test rotate(x, inv(r)) ≈ rotate(x, inv(Rp ⋅ Rq))
         end
         # test with rotmat(θ, n)
         θ = rand(T)
