@@ -171,7 +171,7 @@ julia> rotate(v, quaternion(π/4, Vec(0,0,1)))
 @inline rotate(v::Vec{3}, q::Quaternion) = (q * v / q).vector
 @inline rotate(v::Vec{2}, q::Quaternion) = (v = (q * v / q).vector; @inbounds Vec(v[1], v[2]))
 
-@inline Base.conj(q::Quaternion) = @inbounds Quaternion(q[1], -q[2], -q[3], -q[4])
+@inline Base.conj(q::Quaternion) = Quaternion(q.scalar, -q.vector)
 @inline Base.abs2(q::Quaternion) = (v = Vec(q); dot(v, v))
 @inline Base.abs(q::Quaternion) = sqrt(abs2(q))
 @inline norm(q::Quaternion) = abs(q)
@@ -179,20 +179,18 @@ julia> rotate(v, quaternion(π/4, Vec(0,0,1)))
 
 function Base.exp(q::Quaternion)
     v = q.vector
-    norm_v = norm(v)
-    if norm_v > 0
-        n = v / norm_v
+    v_norm = norm(v)
+    if v_norm > 0
+        n = v / v_norm
     else
         n = zero(v)
     end
-    exp(q.scalar) * quaternion(2norm_v, n; normalize = false)
+    exp(q.scalar) * quaternion(2*v_norm, n; normalize = false)
 end
 
 function Base.log(q::Quaternion)
-    norm_q = norm(q)
-    v = q.vector
-    norm_v = norm(v)
-    Quaternion(log(norm_q), Tuple(v/norm_v * acos(q.scalar/norm_q))...)
+    q_norm = norm(q)
+    Quaternion(log(q_norm), normalize(q.vector) * acos(q.scalar/q_norm))
 end
 
 @inline normalize(q::Quaternion) = q / norm(q)
