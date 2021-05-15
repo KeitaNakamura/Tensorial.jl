@@ -1,5 +1,8 @@
 abstract type AbstractTensor{S <: Tuple, T, N} <: AbstractArray{T, N} end
 
+# for AbstractArray interface
+Base.IndexStyle(::Type{<: AbstractTensor}) = IndexLinear()
+
 @pure Base.size(::Type{TT}) where {TT <: AbstractTensor} = tensorsize(Space(TT))
 @inline function Base.size(TT::Type{<: AbstractTensor}, d::Int)
     S = size(TT)

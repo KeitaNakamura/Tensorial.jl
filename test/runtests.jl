@@ -6,6 +6,7 @@ using StaticArrays: SArray, SVector
 
 include("Symmetry.jl")
 include("Space.jl")
+include("AbstractTensor.jl")
 include("Tensor.jl")
 include("permute.jl")
 include("einsum.jl")
