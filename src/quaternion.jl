@@ -79,9 +79,14 @@ Base.real(q::Quaternion) = q.scalar
 Base.isfinite(q::Quaternion) = prod(map(isfinite, Tuple(q)))
 
 """
-    quaternion(θ, x::Vec; [normalize = true, degree = false])
+    quaternion(θ, n::Vec; [normalize = true, degree = false])
 
-Construct `Quaternion` from angle `θ` and axis `x`.
+Construct `Quaternion` from angle `θ` and axis `n` as
+
+```math
+q = \\cos\\frac{\\theta}{2} + \\bm{n} \\sin\\frac{\\theta}{2}
+```
+
 The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
 
 # Examples
@@ -177,6 +182,15 @@ julia> rotate(v, quaternion(π/4, Vec(0,0,1)))
 @inline norm(q::Quaternion) = abs(q)
 @inline inv(q::Quaternion) = conj(q) / abs2(q)
 
+"""
+    exp(::Quaternion)
+
+Compute the exponential of quaternion as
+
+```math
+\\exp(q) = e^{q_w} \\left( \\cos\\| \\bm{v} \\| + \\frac{\\bm{v}}{\\| \\bm{v} \\|} \\sin\\| \\bm{v} \\| \\right)
+```
+"""
 function Base.exp(q::Quaternion)
     v = q.vector
     v_norm = norm(v)
@@ -188,6 +202,15 @@ function Base.exp(q::Quaternion)
     exp(q.scalar) * quaternion(2*v_norm, n; normalize = false)
 end
 
+"""
+    log(::Quaternion)
+
+Compute the logarithm of quaternion as
+
+```math
+\\ln(q) = \\ln\\| q \\| + \\frac{\\bm{v}}{\\| \\bm{v} \\|} \\arccos\\frac{q_w}{\\| q \\|}
+```
+"""
 function Base.log(q::Quaternion)
     q_norm = norm(q)
     Quaternion(log(q_norm), normalize(q.vector) * acos(q.scalar/q_norm))

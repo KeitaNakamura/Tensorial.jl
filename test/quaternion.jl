@@ -89,8 +89,14 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
         @test (@inferred p / 2)::Quaternion{T} == Quaternion(Vec(p) / 2)
         @test (@inferred norm(q))::T ≈ (@inferred abs(q))::T
         @test (@inferred norm(p))::T ≈ (@inferred abs(p))::T
+
+        a = rand(T)
         @test (@inferred exp(log(q)))::Quaternion{T} ≈ q
         @test (@inferred exp(log(p)))::Quaternion{T} ≈ p
+        @test (@inferred exp(a + q))::Quaternion{T} ≈ exp(a) * exp(q)
+        @test (@inferred exp(a + p))::Quaternion{T} ≈ exp(a) * exp(p)
+        @test (@inferred log(a * q))::Quaternion{T} ≈ log(a) + log(q)
+        @test (@inferred log(a * p))::Quaternion{T} ≈ log(a) + log(p)
         @test (@inferred exp(Quaternion{T}(1,0,0,0)))::Quaternion{T} ≈ exp(1)
 
         Rq = rotmat(q)
