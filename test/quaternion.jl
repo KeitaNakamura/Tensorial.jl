@@ -5,21 +5,40 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
     for T in (Float32, Float64)
         # basic constructors
         @test (@inferred Quaternion{T}((1,2,3,4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
-        @test (@inferred Quaternion((1,2,3,T(4))))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
         @test (@inferred Quaternion{T}(1,2,3,4))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
-        @test (@inferred Quaternion(1,2,3,T(4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
-        @test (@inferred Quaternion(Vec(1,2,T(3))))::Quaternion{T} |> Tuple === map(T, (0,1,2,3))
+        @test (@inferred Quaternion{T}(Vec(1,2,3,4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
         @test (@inferred Quaternion{T}(Vec(1,2,3)))::Quaternion{T} |> Tuple === map(T, (0,1,2,3))
-        @test (@inferred Quaternion(T(1)))::Quaternion{T} |> Tuple === map(T, (1,0,0,0))
+        @test (@inferred Quaternion{T}(Vec(1,2)))::Quaternion{T} |> Tuple === map(T, (0,1,2,0))
+        @test (@inferred Quaternion{T}(Vec(1)))::Quaternion{T} |> Tuple === map(T, (0,1,0,0))
+        @test (@inferred Quaternion{T}(4, Vec(1,2,3)))::Quaternion{T} |> Tuple === map(T, (4,1,2,3))
+        @test (@inferred Quaternion{T}(4, Vec(1,2)))::Quaternion{T} |> Tuple === map(T, (4,1,2,0))
+        @test (@inferred Quaternion{T}(4, Vec(1)))::Quaternion{T} |> Tuple === map(T, (4,1,0,0))
+        @test (@inferred Quaternion{T}(4))::Quaternion{T} |> Tuple === map(T, (4,0,0,0))
+        @test (@inferred Quaternion((T(1),2,3,4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
+        @test (@inferred Quaternion(T(1),2,3,4))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
+        @test (@inferred Quaternion(Vec(T(1),2,3,4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
+        @test (@inferred Quaternion(Vec(T(1),2,3)))::Quaternion{T} |> Tuple === map(T, (0,1,2,3))
+        @test (@inferred Quaternion(Vec(T(1),2)))::Quaternion{T} |> Tuple === map(T, (0,1,2,0))
+        @test (@inferred Quaternion(Vec(T(1))))::Quaternion{T} |> Tuple === map(T, (0,1,0,0))
+        @test (@inferred Quaternion(T(4), Vec(1,2,3)))::Quaternion{T} |> Tuple === map(T, (4,1,2,3))
+        @test (@inferred Quaternion(T(4), Vec(1,2)))::Quaternion{T} |> Tuple === map(T, (4,1,2,0))
+        @test (@inferred Quaternion(T(4), Vec(1)))::Quaternion{T} |> Tuple === map(T, (4,1,0,0))
+        @test (@inferred Quaternion(T(4)))::Quaternion{T} |> Tuple === map(T, (4,0,0,0))
 
         # properties
         q = Quaternion{T}(1,2,3,4)
-        @test propertynames(q) == (:scalar, :vector, :data)
-        get_scalar = q -> q.scalar
-        get_vector = q -> q.vector
+        @test propertynames(q) == (:w, :x, :y, :z, :v, :data)
+        get_w = q -> q.w
+        get_x = q -> q.x
+        get_y = q -> q.y
+        get_z = q -> q.z
+        get_v = q -> q.v
         get_data = q -> q.data
-        @test (@inferred get_scalar(q))::T == T(1)
-        @test (@inferred get_vector(q))::Vec{3, T} == Vec{3, T}(2,3,4)
+        @test (@inferred get_w(q))::T == T(1)
+        @test (@inferred get_x(q))::T == T(2)
+        @test (@inferred get_y(q))::T == T(3)
+        @test (@inferred get_z(q))::T == T(4)
+        @test (@inferred get_v(q))::Vec{3, T} == Vec{3, T}(2,3,4)
         @test (@inferred get_data(q))::NTuple{4, T} == map(T, (1,2,3,4))
 
         # quaternion
@@ -68,8 +87,14 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
         @test (@inferred p / 2)::Quaternion{T} == Quaternion(Vec(p) / 2)
         @test (@inferred norm(q))::T ≈ (@inferred abs(q))::T
         @test (@inferred norm(p))::T ≈ (@inferred abs(p))::T
+
+        a = rand(T)
         @test (@inferred exp(log(q)))::Quaternion{T} ≈ q
         @test (@inferred exp(log(p)))::Quaternion{T} ≈ p
+        @test (@inferred exp(a + q))::Quaternion{T} ≈ exp(a) * exp(q)
+        @test (@inferred exp(a + p))::Quaternion{T} ≈ exp(a) * exp(p)
+        @test (@inferred log(a * q))::Quaternion{T} ≈ log(a) + log(q)
+        @test (@inferred log(a * p))::Quaternion{T} ≈ log(a) + log(p)
         @test (@inferred exp(Quaternion{T}(1,0,0,0)))::Quaternion{T} ≈ exp(1)
 
         Rq = rotmat(q)
@@ -78,26 +103,26 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
 
         for dim in (2, 3)
             # check multiplications
-            v = rand(Vec{dim, T})
-            v3 = ToVec3(v)
-            @test (q * v / q).vector ≈ Rq ⋅ v3
-            @test (p * v / p).vector ≈ Rp ⋅ v3
-            @test (r * v / r).vector ≈ Rp ⋅ Rq ⋅ v3
-            @test (q * v * inv(q)).vector ≈ Rq ⋅ v3
-            @test (p * v * inv(p)).vector ≈ Rp ⋅ v3
-            @test (r * v * inv(r)).vector ≈ Rp ⋅ Rq ⋅ v3
+            x = rand(Vec{dim, T})
+            x3 = ToVec3(x)
+            @test (q * x / q).v ≈ Rq ⋅ x3
+            @test (p * x / p).v ≈ Rp ⋅ x3
+            @test (r * x / r).v ≈ Rp ⋅ Rq ⋅ x3
+            @test (q * x * inv(q)).v ≈ Rq ⋅ x3
+            @test (p * x * inv(p)).v ≈ Rp ⋅ x3
+            @test (r * x * inv(r)).v ≈ Rp ⋅ Rq ⋅ x3
             # inverse of rotation
-            @test (inv(q) * v * q).vector ≈ inv(Rq) ⋅ v3
+            @test (inv(q) * x * q).v ≈ inv(Rq) ⋅ x3
             # check order of multiplications
-            @test ((q * v) / q).vector ≈ Rq ⋅ v3
-            @test (q * (v / q)).vector ≈ Rq ⋅ v3
+            @test ((q * x) / q).v ≈ Rq ⋅ x3
+            @test (q * (x / q)).v ≈ Rq ⋅ x3
             # rotate
-            @test rotate(v, q) ≈ rotate(v, Rq)
-            @test rotate(v, p) ≈ rotate(v, Rp)
-            @test rotate(v, r) ≈ rotate(v, Rp ⋅ Rq)
-            @test rotate(v, inv(q)) ≈ rotate(v, inv(Rq))
-            @test rotate(v, inv(p)) ≈ rotate(v, inv(Rp))
-            @test rotate(v, inv(r)) ≈ rotate(v, inv(Rp ⋅ Rq))
+            @test rotate(x, q) ≈ rotate(x, Rq)
+            @test rotate(x, p) ≈ rotate(x, Rp)
+            @test rotate(x, r) ≈ rotate(x, Rp ⋅ Rq)
+            @test rotate(x, inv(q)) ≈ rotate(x, inv(Rq))
+            @test rotate(x, inv(p)) ≈ rotate(x, inv(Rp))
+            @test rotate(x, inv(r)) ≈ rotate(x, inv(Rp ⋅ Rq))
         end
         # test with rotmat(θ, n)
         θ = rand(T)

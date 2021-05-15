@@ -1,6 +1,6 @@
 """
-`Quaternion` represents ``q_1 + q_2 \\bm{i} + q_3 \\bm{j} + q_4 \\bm{k}``.
-The salar part and vector part can be accessed by `q.scalar` and `q.vector`, respectively.
+`Quaternion` represents ``q_w + q_x \\bm{i} + q_y \\bm{j} + q_z \\bm{k}``.
+The salar part and vector part can be accessed by `q.w` and `q.v`, respectively.
 
 # Examples
 ```jldoctest
@@ -30,31 +30,42 @@ end
 @inline Quaternion(data::NTuple{4, Any}) = Quaternion{promote_ntuple_eltype(data)}(data)
 @inline (::Type{T})(data::Vararg{Any}) where {T <: Quaternion} = T(data)
 
-# Quaternion <-> Vec
-@inline Quaternion(v::Vec{4}) = Quaternion(Tuple(v))
-@inline Vec(q::Quaternion) = Vec(Tuple(q))
-@inline (::Type{T})(x::Vec{3}) where {T <: Quaternion} = @inbounds T(zero(eltype(x)), x[1], x[2], x[3])
+# from scalar and vector
+@inline Quaternion{T}(r::Real, v::Vec{3}) where {T} = @inbounds Quaternion{T}(r, v[1], v[2], v[3])
+@inline Quaternion{T}(r::Real, v::Vec{2}) where {T} = @inbounds Quaternion{T}(r, v[1], v[2], zero(eltype(v)))
+@inline Quaternion{T}(r::Real, v::Vec{1}) where {T} = @inbounds Quaternion{T}(r, v[1], zero(eltype(v)), zero(eltype(v)))
+@inline Quaternion(r::Real, v::Vec) = Quaternion{promote_type(typeof(r), eltype(v))}(r, v)
 
-@inline Quaternion(x::Real) = Quaternion(x, zero(x), zero(x), zero(x))
+# from vector
+@inline Quaternion{T}(v::Vec{4}) where {T} = Quaternion{T}(Tuple(v))
+for dim in 1:3
+    @eval @inline Quaternion{T}(v::Vec{$dim}) where {T} = Quaternion{T}(zero(eltype(v)), v)
+end
+@inline Quaternion(v::Vec) = Quaternion{eltype(v)}(v)
+
+# from scalar
+@inline Quaternion{T}(r::Real) where {T} = (z = zero(r); Quaternion{T}(r, z, z, z))
+@inline Quaternion(r::Real) = Quaternion{typeof(r)}(r)
+
+@inline Vec(q::Quaternion) = Vec(Tuple(q))
 
 Base.Tuple(q::Quaternion) = getfield(q, :data)
 
 @inline function Base.getproperty(q::Quaternion, name::Symbol)
-    name == :scalar && return @inbounds q[1]
-    name == :vector && return @inbounds Vec(q[2], q[3], q[4])
+    name == :w && return @inbounds q[1]
+    name == :x && return @inbounds q[2]
+    name == :y && return @inbounds q[3]
+    name == :z && return @inbounds q[4]
+    name == :v && return @inbounds Vec(q[2], q[3], q[4])
     getfield(q, name)
 end
 
-Base.propertynames(q::Quaternion) = (:scalar, :vector, :data)
+Base.propertynames(q::Quaternion) = (:w, :x, :y, :z, :v, :data)
 
 # conversion
 Base.convert(::Type{Quaternion{T}}, x::Quaternion{T}) where {T} = x
-function Base.convert(::Type{Quaternion{T}}, x::Quaternion{U}) where {T, U}
-    @inbounds Quaternion(convert(T, x[1]), convert(T, x[2]), convert(T, x[3]), convert(T, x[4]))
-end
-function Base.convert(::Type{Quaternion{T}}, x::Real) where {T}
-    Quaternion(convert(T, x), convert(T, 0), convert(T, 0), convert(T, 0))
-end
+Base.convert(::Type{Quaternion{T}}, x::Quaternion{U}) where {T, U} = Quaternion(map(T, Tuple(x)))
+Base.convert(::Type{Quaternion{T}}, x::Real) where {T} = convert(Quaternion{T}, Quaternion(x))
 
 # promotion
 Base.promote_rule(::Type{Quaternion{T}}, ::Type{T}) where {T <: Real} = Quaternion{T}
@@ -63,10 +74,36 @@ Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{T}}) where {T <: Real
 Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{U}}) where {T <: Real, U <: Real} = Quaternion{promote_type(T, U)}
 
 # used for `isapprox`
-Base.real(q::Quaternion) = q.scalar
+Base.real(q::Quaternion) = q.w
 Base.isfinite(q::Quaternion) = prod(map(isfinite, Tuple(q)))
 
-function (::Type{Quat})(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {Quat <: Quaternion}
+"""
+    quaternion(θ, n::Vec; [normalize = true, degree = false])
+
+Construct `Quaternion` from angle `θ` and axis `n` as
+
+```math
+q = \\cos\\frac{\\theta}{2} + \\bm{n} \\sin\\frac{\\theta}{2}
+```
+
+The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
+
+# Examples
+```jldoctest
+julia> q = quaternion(π/4, Vec(0,0,1))
+0.9238795325112867 + 0.0𝙞 + 0.0𝙟 + 0.3826834323650898𝙠
+
+julia> x = rand(Vec{3})
+3-element Vec{3, Float64}:
+ 0.5908446386657102
+ 0.7667970365022592
+ 0.5662374165061859
+
+julia> (q * x / q).v ≈ rotmatz(π/4) ⋅ x
+true
+```
+"""
+function quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {T}
     if degree
         θ = deg2rad(θ)
     end
@@ -76,41 +113,18 @@ function (::Type{Quat})(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Boo
     else
         n = x * sin(ϕ)
     end
-    @inbounds Quat(cos(ϕ), n[1], n[2], n[3])
+    @inbounds Quaternion{T}(cos(ϕ), n)
 end
-
-"""
-    quaternion(θ, x::Vec; [normalize = true, degree = false])
-    quaternion(T, θ, x::Vec; [normalize = true, degree = false])
-
-Construct `Quaternion` from angle `θ` and direction `x`.
-The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
-
-# Examples
-```jldoctest
-julia> q = quaternion(π/4, Vec(0,0,1))
-0.9238795325112867 + 0.0𝙞 + 0.0𝙟 + 0.3826834323650898𝙠
-
-julia> v = rand(Vec{3})
-3-element Vec{3, Float64}:
- 0.5908446386657102
- 0.7667970365022592
- 0.5662374165061859
-
-julia> (q * v / q).vector ≈ rotmatz(π/4) ⋅ v
-true
-```
-"""
-quaternion(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) = Quaternion(θ, x; normalize, degree)
-quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {T} = Quaternion{T}(θ, x; normalize, degree)
-quaternion(θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) = @inbounds Quaternion(θ, Vec(x[1], x[2], 0); normalize, degree)
-quaternion(::Type{T}, θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) where {T} = @inbounds Quaternion{T}(θ, Vec(x[1], x[2], 0); normalize, degree)
+quaternion(T::Type, θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) =
+    @inbounds quaternion(T, θ, Vec(x[1], x[2], 0); normalize, degree)
+quaternion(θ::Real, x::Vec; normalize::Bool = true, degree::Bool = false) =
+    quaternion(promote_type(typeof(θ), eltype(x)), θ, x; normalize, degree)
 
 Base.length(::Quaternion) = 4
 Base.size(::Quaternion) = (4,)
 
 @inline function Base.getindex(q::Quaternion, i::Int)
-    @_propagate_inbounds_meta
+    @boundscheck 1 ≤ i ≤ 4 || throw(BoundsError(q, i))
     @inbounds Tuple(q)[i]
 end
 
@@ -134,20 +148,8 @@ end
 @inline Base.:/(q::Quaternion, a::Number) = Quaternion(Vec(q) / a)
 
 # quaternion vs vector
-@inline function Base.:*(q::Quaternion, v::Vec{3, T}) where {T}
-    @inbounds q * Quaternion(zero(T), v[1], v[2], v[3])
-end
-@inline function Base.:*(v::Vec{3, T}, q::Quaternion) where {T}
-    @inbounds Quaternion(zero(T), v[1], v[2], v[3]) * q
-end
-# in 2D, expand vector to 3D first
-@inline function Base.:*(q::Quaternion, v::Vec{2, T}) where {T}
-    @inbounds q * Quaternion(zero(T), v[1], v[2], zero(T))
-end
-@inline function Base.:*(v::Vec{2, T}, q::Quaternion) where {T}
-    @inbounds Quaternion(zero(T), v[1], v[2], zero(T)) * q
-end
-
+@inline Base.:*(q::Quaternion, v::Vec) = q * Quaternion(v)
+@inline Base.:*(v::Vec, q::Quaternion) = Quaternion(v) * q
 @inline Base.:/(v::Vec, q::Quaternion) = v * inv(q)
 
 """
@@ -170,31 +172,47 @@ julia> rotate(v, quaternion(π/4, Vec(0,0,1)))
  0.0
 ```
 """
-@inline rotate(v::Vec{3}, q::Quaternion) = (q * v / q).vector
-@inline rotate(v::Vec{2}, q::Quaternion) = (v = (q * v / q).vector; @inbounds Vec(v[1], v[2]))
+@inline rotate(v::Vec{3}, q::Quaternion) = (q * v / q).v
+@inline rotate(v::Vec{2}, q::Quaternion) = (v = (q * v / q).v; @inbounds Vec(v[1], v[2]))
 
-@inline Base.conj(q::Quaternion) = @inbounds Quaternion(q[1], -q[2], -q[3], -q[4])
+@inline Base.conj(q::Quaternion) = Quaternion(q.w, -q.v)
 @inline Base.abs2(q::Quaternion) = (v = Vec(q); dot(v, v))
 @inline Base.abs(q::Quaternion) = sqrt(abs2(q))
 @inline norm(q::Quaternion) = abs(q)
 @inline inv(q::Quaternion) = conj(q) / abs2(q)
 
+"""
+    exp(::Quaternion)
+
+Compute the exponential of quaternion as
+
+```math
+\\exp(q) = e^{q_w} \\left( \\cos\\| \\bm{v} \\| + \\frac{\\bm{v}}{\\| \\bm{v} \\|} \\sin\\| \\bm{v} \\| \\right)
+```
+"""
 function Base.exp(q::Quaternion)
-    v = q.vector
-    norm_v = norm(v)
-    if norm_v > 0
-        n = v / norm_v
+    v = q.v
+    v_norm = norm(v)
+    if v_norm > 0
+        n = v / v_norm
     else
         n = zero(v)
     end
-    exp(q.scalar) * quaternion(2norm_v, n; normalize = false)
+    exp(q.w) * quaternion(2*v_norm, n; normalize = false)
 end
 
+"""
+    log(::Quaternion)
+
+Compute the logarithm of quaternion as
+
+```math
+\\ln(q) = \\ln\\| q \\| + \\frac{\\bm{v}}{\\| \\bm{v} \\|} \\arccos\\frac{q_w}{\\| q \\|}
+```
+"""
 function Base.log(q::Quaternion)
-    norm_q = norm(q)
-    v = q.vector
-    norm_v = norm(v)
-    Quaternion(log(norm_q), Tuple(v/norm_v * acos(q.scalar/norm_q))...)
+    q_norm = norm(q)
+    Quaternion(log(q_norm), normalize(q.v) * acos(q.w/q_norm))
 end
 
 @inline normalize(q::Quaternion) = q / norm(q)
@@ -215,6 +233,21 @@ function rotmat_normalized(q::Quaternion)
           2(q₂q₃+q₁q₄)    q₁²-q₂²+q₃²-q₄² 2(q₃q₄-q₁q₂)
           2(q₂q₄-q₁q₃)    2(q₃q₄+q₁q₂)    q₁²-q₂²-q₃²+q₄²]
 end
+"""
+    rotmat(::Quaternion)
+
+Construct rotation matrix from quaternion.
+
+# Examples
+julia> q = quaternion(π/4, Vec(0,0,1))
+0.9238795325112867 + 0.0𝙞 + 0.0𝙟 + 0.3826834323650898𝙠
+
+julia> rotmat(q)
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.707107  -0.707107  0.0
+ 0.707107   0.707107  0.0
+ 0.0        0.0       1.0
+"""
 @inline rotmat(q::Quaternion) = rotmat_normalized(normalize(q))
 
 function Base.show(io::IO, q::Quaternion)
