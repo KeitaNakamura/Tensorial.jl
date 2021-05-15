@@ -136,9 +136,6 @@ end
     TT((i,j) -> I[i,j])
 end
 
-# for AbstractArray interface
-Base.IndexStyle(::Type{<: Tensor}) = IndexLinear()
-
 # helpers
 Base.Tuple(x::Tensor) = x.data
 ncomponents(x::Tensor) = length(Tuple(x))
