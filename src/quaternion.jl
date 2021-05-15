@@ -31,11 +31,14 @@ end
 @inline (::Type{T})(data::Vararg{Any}) where {T <: Quaternion} = T(data)
 
 # Quaternion <-> Vec
-@inline Quaternion(v::Vec{4}) = Quaternion(Tuple(v))
+@inline Quaternion{T}(v::Vec{4}) where {T} = Quaternion{T}(Tuple(v))
+@inline Quaternion{T}(v::Vec{3}) where {T} = @inbounds Quaternion{T}(zero(eltype(v)), v[1], v[2], v[3])
+@inline Quaternion{T}(v::Vec{2}) where {T} = (z = zero(eltype(v)); @inbounds Quaternion{T}(z, v[1], v[2], z))
+@inline Quaternion{T}(v::Vec{1}) where {T} = (z = zero(eltype(v)); @inbounds Quaternion{T}(z, v[1], z, z))
+@inline Quaternion(v::Vec) = Quaternion{eltype(v)}(v)
 @inline Vec(q::Quaternion) = Vec(Tuple(q))
-@inline (::Type{T})(x::Vec{3}) where {T <: Quaternion} = @inbounds T(zero(eltype(x)), x[1], x[2], x[3])
 
-@inline Quaternion(x::Real) = Quaternion(x, zero(x), zero(x), zero(x))
+@inline Quaternion(x::Real) = (z = zero(x); Quaternion(x, z, z, z))
 
 Base.Tuple(q::Quaternion) = getfield(q, :data)
 

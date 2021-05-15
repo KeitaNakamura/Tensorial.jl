@@ -5,11 +5,16 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
     for T in (Float32, Float64)
         # basic constructors
         @test (@inferred Quaternion{T}((1,2,3,4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
-        @test (@inferred Quaternion((1,2,3,T(4))))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
         @test (@inferred Quaternion{T}(1,2,3,4))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
+        @test (@inferred Quaternion{T}(Vec(1,2,3,4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
+        @test (@inferred Quaternion{T}(Vec(1,2,3)))::Quaternion{T} |> Tuple === map(T, (0,1,2,3))
+        @test (@inferred Quaternion{T}(Vec(1,2)))::Quaternion{T} |> Tuple === map(T, (0,1,2,0))
+        @test (@inferred Quaternion{T}(Vec(1)))::Quaternion{T} |> Tuple === map(T, (0,1,0,0))
+        @test (@inferred Quaternion((1,2,3,T(4))))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
         @test (@inferred Quaternion(1,2,3,T(4)))::Quaternion{T} |> Tuple === map(T, (1,2,3,4))
         @test (@inferred Quaternion(Vec(1,2,T(3))))::Quaternion{T} |> Tuple === map(T, (0,1,2,3))
-        @test (@inferred Quaternion{T}(Vec(1,2,3)))::Quaternion{T} |> Tuple === map(T, (0,1,2,3))
+        @test (@inferred Quaternion(Vec(1,T(2))))::Quaternion{T} |> Tuple === map(T, (0,1,2,0))
+        @test (@inferred Quaternion(Vec(T(1))))::Quaternion{T} |> Tuple === map(T, (0,1,0,0))
         @test (@inferred Quaternion(T(1)))::Quaternion{T} |> Tuple === map(T, (1,0,0,0))
 
         # properties
