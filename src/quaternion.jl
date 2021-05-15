@@ -30,19 +30,24 @@ end
 @inline Quaternion(data::NTuple{4, Any}) = Quaternion{promote_ntuple_eltype(data)}(data)
 @inline (::Type{T})(data::Vararg{Any}) where {T <: Quaternion} = T(data)
 
-# Quaternion <-> Vec
+# from scalar and vector
 @inline Quaternion{T}(r::Real, v::Vec{3}) where {T} = @inbounds Quaternion{T}(r, v[1], v[2], v[3])
 @inline Quaternion{T}(r::Real, v::Vec{2}) where {T} = @inbounds Quaternion{T}(r, v[1], v[2], zero(eltype(v)))
 @inline Quaternion{T}(r::Real, v::Vec{1}) where {T} = @inbounds Quaternion{T}(r, v[1], zero(eltype(v)), zero(eltype(v)))
+@inline Quaternion(r::Real, v::Vec) = Quaternion{promote_type(typeof(r), eltype(v))}(r, v)
+
+# from vector
 @inline Quaternion{T}(v::Vec{4}) where {T} = Quaternion{T}(Tuple(v))
 for dim in 1:3
     @eval @inline Quaternion{T}(v::Vec{$dim}) where {T} = Quaternion{T}(zero(eltype(v)), v)
 end
 @inline Quaternion(v::Vec) = Quaternion{eltype(v)}(v)
-@inline Quaternion(r::Real, v::Vec) = Quaternion{promote_type(typeof(r), eltype(v))}(r, v)
-@inline Vec(q::Quaternion) = Vec(Tuple(q))
 
-@inline Quaternion(x::Real) = (z = zero(x); Quaternion(x, z, z, z))
+# from scalar
+@inline Quaternion{T}(r::Real) where {T} = (z = zero(r); Quaternion{T}(r, z, z, z))
+@inline Quaternion(r::Real) = Quaternion{typeof(r)}(r)
+
+@inline Vec(q::Quaternion) = Vec(Tuple(q))
 
 Base.Tuple(q::Quaternion) = getfield(q, :data)
 
