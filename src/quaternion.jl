@@ -1,5 +1,5 @@
 """
-`Quaternion` represents ``q_1 + q_2 \\bm{i} + q_3 \\bm{j} + q_4 \\bm{k}``.
+`Quaternion` represents ``q_w + q_x \\bm{i} + q_y \\bm{j} + q_z \\bm{k}``.
 The salar part and vector part can be accessed by `q.scalar` and `q.vector`, respectively.
 
 # Examples
@@ -42,10 +42,14 @@ Base.Tuple(q::Quaternion) = getfield(q, :data)
 @inline function Base.getproperty(q::Quaternion, name::Symbol)
     name == :scalar && return @inbounds q[1]
     name == :vector && return @inbounds Vec(q[2], q[3], q[4])
+    name == :w && return @inbounds q[1]
+    name == :x && return @inbounds q[2]
+    name == :y && return @inbounds q[3]
+    name == :z && return @inbounds q[4]
     getfield(q, name)
 end
 
-Base.propertynames(q::Quaternion) = (:scalar, :vector, :data)
+Base.propertynames(q::Quaternion) = (:scalar, :vector, :w, :x, :y, :z, :data)
 
 # conversion
 Base.convert(::Type{Quaternion{T}}, x::Quaternion{T}) where {T} = x
