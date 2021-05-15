@@ -66,22 +66,8 @@ Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{U}}) where {T <: Real
 Base.real(q::Quaternion) = q.scalar
 Base.isfinite(q::Quaternion) = prod(map(isfinite, Tuple(q)))
 
-function (::Type{Quat})(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {Quat <: Quaternion}
-    if degree
-        θ = deg2rad(θ)
-    end
-    ϕ = θ / 2
-    if normalize
-        n = LinearAlgebra.normalize(x) * sin(ϕ)
-    else
-        n = x * sin(ϕ)
-    end
-    @inbounds Quat(cos(ϕ), n[1], n[2], n[3])
-end
-
 """
     quaternion(θ, x::Vec; [normalize = true, degree = false])
-    quaternion(T, θ, x::Vec; [normalize = true, degree = false])
 
 Construct `Quaternion` from angle `θ` and axis `x`.
 The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
@@ -101,10 +87,22 @@ julia> (q * v / q).vector ≈ rotmatz(π/4) ⋅ v
 true
 ```
 """
-quaternion(θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) = Quaternion(θ, x; normalize, degree)
-quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {T} = Quaternion{T}(θ, x; normalize, degree)
-quaternion(θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) = @inbounds Quaternion(θ, Vec(x[1], x[2], 0); normalize, degree)
-quaternion(::Type{T}, θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) where {T} = @inbounds Quaternion{T}(θ, Vec(x[1], x[2], 0); normalize, degree)
+function quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {T}
+    if degree
+        θ = deg2rad(θ)
+    end
+    ϕ = θ / 2
+    if normalize
+        n = LinearAlgebra.normalize(x) * sin(ϕ)
+    else
+        n = x * sin(ϕ)
+    end
+    @inbounds Quaternion{T}(cos(ϕ), n[1], n[2], n[3])
+end
+quaternion(T::Type, θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) =
+    @inbounds quaternion(T, θ, Vec(x[1], x[2], 0); normalize, degree)
+quaternion(θ::Real, x::Vec; normalize::Bool = true, degree::Bool = false) =
+    quaternion(promote_type(typeof(θ), eltype(x)), θ, x; normalize, degree)
 
 Base.length(::Quaternion) = 4
 Base.size(::Quaternion) = (4,)
