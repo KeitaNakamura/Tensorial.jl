@@ -56,12 +56,8 @@ Base.propertynames(q::Quaternion) = (:scalar, :vector, :w, :x, :y, :z, :data)
 
 # conversion
 Base.convert(::Type{Quaternion{T}}, x::Quaternion{T}) where {T} = x
-function Base.convert(::Type{Quaternion{T}}, x::Quaternion{U}) where {T, U}
-    Quaternion(map(T, Tuple(x)))
-end
-function Base.convert(::Type{Quaternion{T}}, x::Real) where {T}
-    convert(Quaternion{T}, Quaternion(x))
-end
+Base.convert(::Type{Quaternion{T}}, x::Quaternion{U}) where {T, U} = Quaternion(map(T, Tuple(x)))
+Base.convert(::Type{Quaternion{T}}, x::Real) where {T} = convert(Quaternion{T}, Quaternion(x))
 
 # promotion
 Base.promote_rule(::Type{Quaternion{T}}, ::Type{T}) where {T <: Real} = Quaternion{T}
