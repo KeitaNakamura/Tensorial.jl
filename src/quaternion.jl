@@ -135,20 +135,8 @@ end
 @inline Base.:/(q::Quaternion, a::Number) = Quaternion(Vec(q) / a)
 
 # quaternion vs vector
-@inline function Base.:*(q::Quaternion, v::Vec{3, T}) where {T}
-    @inbounds q * Quaternion(zero(T), v[1], v[2], v[3])
-end
-@inline function Base.:*(v::Vec{3, T}, q::Quaternion) where {T}
-    @inbounds Quaternion(zero(T), v[1], v[2], v[3]) * q
-end
-# in 2D, expand vector to 3D first
-@inline function Base.:*(q::Quaternion, v::Vec{2, T}) where {T}
-    @inbounds q * Quaternion(zero(T), v[1], v[2], zero(T))
-end
-@inline function Base.:*(v::Vec{2, T}, q::Quaternion) where {T}
-    @inbounds Quaternion(zero(T), v[1], v[2], zero(T)) * q
-end
-
+@inline Base.:*(q::Quaternion, v::Vec) = q * Quaternion(v)
+@inline Base.:*(v::Vec, q::Quaternion) = Quaternion(v) * q
 @inline Base.:/(v::Vec, q::Quaternion) = v * inv(q)
 
 """
