@@ -31,11 +31,15 @@ end
 @inline (::Type{T})(data::Vararg{Any}) where {T <: Quaternion} = T(data)
 
 # Quaternion <-> Vec
+@inline Quaternion{T}(r::Real, v::Vec{3}) where {T} = @inbounds Quaternion{T}(r, v[1], v[2], v[3])
+@inline Quaternion{T}(r::Real, v::Vec{2}) where {T} = @inbounds Quaternion{T}(r, v[1], v[2], zero(eltype(v)))
+@inline Quaternion{T}(r::Real, v::Vec{1}) where {T} = @inbounds Quaternion{T}(r, v[1], zero(eltype(v)), zero(eltype(v)))
 @inline Quaternion{T}(v::Vec{4}) where {T} = Quaternion{T}(Tuple(v))
-@inline Quaternion{T}(v::Vec{3}) where {T} = @inbounds Quaternion{T}(zero(eltype(v)), v[1], v[2], v[3])
-@inline Quaternion{T}(v::Vec{2}) where {T} = (z = zero(eltype(v)); @inbounds Quaternion{T}(z, v[1], v[2], z))
-@inline Quaternion{T}(v::Vec{1}) where {T} = (z = zero(eltype(v)); @inbounds Quaternion{T}(z, v[1], z, z))
+for dim in 1:3
+    @eval @inline Quaternion{T}(v::Vec{$dim}) where {T} = Quaternion{T}(zero(eltype(v)), v)
+end
 @inline Quaternion(v::Vec) = Quaternion{eltype(v)}(v)
+@inline Quaternion(r::Real, v::Vec) = Quaternion{promote_type(typeof(r), eltype(v))}(r, v)
 @inline Vec(q::Quaternion) = Vec(Tuple(q))
 
 @inline Quaternion(x::Real) = (z = zero(x); Quaternion(x, z, z, z))
@@ -100,7 +104,7 @@ function quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degr
     else
         n = x * sin(ϕ)
     end
-    @inbounds Quaternion{T}(cos(ϕ), n[1], n[2], n[3])
+    @inbounds Quaternion{T}(cos(ϕ), n)
 end
 quaternion(T::Type, θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) =
     @inbounds quaternion(T, θ, Vec(x[1], x[2], 0); normalize, degree)
