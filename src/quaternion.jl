@@ -233,6 +233,21 @@ function rotmat_normalized(q::Quaternion)
           2(q₂q₃+q₁q₄)    q₁²-q₂²+q₃²-q₄² 2(q₃q₄-q₁q₂)
           2(q₂q₄-q₁q₃)    2(q₃q₄+q₁q₂)    q₁²-q₂²-q₃²+q₄²]
 end
+"""
+    rotmat(::Quaternion)
+
+Construct rotation matrix from quaternion.
+
+# Examples
+julia> q = quaternion(π/4, Vec(0,0,1))
+0.9238795325112867 + 0.0𝙞 + 0.0𝙟 + 0.3826834323650898𝙠
+
+julia> rotmat(q)
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.707107  -0.707107  0.0
+ 0.707107   0.707107  0.0
+ 0.0        0.0       1.0
+"""
 @inline rotmat(q::Quaternion) = rotmat_normalized(normalize(q))
 
 function Base.show(io::IO, q::Quaternion)
