@@ -54,10 +54,10 @@ Base.propertynames(q::Quaternion) = (:scalar, :vector, :w, :x, :y, :z, :data)
 # conversion
 Base.convert(::Type{Quaternion{T}}, x::Quaternion{T}) where {T} = x
 function Base.convert(::Type{Quaternion{T}}, x::Quaternion{U}) where {T, U}
-    @inbounds Quaternion(convert(T, x[1]), convert(T, x[2]), convert(T, x[3]), convert(T, x[4]))
+    Quaternion(map(T, Tuple(x)))
 end
 function Base.convert(::Type{Quaternion{T}}, x::Real) where {T}
-    Quaternion(convert(T, x), convert(T, 0), convert(T, 0), convert(T, 0))
+    convert(Quaternion{T}, Quaternion(x))
 end
 
 # promotion
