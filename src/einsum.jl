@@ -229,25 +229,27 @@ function einsum_instantiate(expr)
             return einex
         end
     elseif Meta.isexpr(expr, :ref)
-        return einsum_instantiate_tensor(esc(expr.args[1]), expr.args[2:end])
+        ex = esc(expr.args[1])
+        allinds = expr.args[2:end]
+        freeinds = find_freeindices(allinds)
+        return einsum_instantiate_tensor(EinsumExpr(ex, freeinds, allinds))
     end
     EinsumExpr(expr, [], [])
 end
 
 # ref case
-function einsum_instantiate_tensor(tensor, inds)
-    freeinds = find_freeindices(inds)
-    if isempty(freeinds) # handle `A[i,i]`
-        ex = :($einsum_contraction(Val(()), ($tensor,), ($(ValTuple(inds...)),)))
-        return EinsumExpr(ex, freeinds, inds)
+function einsum_instantiate_tensor(einex::EinsumExpr)
+    if isscalarexpr(einex) # handle `A[i,i]`
+        ex = :($einsum_contraction(Val(()), ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
+        return EinsumExpr(ex, einex.freeinds, einex.allinds)
     else
-        return EinsumExpr(tensor, inds, inds)
+        return einex
     end
 end
 
 # division
 function einsum_instantiate_division(lhs::EinsumExpr, rhs::EinsumExpr)
-    @assert isempty(rhs.freeinds)
+    @assert isscalarexpr(rhs)
     ex = Expr(:call, :/, lhs.ex, rhs.ex)
     EinsumExpr(ex, lhs.freeinds, lhs.allinds) # is it ok to ignore indices of `rhs`?
 end
@@ -262,10 +264,10 @@ end
 
 # contraction
 function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr)
-    if isempty(lhs.freeinds)
+    if isscalarexpr(lhs)
         ex = Expr(:call, :*, lhs.ex, rhs.ex)
         return EinsumExpr(ex, rhs.freeinds, vcat(lhs.allinds, rhs.allinds))
-    elseif isempty(rhs.freeinds)
+    elseif isscalarexpr(rhs)
         ex = Expr(:call, :*, lhs.ex, rhs.ex)
         return EinsumExpr(ex, lhs.freeinds, vcat(lhs.allinds, rhs.allinds))
     else
