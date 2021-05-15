@@ -111,7 +111,7 @@ Base.length(::Quaternion) = 4
 Base.size(::Quaternion) = (4,)
 
 @inline function Base.getindex(q::Quaternion, i::Int)
-    @_propagate_inbounds_meta
+    @boundscheck 1 ≤ i ≤ 4 || throw(BoundsError(q, i))
     @inbounds Tuple(q)[i]
 end
 
