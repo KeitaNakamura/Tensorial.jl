@@ -614,7 +614,12 @@ julia> R ⋅ A ⋅ R'
     end
 end
 
-# eigvals/eigen (just call methos in StaticArrays.jl)
+
+# ----------------------------------------------#
+# operations calling methods in StaticArrays.jl #
+# ----------------------------------------------#
+
+# eigvals/eigen
 @inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
     Tensor(eigvals(Symmetric(convert_to_SArray(x)); permute, scale))
 end
@@ -622,3 +627,7 @@ end
     eig = eigen(Symmetric(convert_to_SArray(x)))
     Eigen(Tensor(eig.values), Tensor(eig.vectors))
 end
+
+# exp
+@inline Base.exp(x::AbstractSecondOrderTensor) = typeof(x)(exp(convert_to_SArray(x)))
+@inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = typeof(x)(exp(Symmetric(convert_to_SArray(x))))

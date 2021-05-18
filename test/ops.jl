@@ -258,6 +258,18 @@ end
             end
         end
     end
+    @testset "exp" begin
+        # error for `Float32`
+        # see https://github.com/JuliaArrays/StaticArrays.jl/issues/785
+        for T in (Float64,)
+            for dim in (2, 3)
+                x = rand(SecondOrderTensor{dim, T})
+                y = rand(SymmetricSecondOrderTensor{dim, T})
+                @test (@inferred exp(x))::SecondOrderTensor{dim, T} ≈ exp(Array(x))
+                @test (@inferred exp(y))::SymmetricSecondOrderTensor{dim, T} ≈ exp(Array(y))
+            end
+        end
+    end
 end
 
 @testset "UniformScaling" begin
