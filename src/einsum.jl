@@ -229,25 +229,27 @@ function einsum_instantiate(expr)
             return einex
         end
     elseif Meta.isexpr(expr, :ref)
-        return einsum_instantiate_tensor(esc(expr.args[1]), expr.args[2:end])
+        ex = esc(expr.args[1])
+        allinds = expr.args[2:end]
+        freeinds = find_freeindices(allinds)
+        return einsum_instantiate_tensor(EinsumExpr(ex, freeinds, allinds))
     end
     EinsumExpr(expr, [], [])
 end
 
 # ref case
-function einsum_instantiate_tensor(tensor, inds)
-    freeinds = find_freeindices(inds)
-    if isempty(freeinds) # handle `A[i,i]`
-        ex = :($einsum_contraction(Val(()), ($tensor,), ($(ValTuple(inds...)),)))
-        return EinsumExpr(ex, freeinds, inds)
+function einsum_instantiate_tensor(einex::EinsumExpr)
+    if isscalarexpr(einex) # handle `A[i,i]`
+        ex = :($einsum_contraction(Val(()), ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
+        return EinsumExpr(ex, einex.freeinds, einex.allinds)
     else
-        return EinsumExpr(tensor, inds, inds)
+        return einex
     end
 end
 
 # division
 function einsum_instantiate_division(lhs::EinsumExpr, rhs::EinsumExpr)
-    @assert isempty(rhs.freeinds)
+    @assert isscalarexpr(rhs)
     ex = Expr(:call, :/, lhs.ex, rhs.ex)
     EinsumExpr(ex, lhs.freeinds, lhs.allinds) # is it ok to ignore indices of `rhs`?
 end
@@ -262,10 +264,10 @@ end
 
 # contraction
 function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr)
-    if isempty(lhs.freeinds)
+    if isscalarexpr(lhs)
         ex = Expr(:call, :*, lhs.ex, rhs.ex)
         return EinsumExpr(ex, rhs.freeinds, vcat(lhs.allinds, rhs.allinds))
-    elseif isempty(rhs.freeinds)
+    elseif isscalarexpr(rhs)
         ex = Expr(:call, :*, lhs.ex, rhs.ex)
         return EinsumExpr(ex, lhs.freeinds, vcat(lhs.allinds, rhs.allinds))
     else
@@ -276,7 +278,16 @@ function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr)
     end
 end
 
-@generated function einsum_contraction(::Val{freeinds}, tensors::Tuple, _tensorinds::Tuple{Vararg{Val}}) where {freeinds}
+# for dummy indices
+function sumargs(x, ys...)
+    ret = *(x...)
+    @simd for i in eachindex(ys)
+        @inbounds ret += *(ys[i]...)
+    end
+    ret
+end
+
+@generated function _einsum_contraction(::Val{freeinds}, tensors::Tuple, _tensorinds::Tuple{Vararg{Val}}) where {freeinds}
     tensorinds = map(p -> p.parameters[1], _tensorinds.parameters)
 
     allinds = vcat([collect(x) for x in tensorinds]...)
@@ -350,10 +361,38 @@ end
     end
 end
 
-function sumargs(x, ys...)
-    ret = *(x...)
-    @simd for i in eachindex(ys)
-        @inbounds ret += *(ys[i]...)
+# call contraction methods if possible
+@generated function einsum_contraction(_freeinds::Val{freeinds}, tensors::Tuple, _tensorinds::Tuple{Vararg{Val}}) where {freeinds}
+    default = quote
+        @_inline_meta
+        _einsum_contraction(_freeinds, tensors, _tensorinds)
     end
-    ret
+
+    length(tensors.parameters) != 2 && return default
+    lhsall, rhsall = map(p -> collect(p.parameters[1]), _tensorinds.parameters)
+
+    lhsdummy = Int[]
+    rhsdummy = Int[]
+    for i in eachindex(lhsall)
+        index = lhsall[i]
+        I = findall(==(index), rhsall)
+        isempty(I) && continue
+        push!(lhsdummy, i)
+        push!(rhsdummy, only(I))
+    end
+
+    issequence(x) = isempty(x) ? false : x == first(x):first(x)+length(x)-1
+    if issequence(lhsdummy) && issequence(rhsdummy) &&
+       last(lhsdummy) == lastindex(lhsall) && first(rhsdummy) == firstindex(rhsall)
+        lhsfree = deleteat!(lhsall, lhsdummy)
+        rhsfree = deleteat!(rhsall, rhsdummy)
+        if freeinds == tuple(lhsfree..., rhsfree...)
+            return quote
+                @_inline_meta
+                contraction(tensors..., $(Val(length(lhsdummy))))
+            end
+        end
+    end
+
+    default
 end
