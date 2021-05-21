@@ -215,13 +215,21 @@ end
     end
     throw(ArgumentError("uplo argument must be either :U (upper) or :L (lower)"))
 end
-## :L or :U
-@inline function symmetric(x::AbstractSecondOrderTensor{dim}, uplo::Symbol) where {dim}
-    if uplo == :U
-        return SymmetricSecondOrderTensor{dim}((i,j) -> @inbounds i ≤ j ? x[i,j] : x[j,i])
-    elseif uplo == :L
-        return SymmetricSecondOrderTensor{dim}((i,j) -> @inbounds i ≥ j ? x[i,j] : x[j,i])
+## :U or :L
+for (uplo, filter) in ((:U, (inds,i,j) -> i ≤ j ? inds[i,j] : inds[j,i]),
+                       (:L, (inds,i,j) -> i ≥ j ? inds[i,j] : inds[j,i]))
+    @eval @generated function $(Symbol(:symmetric, uplo))(x::AbstractSecondOrderTensor{dim}) where {dim}
+        exps = [:(Tuple(x)[$($filter(independent_indices(x), Tuple(I)...))]) for I in CartesianIndices(x)]
+        TT = SymmetricSecondOrderTensor{dim}
+        quote
+            @_inline_meta
+            @inbounds $TT($(exps[indices(TT)]...))
+        end
     end
+end
+@inline function symmetric(x::AbstractSecondOrderTensor{dim}, uplo::Symbol) where {dim}
+    uplo == :U && return symmetricU(x)
+    uplo == :L && return symmetricL(x)
     throw(ArgumentError("uplo argument must be either :U (upper) or :L (lower)"))
 end
 ## no uplo

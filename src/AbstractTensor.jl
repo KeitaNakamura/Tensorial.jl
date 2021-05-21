@@ -17,6 +17,9 @@ function Base.axes(TT::Type{<: AbstractTensor}, d::Int)
 end
 
 # indices
+for Indices in (:CartesianIndices, :LinearIndices)
+    @eval Base.$Indices(::Type{TT}) where {TT <: AbstractTensor} = $Indices(size(TT))
+end
 for func in (:independent_indices, :indices, :duplicates)
     @eval begin
         $func(::Type{TT}) where {S, TT <: AbstractTensor{S}} = $func(Space(S))
