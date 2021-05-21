@@ -42,18 +42,13 @@ Base.:*(::AbstractTensor, ::AbstractTensor) = error_multiply()
 Base.:*(::AbstractTensor, ::UniformScaling) = error_multiply()
 Base.:*(::UniformScaling, ::AbstractTensor) = error_multiply()
 
-function contraction_exprs(S1::Space, S2::Space, ::Val{N}) where {N}
-    S = contraction(S1, S2, Val(N))
-    s1 = map(i -> EinsumIndex(:(Tuple(x)), i), independent_indices(S1))
-    s2 = map(i -> EinsumIndex(:(Tuple(y)), i), independent_indices(S2))
-    K = prod(size(s2)[1:N])
-    I = length(s1) ÷ K
-    J = length(s2) ÷ K
-    s1′ = reshape(s1, I, K)
-    s2′ = reshape(s2, K, J)
-    s′ = @einsum_array (i,j) -> s1′[i,k] * s2′[k,j]
-    s = reshape(s′, size(s1)[1:end-N]..., size(s2)[N+1:end]...)
-    map(construct_expr, s[indices(S)])
+function contraction_exprs(x::Type{<: AbstractTensor}, y::Type{<: AbstractTensor}, N::Int)
+    nx = ndims(x)
+    ny = ndims(y)
+    ij_x = UnitRange(1, nx)
+    ij_y = UnitRange(nx + 1 - N, nx + ny - N)
+    freeinds = find_freeindices([ij_x; ij_y])
+    einsum_contraction_expr(Tuple(freeinds), (x, y), (ij_x, ij_y))
 end
 
 """
@@ -82,16 +77,10 @@ Following symbols are also available for specific contractions:
 - `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>`): `contraction(x, y, Val(2))`
 """
 @generated function contraction(x::AbstractTensor, y::AbstractTensor, ::Val{N}) where {N}
-    S = contraction(Space(x), Space(y), Val(N))
-    exps = contraction_exprs(Space(x), Space(y), Val(N))
-    T = promote_type(eltype(x), eltype(y))
-    if length(S) == 0
-        TT = T
-    else
-        TT = tensortype(S){T}
-    end
+    TT, exps = contraction_exprs(x, y, N)
     quote
         @_inline_meta
+        tensors = (x, y)
         @inbounds $TT($(exps...))
     end
 end
@@ -372,11 +361,11 @@ end
 ## helper functions
 @inline _powdot(x::AbstractSecondOrderTensor, y::AbstractSecondOrderTensor) = dot(x, y)
 @generated function _powdot(x::AbstractSymmetricSecondOrderTensor{dim}, y::AbstractSymmetricSecondOrderTensor{dim}) where {dim}
-    S = Space(x)
-    exps = contraction_exprs(Space(x), Space(y), Val(1))
+    _, exps = contraction_exprs(x, y, 1)
     quote
         @_inline_meta
-        @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices(S)]...))
+        tensors = (x, y)
+        @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices(x)]...))
     end
 end
 
@@ -613,12 +602,13 @@ julia> R ⋅ A ⋅ R'
 @inline rotate(v::Vec{2}, R::SecondOrderTensor{3}) = (R2x2 = Mat{2, 2}((i,j) -> @inbounds R[i,j]); R2x2 ⋅ v)
 @inline rotate(A::SecondOrderTensor, R::SecondOrderTensor) = R ⋅ A ⋅ R'
 @generated function rotate(A::SymmetricSecondOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim}
-    exps = contraction_exprs(Space(R), dot(Space(A), Space(R)), Val(1))
+    _, exps = contraction_exprs(SecondOrderTensor{dim}, SecondOrderTensor{dim}, 1)
+    TT = SymmetricSecondOrderTensor{dim}
     quote
         @_inline_meta
-        x = R
-        y = A ⋅ R'
-        @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices(SymmetricSecondOrderTensor{dim})]...))
+        ARᵀ = @einsum A[i,j] * R[k,j]
+        tensors = (R, ARᵀ)
+        @inbounds $TT($(exps[indices(TT)]...))
     end
 end
 
