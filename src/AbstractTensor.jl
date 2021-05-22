@@ -10,6 +10,8 @@ Base.IndexStyle(::Type{<: AbstractTensor}) = IndexLinear()
 end
 @inline Base.size(x::AbstractTensor) = tensorsize(Space(x))
 
+@pure Base.ndims(::Type{TT}) where {TT <: AbstractTensor} = length(size(TT))
+
 @pure Base.axes(::Type{TT}) where {TT <: AbstractTensor} = map(Base.OneTo, size(TT))
 function Base.axes(TT::Type{<: AbstractTensor}, d::Int)
     A = axes(TT)
