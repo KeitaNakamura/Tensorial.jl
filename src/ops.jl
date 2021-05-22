@@ -189,12 +189,7 @@ julia> tr(x)
 1.6317075356075135
 ```
 """
-@inline function tr(x::AbstractSquareTensor{dim}) where {dim}
-    sum(i -> @inbounds(x[i,i]), 1:dim)
-end
-@inline tr(x::AbstractSquareTensor{1}) = @inbounds x[1,1]
-@inline tr(x::AbstractSquareTensor{2}) = @inbounds x[1,1] + x[2,2]
-@inline tr(x::AbstractSquareTensor{3}) = @inbounds x[1,1] + x[2,2] + x[3,3]
+@inline tr(x::AbstractSquareTensor) = @einsum x[i,i]
 
 # symmetric
 @inline symmetric(x::AbstractSymmetricSecondOrderTensor) = x
