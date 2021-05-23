@@ -39,9 +39,8 @@ function getindex_expr(x::Type{<: AbstractTensor}, ex::Union{Symbol, Expr}, i...
 end
 
 # to SArray
-@generated function convert_to_SArray(x::AbstractTensor)
-    S = Space(x)
-    NewS = Space(tensorsize(S)) # remove Symmetry
+@generated function StaticArrays.SArray(x::AbstractTensor)
+    NewS = Space(size(x)) # remove Symmetry
     exps = [getindex_expr(x, :x, i) for i in indices(NewS)]
     quote
         @_inline_meta

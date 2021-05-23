@@ -234,8 +234,7 @@ function einsum_contraction_expr(freeinds::Tuple, tensors::Tuple{Vararg{Any, N}}
             ainds = [Tuple(finds)..., Tuple(dinds)...]
             exps = map(enumerate(tensors)) do (i, t)
                 inds = ainds[whichindices[i]]
-                I = independent_indices(t)[inds...]
-                :(Tuple(tensors[$i])[$I])
+                getindex_expr(t, :(tensors[$i]), inds...)
             end
             Expr(:tuple, exps...)
         end

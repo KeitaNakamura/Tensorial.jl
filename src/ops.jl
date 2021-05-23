@@ -614,13 +614,13 @@ end
 
 # eigvals/eigen
 @inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
-    Tensor(eigvals(Symmetric(convert_to_SArray(x)); permute, scale))
+    Tensor(eigvals(Symmetric(SArray(x)); permute, scale))
 end
 @inline function eigen(x::AbstractSymmetricSecondOrderTensor)
-    eig = eigen(Symmetric(convert_to_SArray(x)))
+    eig = eigen(Symmetric(SArray(x)))
     Eigen(Tensor(eig.values), Tensor(eig.vectors))
 end
 
 # exp
-@inline Base.exp(x::AbstractSecondOrderTensor) = typeof(x)(exp(convert_to_SArray(x)))
-@inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = typeof(x)(exp(Symmetric(convert_to_SArray(x))))
+@inline Base.exp(x::AbstractSecondOrderTensor) = typeof(x)(exp(SArray(x)))
+@inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = typeof(x)(exp(Symmetric(SArray(x))))
