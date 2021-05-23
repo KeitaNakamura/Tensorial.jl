@@ -87,7 +87,7 @@ SS = rand(SymmetricFourthOrderTensor{3}) # equal to one(Tensor{Tuple{@Symmetry{3
 inv(AA) ⊡ AA ≈ one(AA)
 inv(SS) ⊡ SS ≈ one(SS)
 
-# Einstein summation convention (experimental)
+# Einstein summation convention
 A = rand(Mat{3,3})
 B = rand(Mat{3,3})
 @einsum (i,j) -> A[i,k] * B[k,j]

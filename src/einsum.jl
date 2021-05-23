@@ -35,10 +35,6 @@ julia> @einsum A[i,k] * B[k,j] # same as above
 julia> @einsum A[i,j] * B[i,j]
 2.454690093453888
 ```
-
-!!! note
-
-    `@einsum` is experimental and could change or disappear in future versions of Tensorial.
 """
 macro einsum(expr)
     freeinds, body = anonymous_args_body(expr)
