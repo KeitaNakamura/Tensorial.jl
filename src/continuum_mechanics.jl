@@ -1,6 +1,6 @@
 """
-    mean(::AbstractSecondOrderTensor)
-    mean(::AbstractSymmetricSecondOrderTensor)
+    mean(::AbstractSecondOrderTensor{3})
+    mean(::AbstractSymmetricSecondOrderTensor{3})
 
 Compute the mean value of diagonal entries of a square tensor.
 
@@ -16,7 +16,7 @@ julia> mean(x)
 0.5439025118691712
 ```
 """
-@inline mean(x::AbstractSquareTensor{dim}) where {dim} = tr(x) / dim
+@inline mean(x::AbstractSquareTensor{3}) = tr(x) / 3
 
 """
     vol(::AbstractSecondOrderTensor{3})
