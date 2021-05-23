@@ -2,7 +2,7 @@ module Tensorial
 
 using LinearAlgebra, Statistics
 # re-exports from LinearAlgebra and Statistics
-export ⋅, ×, dot, tr, det, norm, normalize, mean, I, eigen, eigvals, eigvecs
+export ⋅, ×, dot, tr, det, norm, normalize, mean, I, cross, eigen, eigvals, eigvecs
 
 using StaticArrays
 using Base: @pure, @_inline_meta, @_propagate_inbounds_meta
