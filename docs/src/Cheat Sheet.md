@@ -114,8 +114,8 @@ D  = gradient(dev, A)            # deviatoric projection tensor
 Ds = gradient(dev, symmetric(A)) # symmetric deviatoric projection tensor
 A ⊡ D  ≈ dev(A)
 A ⊡ Ds ≈ symmetric(dev(A))
-gradient(identity, A)  == one(FourthOrderTensor{3})          # 4th-order identity tensor
-gradient(symmetric, A) == one(SymmetricFourthOrderTensor{3}) # symmetric 4th-order identity tensor
+gradient(identity, A) == one(FourthOrderTensor{3})                     # 4th-order identity tensor
+gradient(identity, symmetric(A)) == one(SymmetricFourthOrderTensor{3}) # symmetric 4th-order identity tensor
 ```
 
 ## Aliases

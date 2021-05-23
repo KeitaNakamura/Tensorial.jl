@@ -11,7 +11,7 @@ Tensorial provides useful tensor operations (e.g., contraction; tensor product, 
 The library supports arbitrary size of non-symmetric and symmetric tensors, where symmetries should be specified to avoid wasteful duplicate computations.
 The way to give a size of the tensor is similar to [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl), and symmetries of tensors can be specified by using `@Symmetry`.
 For example, symmetric fourth-order tensor (symmetrizing tensor) is represented in this library as `Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}`.
-Any tensors can also be used in provided automatic differentiation functions.
+Einstein summation macro and automatic differentiation functions are also provided.
 
 ## Speed
 
@@ -106,14 +106,6 @@ x ⊗ y isa Tensor{Tuple{2,2,@Symmetry{2,2}}} # tensor product
 x ⋅ y isa Tensor{Tuple{2,2}}                # single contraction (x_ij * y_jk)
 x ⊡ y isa Real                              # double contraction (x_ij * y_ij)
 
-# norm/tr/mean/vol/dev
-x = rand(SecondOrderTensor{3}) # equal to rand(Tensor{Tuple{3,3}})
-v = rand(Vec{3})
-norm(v)
-tr(x)
-mean(x) == tr(x) / 3 # useful for computing mean stress
-vol(x) + dev(x) == x # decomposition into volumetric part and deviatoric part
-
 # det/inv for 2nd-order tensor
 A = rand(SecondOrderTensor{3})          # equal to one(Tensor{Tuple{3,3}})
 S = rand(SymmetricSecondOrderTensor{3}) # equal to one(Tensor{Tuple{@Symmetry{3,3}}})
@@ -132,6 +124,10 @@ A = rand(Mat{3,3})
 B = rand(Mat{3,3})
 @einsum (i,j) -> A[i,k] * B[k,j]
 @einsum A[i,j] * B[i,j]
+
+# Automatic differentiation
+gradient(tr, rand(Mat{3,3})) == one(Mat{3,3}) # Tensor -> Real
+gradient(identity, rand(SymmetricSecondOrderTensor{3})) == one(SymmetricFourthOrderTensor{3}) # Tensor -> Tensor
 ```
 
 ## Other tensor packages
