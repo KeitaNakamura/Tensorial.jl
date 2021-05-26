@@ -83,10 +83,10 @@ end
                             order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim)),
                             offdiagscale::T = one(T)) where {dim, T}
     L = ncomponents(x)
-    function tovoigt_element(i)
+    function tovoigt_element(I)
         ex = :(x[i,j])
         quote
-            i, j = order[$i]
+            i, j = order[$I]
             (i == j ? $ex : $ex * offdiagscale)
         end
     end
@@ -94,7 +94,7 @@ end
     quote
         @_propagate_inbounds_meta
         @assert length(order) ≥ $L
-        @inbounds SVector{$L, T}($(exps...))
+        SVector{$L, T}($(exps...))
     end
 end
 
@@ -102,11 +102,11 @@ end
                             order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim)),
                             offdiagscale::T = one(T)) where {dim, T}
     L = Int(sqrt(ncomponents(x)))
-    function tovoigt_element(i, j)
+    function tovoigt_element(I, J)
         ex = :(x[i,j,k,l])
         quote
-            i, j = order[$i]
-            k, l = order[$j]
+            i, j = order[$I]
+            k, l = order[$J]
             ((i == j && k == l) ? $ex :
              (i == j || k == l) ? $ex * offdiagscale :
                                   $ex * (offdiagscale * offdiagscale))
@@ -183,8 +183,9 @@ function fromvoigt end
         @assert length(v) == length(order) == $L
         data = MVector{$L, $T}(undef)
         for I in 1:$L
-            i, j = order[I]
-            data[$inds[i,j]] = v[I]
+            i, j = @inbounds order[I]
+            index = $inds[i,j]
+            @inbounds data[index] = v[I]
         end
         TT(Tuple(data))
     end
@@ -199,13 +200,16 @@ end
     T = eltype(TT) == Any ? eltype(v) : eltype(TT)
     quote
         @_propagate_inbounds_meta
-        @assert length(v) == $(L*L)
+        @assert size(v) == ($L, $L)
         @assert length(order) == $L
         data = MVector{$(L*L), $T}(undef)
         for J in 1:$L, I in 1:$L
-            i, j = order[I]
-            k, l = order[J]
-            data[$inds[i,j,k,l]] = v[I,J]
+            @inbounds begin
+                i, j = order[I]
+                k, l = order[J]
+            end
+            index = $inds[i,j,k,l]
+            @inbounds data[index] = v[I,J]
         end
         TT(Tuple(data))
     end
@@ -225,11 +229,12 @@ end
         @assert length(order) ≥ $L
         data = MVector{$L, $T}(undef)
         for I in 1:$L
-            i, j = order[I]
+            @inbounds i, j = order[I]
+            index = $inds[i,j]
             if i == j
-                data[$inds[i,j]] = v[I]
+                @inbounds data[index] = v[I]
             else
-                data[$inds[i,j]] = v[I] / offdiagscale
+                @inbounds data[index] = v[I] / offdiagscale
             end
         end
         TT(Tuple(data))
@@ -246,18 +251,21 @@ end
     T = eltype(TT) == Any ? eltype(v) : eltype(TT)
     quote
         @_propagate_inbounds_meta
-        @assert length(v) == $(L*L)
+        @assert size(v) == ($L, $L)
         @assert length(order) ≥ $L
         data = MVector{$(L*L), $T}(undef)
         for J in 1:$L, I in 1:$L
-            i, j = order[I]
-            k, l = order[J]
+            @inbounds begin
+                i, j = order[I]
+                k, l = order[J]
+            end
+            index = $inds[i,j,k,l]
             if i == j && k == l
-                data[$inds[i,j,k,l]] = v[I,J]
+                @inbounds data[index] = v[I,J]
             elseif i == j || k == l
-                data[$inds[i,j,k,l]] = v[I,J] / offdiagscale
+                @inbounds data[index] = v[I,J] / offdiagscale
             else
-                data[$inds[i,j,k,l]] = v[I,J] / (offdiagscale * offdiagscale)
+                @inbounds data[index] = v[I,J] / (offdiagscale * offdiagscale)
             end
         end
         TT(Tuple(data))
