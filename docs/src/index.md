@@ -6,7 +6,7 @@ Tensorial provides useful tensor operations (e.g., contraction; tensor product, 
 The library supports arbitrary size of non-symmetric and symmetric tensors, where symmetries should be specified to avoid wasteful duplicate computations.
 The way to give a size of the tensor is similar to [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl), and symmetries of tensors can be specified by using `@Symmetry`.
 For example, symmetric fourth-order tensor (symmetrizing tensor) is represented in this library as `Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}`.
-Any tensors can also be used in provided automatic differentiation functions.
+Einstein summation macro and automatic differentiation functions are also provided.
 
 ## Installation
 

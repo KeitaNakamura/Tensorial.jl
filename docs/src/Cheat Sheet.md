@@ -87,7 +87,7 @@ SS = rand(SymmetricFourthOrderTensor{3}) # equal to one(Tensor{Tuple{@Symmetry{3
 inv(AA) ⊡ AA ≈ one(AA)
 inv(SS) ⊡ SS ≈ one(SS)
 
-# Einstein summation convention (experimental)
+# Einstein summation convention
 A = rand(Mat{3,3})
 B = rand(Mat{3,3})
 @einsum (i,j) -> A[i,k] * B[k,j]
@@ -114,8 +114,8 @@ D  = gradient(dev, A)            # deviatoric projection tensor
 Ds = gradient(dev, symmetric(A)) # symmetric deviatoric projection tensor
 A ⊡ D  ≈ dev(A)
 A ⊡ Ds ≈ symmetric(dev(A))
-gradient(identity, A)  == one(FourthOrderTensor{3})          # 4th-order identity tensor
-gradient(symmetric, A) == one(SymmetricFourthOrderTensor{3}) # symmetric 4th-order identity tensor
+gradient(identity, A) == one(FourthOrderTensor{3})                     # 4th-order identity tensor
+gradient(identity, symmetric(A)) == one(SymmetricFourthOrderTensor{3}) # symmetric 4th-order identity tensor
 ```
 
 ## Aliases
