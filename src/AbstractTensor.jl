@@ -1,5 +1,26 @@
 abstract type AbstractTensor{S <: Tuple, T, N} <: AbstractArray{T, N} end
 
+# aliases (too long name?)
+const AbstractSecondOrderTensor{dim, T} = AbstractTensor{NTuple{2, dim}, T, 2}
+const AbstractFourthOrderTensor{dim, T} = AbstractTensor{NTuple{4, dim}, T, 4}
+const AbstractSymmetricSecondOrderTensor{dim, T} = AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}
+const AbstractSymmetricFourthOrderTensor{dim, T} = AbstractTensor{NTuple{2, @Symmetry{dim, dim}}, T, 4}
+const AbstractVec{dim, T} = AbstractTensor{Tuple{dim}, T, 1}
+const AbstractMat{m, n, T} = AbstractTensor{Tuple{m, n}, T, 2}
+
+const AbstractVecOrMat{T} = Union{AbstractVec{<: Any, T}, AbstractMat{<: Any, <: Any, T}}
+const AbstractMatLike{T} = Union{
+    AbstractMat{<: Any, <: Any, T},
+    Transpose{T, <: AbstractVecOrMat{T}},
+}
+const AbstractVecOrMatLike{T} = Union{AbstractVec{<: Any, T}, AbstractMatLike{T}}
+
+# special name (not exported)
+const AbstractSquareTensor{dim, T} = Union{AbstractTensor{Tuple{dim, dim}, T, 2},
+                                           AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}}
+
+
+
 # for AbstractArray interface
 Base.IndexStyle(::Type{<: AbstractTensor}) = IndexLinear()
 
@@ -47,15 +68,35 @@ end
         @inbounds SArray{Tuple{$(tensorsize(NewS)...)}}(tuple($(exps...)))
     end
 end
+function StaticArrays.SArray(x::Transpose{<: T, <: AbstractVec{dim, T}}) where {dim, T}
+    SMatrix{1, dim}(Tuple(parent(x)))
+end
 
-# aliases (too long name?)
-const AbstractSecondOrderTensor{dim, T} = AbstractTensor{NTuple{2, dim}, T, 2}
-const AbstractFourthOrderTensor{dim, T} = AbstractTensor{NTuple{4, dim}, T, 4}
-const AbstractSymmetricSecondOrderTensor{dim, T} = AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}
-const AbstractSymmetricFourthOrderTensor{dim, T} = AbstractTensor{NTuple{2, @Symmetry{dim, dim}}, T, 4}
-const AbstractVec{dim, T} = AbstractTensor{Tuple{dim}, T, 1}
-const AbstractMat{m, n, T} = AbstractTensor{Tuple{m, n}, T, 2}
 
-# special name (not exported)
-const AbstractSquareTensor{dim, T} = Union{AbstractTensor{Tuple{dim, dim}, T, 2},
-                                           AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}}
+# vcat
+## vector or matrix
+Base.vcat(a::AbstractMatLike) = a
+Base.vcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike) = Tensor(vcat(SArray(a), SArray(b)))
+Base.vcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike, c::AbstractVecOrMatLike...) = vcat(vcat(a, b), vcat(c...))
+## vector or real
+Base.vcat(a::AbstractVec) = a
+Base.vcat(a::AbstractVec, b::AbstractVec) = Vec(Tuple(a)..., Tuple(b)...)
+Base.vcat(a::AbstractVec, b::AbstractVec, c::AbstractVec...) = vcat(vcat(a, b), vcat(c...))
+@generated function _vcat(xs::Union{AbstractVec, Real}...)
+    exps = [xs[i] <: AbstractVec ? :(xs[$i]) : :(Vec(xs[$i])) for i in 1:length(xs)]
+    quote
+        vcat($(exps...))
+    end
+end
+Base.vcat(a::AbstractVec, b::Union{AbstractVec, Real}...) = _vcat(a, b...)
+Base.vcat(a::Real, b::AbstractVec, c::Union{AbstractVec, Real}...) = _vcat(a, b, c...)
+Base.vcat(a::Real, b::Real, c::AbstractVec, d::Union{AbstractVec, Real}...) = _vcat(a, b, c, d...)
+Base.vcat(a::Real, b::Real, c::Real, d::AbstractVec, e::Union{AbstractVec, Real}...) = _vcat(a, b, c, d, e...)
+Base.vcat(a::Real, b::Real, c::Real, d::Real, e::AbstractVec, f::Union{AbstractVec, Real}...) = _vcat(a, b, c, d, e, f...)
+Base.vcat(a::Real, b::Real, c::Real, d::Real, e::Real, f::AbstractVec, g::Union{AbstractVec, Real}...) = _vcat(a, b, c, d, e, f, g...)
+
+# hcat
+Base.hcat(a::AbstractVec) = Tensor(hcat(SArray(a)))
+Base.hcat(a::AbstractMatLike) = a
+Base.hcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike) = Tensor(hcat(SArray(a), SArray(b)))
+Base.hcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike, c::AbstractVecOrMatLike...) = hcat(hcat(a, b), hcat(c...))
