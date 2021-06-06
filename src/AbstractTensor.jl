@@ -30,6 +30,7 @@ Base.IndexStyle(::Type{<: AbstractTensor}) = IndexLinear()
     d > length(S) ? 1 : S[d]
 end
 @inline Base.size(x::AbstractTensor) = tensorsize(Space(x))
+@pure Base.length(::Type{TT}) where {TT <: AbstractTensor} = prod(size(TT))
 
 @pure Base.ndims(::Type{TT}) where {TT <: AbstractTensor} = length(size(TT))
 
