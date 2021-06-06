@@ -99,6 +99,15 @@ randn(Tensor{Tuple{2,3}})
 @Mat rand(4,4)
 @Tensor rand(2,2,2)
 
+# statically sized getindex by `@Tensor`
+x = @Mat [1 2
+          3 4
+          5 6]
+@Tensor(x[2:3, :])   == @Mat [3 4
+                              5 6]
+@Tensor(x[[1,3], :]) == @Mat [1 2
+                              5 6]
+
 # contraction and tensor product
 x = rand(Mat{2,2})
 y = rand(Tensor{Tuple{@Symmetry{2,2}}})

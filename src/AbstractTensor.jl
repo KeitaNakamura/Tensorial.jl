@@ -59,6 +59,29 @@ function getindex_expr(x::Type{<: AbstractTensor}, ex::Union{Symbol, Expr}, i...
     :(Tuple($ex)[$(inds[i...])])
 end
 
+@generated function Base.getindex(x::AbstractTensor, I::Int...)
+    ex = :()
+    stride = 1
+    for i in 1:length(I)
+        if i == 1
+            ex = :(I[1])
+        else
+            ex = :($ex + $stride * (I[$i] - 1))
+        end
+        stride *= size(x, i)
+    end
+    quote
+        @_inline_meta
+        @boundscheck checkbounds(x, I...)
+        @inbounds x[$ex] # call getindex(x::AbstractTensor, i::Int)
+    end
+end
+
+function Base.getindex(x::AbstractTensor, inds::Union{Int, StaticArray{<:Tuple, Int}, SOneTo, Colon}...)
+    @_propagate_inbounds_meta
+    Tensor(SArray(x)[inds...])
+end
+
 # to SArray
 @generated function StaticArrays.SArray(x::AbstractTensor)
     NewS = Space(size(x)) # remove Symmetry

@@ -2,7 +2,7 @@ using Tensorial
 using Test, Random
 
 using LinearAlgebra: Symmetric
-using StaticArrays: SArray, SVector
+using StaticArrays: SArray, SVector, SOneTo, SUnitRange
 
 include("Symmetry.jl")
 include("Space.jl")

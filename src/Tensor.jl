@@ -91,8 +91,21 @@ end
 macro Mat(ex)
     esc(:(Tensor(Tensorial.@SMatrix $ex)))
 end
-macro Tensor(ex)
-    esc(:(Tensor(Tensorial.@SArray $ex)))
+macro Tensor(expr)
+    if Meta.isexpr(expr, :ref)
+        newargs = map(expr.args) do ex
+            if Meta.isexpr(ex, :call) && ex.args[1] == :(:)
+                Expr(:call, :($(StaticArrays.SUnitRange)), ex.args[2], ex.args[3])
+            elseif Meta.isexpr(ex, :vect)
+                Expr(:call, :($(StaticArrays.SVector)), ex.args...)
+            else
+                ex
+            end
+        end
+        esc(Expr(expr.head, newargs...))
+    else
+        esc(:(Tensor(Tensorial.@SArray $expr)))
+    end
 end
 
 # special constructors

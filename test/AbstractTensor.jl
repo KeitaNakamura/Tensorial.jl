@@ -27,7 +27,26 @@
     @test (@inferred axes(TT, 4)) == Base.OneTo(1)
 end
 
-@testset "AbstractTensor operations" begin
+@testset "Operations for array interface" begin
+    @testset "getindex for slicing" begin
+        v = Vec(5,4,3,2,1)
+        @test @inferred(v[:]) === Vec(5,4,3,2,1)
+        @test @inferred(v[SOneTo(3)]) === Vec(5,4,3)
+        @test @inferred(v[SUnitRange(2,4)]) === Vec(4,3,2)
+        @test @inferred(v[SVector(3,4,1)]) === Vec(3,2,5)
+        A = Mat{2,3}(1,2,3,4,5,6)
+        @test @inferred(A[:]) === Vec(1,2,3,4,5,6)
+        @test @inferred(A[1,:]) === Vec(1,3,5)
+        @test A[end,:] === Vec(2,4,6)
+        @test @inferred(A[:,1]) === Vec(1,2)
+        @test A[:,end] === Vec(5,6)
+        @test @inferred(A[1,SVector(1,3)]) === Vec(1,5)
+        # by @Tensor macro
+        @test @Tensor(A[:,[1,3]]) === @Mat [1 5; 2 6]
+        @test @Tensor(A[1,:]) === Vec(1,3,5)
+        @test @Tensor(A[end,:]) === Vec(2,4,6)
+        @test @Tensor(A[1,2:3]) === Vec(3,5)
+    end
     @testset "vcat/hcat" begin
         @test @inferred(vcat(Vec(1,2,3))) === Vec(1,2,3)
         @test @inferred(vcat(Vec(1,2,3)')) === Vec(1,2,3)'
