@@ -64,7 +64,9 @@ end
     end
     quote
         @_inline_meta
-        promote_shape($(CartesianIndices(S)), A)
+        @boundscheck if length(TT) != length(A)
+            throw(DimensionMismatch("expected input array of length $(length(A)), got length $(length(TT))"))
+        end
         @inbounds TT($(exps...))
     end
 end
