@@ -87,10 +87,10 @@ end
         @test vcat(Vec(1.0f0), Vec(1.0)) === Vec(1.0, 1.0)
         @test hcat(Vec(1.0f0), Vec(1.0)) === Mat{1,2}(1.0, 1.0)
     end
-    if VERSION ≥ v"1.6"
-        @testset "reverse" begin
-            @test @inferred(reverse(Vec(1, 2, 3))) === Vec(3, 2, 1)
-            A = rand(Mat{3,4})
+    @testset "reverse" begin
+        @test @inferred(reverse(Vec(1, 2, 3))) === Vec(3, 2, 1)
+        A = rand(Mat{3,4})
+        if VERSION ≥ v"1.6"
             @test @inferred(reverse(A))::typeof(A) == reverse(reverse(collect(A), dims = 1), dims = 2)
         end
     end
