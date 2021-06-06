@@ -119,5 +119,9 @@ for op in (:vcat, :hcat)
     end
 end
 
-# reverse
-Base.reverse(x::AbstractTensor; dims = :) = Tensor(reverse(SArray(x); dims))
+if VERSION ≥ v"1.6"
+    # reverse
+    Base.reverse(x::AbstractTensor; dims = :) = Tensor(reverse(SArray(x); dims))
+else
+    Base.reverse(x::AbstractTensor) = Tensor(reverse(SArray(x)))
+end
