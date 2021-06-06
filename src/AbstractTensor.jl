@@ -74,32 +74,27 @@ end
 
 
 # vcat
-## vector or matrix
-Base.vcat(a::AbstractMatLike) = a
+Base.vcat(a::AbstractVecOrMatLike) = a
 Base.vcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike) = Tensor(vcat(SArray(a), SArray(b)))
 Base.vcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike, c::AbstractVecOrMatLike...) = vcat(vcat(a, b), vcat(c...))
-## vector or real
-Base.vcat(a::AbstractVec) = a
-Base.vcat(a::AbstractVec, b::AbstractVec) = Vec(Tuple(a)..., Tuple(b)...)
-Base.vcat(a::AbstractVec, b::AbstractVec, c::AbstractVec...) = vcat(vcat(a, b), vcat(c...))
-@generated function _vcat(xs::Union{AbstractVec, Real}...)
-    exps = [xs[i] <: AbstractVec ? :(xs[$i]) : :(Vec(xs[$i])) for i in 1:length(xs)]
-    quote
-        vcat($(exps...))
-    end
-end
-Base.vcat(a::AbstractVec, b::Union{AbstractVec, Real}...) = _vcat(a, b...)
-Base.vcat(a::Real, b::AbstractVec, c::Union{AbstractVec, Real}...) = _vcat(a, b, c...)
-Base.vcat(a::Real, b::Real, c::AbstractVec, d::Union{AbstractVec, Real}...) = _vcat(a, b, c, d...)
-Base.vcat(a::Real, b::Real, c::Real, d::AbstractVec, e::Union{AbstractVec, Real}...) = _vcat(a, b, c, d, e...)
-Base.vcat(a::Real, b::Real, c::Real, d::Real, e::AbstractVec, f::Union{AbstractVec, Real}...) = _vcat(a, b, c, d, e, f...)
-Base.vcat(a::Real, b::Real, c::Real, d::Real, e::Real, f::AbstractVec, g::Union{AbstractVec, Real}...) = _vcat(a, b, c, d, e, f, g...)
-
 # hcat
 Base.hcat(a::AbstractVec) = Tensor(hcat(SArray(a)))
 Base.hcat(a::AbstractMatLike) = a
 Base.hcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike) = Tensor(hcat(SArray(a), SArray(b)))
 Base.hcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike, c::AbstractVecOrMatLike...) = hcat(hcat(a, b), hcat(c...))
+for op in (:vcat, :hcat)
+    _op = Symbol(:_, op)
+    @eval @generated function $_op(xs::Union{AbstractVecOrMatLike, Real}...)
+        exps = [xs[i] <: Real ? :(Vec(xs[$i])) : :(xs[$i]) for i in 1:length(xs)]
+        quote
+            $($op)($(exps...))
+        end
+    end
+    for I in 0:10
+        xs = map(i -> :($(Symbol(:x, i))::Real), 1:I)
+        @eval Base.$op($(xs...), y::AbstractVecOrMatLike, zs::Union{AbstractVecOrMatLike, Real}...) = $_op($(xs...), y, zs...)
+    end
+end
 
 # reverse
 Base.reverse(x::AbstractTensor; dims = :) = Tensor(reverse(SArray(x); dims))
