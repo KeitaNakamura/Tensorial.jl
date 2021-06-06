@@ -46,6 +46,7 @@ end
         @test @Tensor(A[1,:]) === Vec(1,3,5)
         @test @Tensor(A[end,:]) === Vec(2,4,6)
         @test @Tensor(A[1,2:3]) === Vec(3,5)
+        @test_throws Exception @Tensor(Array(A)[1,2:3])
     end
     @testset "vcat/hcat" begin
         @test @inferred(vcat(Vec(1,2,3))) === Vec(1,2,3)
