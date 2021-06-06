@@ -100,3 +100,6 @@ Base.hcat(a::AbstractVec) = Tensor(hcat(SArray(a)))
 Base.hcat(a::AbstractMatLike) = a
 Base.hcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike) = Tensor(hcat(SArray(a), SArray(b)))
 Base.hcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike, c::AbstractVecOrMatLike...) = hcat(hcat(a, b), hcat(c...))
+
+# reverse
+Base.reverse(x::AbstractTensor; dims = :) = Tensor(reverse(SArray(x); dims))
