@@ -54,22 +54,16 @@ end
         @test @inferred(vcat(Vec(1), 2)) === Vec(1,2)
         @test @inferred(vcat(Vec(1), 2, Vec(3))) === Vec(1,2,3)
         ## start from Real
-        @test @inferred(vcat(1, Vec(2))) === Vec(1,2)
-        @test @inferred(vcat(1, 2, Vec(3))) === Vec(1,2,3)
-        @test @inferred(vcat(1, 2, Vec(3), 4)) === Vec(1,2,3,4)
-        @test @inferred(vcat(1, 2, Vec(3), Vec(4))) === Vec(1,2,3,4)
-        @test @inferred(vcat(1, 2, 3, Vec(4))) === Vec(1,2,3,4)
-        @test @inferred(vcat(1, 2, 3, Vec(4), 5)) === Vec(1,2,3,4,5)
-        @test @inferred(vcat(1, 2, 3, Vec(4), Vec(5))) === Vec(1,2,3,4,5)
-        @test @inferred(vcat(1, 2, 3, 4, Vec(5))) === Vec(1,2,3,4,5)
-        @test @inferred(vcat(1, 2, 3, 4, Vec(5), 6)) === Vec(1,2,3,4,5,6)
-        @test @inferred(vcat(1, 2, 3, 4, Vec(5), Vec(6))) === Vec(1,2,3,4,5,6)
-        @test @inferred(vcat(1, 2, 3, 4, 5, Vec(6))) === Vec(1,2,3,4,5,6)
-        @test @inferred(vcat(1, 2, 3, 4, 5, Vec(6), 7)) === Vec(1,2,3,4,5,6,7)
-        @test @inferred(vcat(1, 2, 3, 4, 5, Vec(6), Vec(7))) === Vec(1,2,3,4,5,6,7)
-        @test @inferred(vcat(1, 2, 3, 4, 5, 6, Vec(7)))::Vector == 1:7
-        @test @inferred(vcat(1, 2, 3, 4, 5, 6, Vec(7), 8))::Vector == 1:8
-        @test @inferred(vcat(1, 2, 3, 4, 5, 6, Vec(7), Vec(8)))::Vector == 1:8
+        n = 10
+        for I in 1:n
+            @test @inferred(vcat(1:I..., Vec(I+1))) === Vec((1:I+1)...)
+            @test @inferred(vcat(1:I..., Vec(I+1), I+2)) === Vec((1:I+2)...)
+            @test @inferred(vcat(1:I..., Vec(I+1), Vec(I+2))) === Vec((1:I+2)...)
+        end
+        n += 1
+        @test @inferred(vcat(1:n..., Vec(n+1)))::Vector == 1:n+1
+        @test @inferred(vcat(1:n..., Vec(n+1), n+2))::Vector == 1:n+2
+        @test @inferred(vcat(1:n..., Vec(n+1), Vec(n+2)))::Vector == 1:n+2
 
         @test vcat(Vec(1.0f0), Vec(1.0)) === Vec(1.0, 1.0)
         @test hcat(Vec(1.0f0), Vec(1.0)) === Mat{1,2}(1.0, 1.0)
