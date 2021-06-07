@@ -104,11 +104,13 @@ macro Tensor(expr)
                 ex
             end
         end
-        esc(Expr(expr.head, newargs...))
+        esc(Expr(:block, :($check_Tensor_macro($(newargs[1]))), Expr(expr.head, newargs...)))
     else
         esc(:(Tensor(Tensorial.@SArray $expr)))
     end
 end
+check_Tensor_macro(x::AbstractTensor) = nothing
+check_Tensor_macro(x) = throw(ArgumentError("$(typeof(x)) is not supported in @Tensor"))
 
 # special constructors
 for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))), (:randn,:(()->randn(T))))
