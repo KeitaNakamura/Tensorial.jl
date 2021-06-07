@@ -248,6 +248,9 @@ end
             @test (@inferred rotate(v, R))::Vec{2, T} ≈ (x = rotate(Vec(v[1], v[2], 0), R); Vec(x[1], x[2]))
         end
     end
+end
+
+@testset "Call methods in StaticArrays" begin
     @testset "eigen" begin
         for T in (Float32, Float64)
             for dim in (2, 3)
@@ -269,6 +272,37 @@ end
                 @test (@inferred exp(y))::SymmetricSecondOrderTensor{dim, T} ≈ exp(Array(y))
             end
         end
+    end
+    @testset "qr" begin
+        Random.seed!(1234)
+        At = rand(Mat{3,3})
+        Ft = @inferred qr(At)
+        As = SArray(At)
+        Fs = qr(As)
+        @test Ft.Q == Fs.Q
+        @test Ft.R == Fs.R
+        @test Ft.p == Fs.p
+    end
+    @testset "lu" begin
+        Random.seed!(1234)
+        At = rand(Mat{3,3})
+        Ft = @inferred lu(At)
+        As = SArray(At)
+        Fs = lu(As)
+        @test Ft.L == Fs.L
+        @test Ft.U == Fs.U
+        @test Ft.p == Fs.p
+    end
+    @testset "svd" begin
+        Random.seed!(1234)
+        At = rand(Mat{3,3})
+        Ft = @inferred svd(At)
+        As = SArray(At)
+        Fs = svd(As)
+        @test Ft.U == Fs.U
+        @test Ft.S == Fs.S
+        @test Ft.V == Fs.V
+        @test Ft.Vt == Fs.Vt
     end
 end
 

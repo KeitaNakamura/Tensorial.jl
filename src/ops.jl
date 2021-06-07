@@ -624,3 +624,45 @@ end
 # exp
 @inline Base.exp(x::AbstractSecondOrderTensor) = typeof(x)(exp(SArray(x)))
 @inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = typeof(x)(exp(Symmetric(SArray(x))))
+
+# qr
+struct QR{Q, R, P}
+    Q::Q
+    R::R
+    p::P
+end
+function qr(A::AbstractMat, pivot::Union{Val{false}, Val{true}} = Val(false))
+    F = qr(SArray(A), pivot)
+    QR(Tensor(F.Q), Tensor(F.R), Tensor(F.p))
+end
+
+# lu
+struct LU{L, U, p}
+    L::L
+    U::U
+    p::p
+end
+function lu(A::AbstractMat, pivot::Union{Val{false},Val{true}}=Val(true); check = true)
+    F = lu(SArray(A), pivot; check)
+    LU(LowerTriangular(Tensor(parent(F.L))), UpperTriangular(Tensor(parent(F.U))), Tensor(F.p))
+end
+
+# svd
+struct SVD{T, TU, TS, TVt} <: Factorization{T}
+    U::TU
+    S::TS
+    Vt::TVt
+end
+SVD(U::AbstractArray{T}, S::AbstractVector, Vt::AbstractArray{T}) where {T} = SVD{T, typeof(U), typeof(S), typeof(Vt)}(U, S, Vt)
+@inline function Base.getproperty(F::SVD, s::Symbol)
+    if s === :V
+        return getfield(F, :Vt)'
+    else
+        return getfield(F, s)
+    end
+end
+Base.propertynames(::SVD) = (:U, :S, :V, :Vt)
+function svd(A::AbstractMat; full=Val(false))
+    F = svd(SArray(A); full)
+    SVD(Tensor(F.U), Tensor(F.S), Tensor(F.Vt))
+end
