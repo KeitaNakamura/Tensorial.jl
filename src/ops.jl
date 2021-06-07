@@ -636,6 +636,13 @@ struct QR{Q, R, P}
     R::R
     p::P
 end
+
+# iteration for destructuring into components
+Base.iterate(S::QR) = (S.Q, Val(:R))
+Base.iterate(S::QR, ::Val{:R}) = (S.R, Val(:p))
+Base.iterate(S::QR, ::Val{:p}) = (S.p, Val(:done))
+Base.iterate(S::QR, ::Val{:done}) = nothing
+
 function qr(A::AbstractMat, pivot::Union{Val{false}, Val{true}} = Val(false))
     F = qr(SArray(A), pivot)
     QR(Tensor(F.Q), Tensor(F.R), Tensor(F.p))
@@ -647,6 +654,13 @@ struct LU{L, U, p}
     U::U
     p::p
 end
+
+# iteration for destructuring into components
+Base.iterate(S::LU) = (S.L, Val(:U))
+Base.iterate(S::LU, ::Val{:U}) = (S.U, Val(:p))
+Base.iterate(S::LU, ::Val{:p}) = (S.p, Val(:done))
+Base.iterate(S::LU, ::Val{:done}) = nothing
+
 function lu(A::AbstractMat, pivot::Union{Val{false},Val{true}}=Val(true); check = true)
     F = lu(SArray(A), pivot; check)
     LU(LowerTriangular(Tensor(parent(F.L))), UpperTriangular(Tensor(parent(F.U))), Tensor(F.p))
@@ -659,6 +673,7 @@ struct SVD{T, TU, TS, TVt} <: Factorization{T}
     Vt::TVt
 end
 SVD(U::AbstractArray{T}, S::AbstractVector, Vt::AbstractArray{T}) where {T} = SVD{T, typeof(U), typeof(S), typeof(Vt)}(U, S, Vt)
+
 @inline function Base.getproperty(F::SVD, s::Symbol)
     if s === :V
         return getfield(F, :Vt)'
@@ -667,6 +682,13 @@ SVD(U::AbstractArray{T}, S::AbstractVector, Vt::AbstractArray{T}) where {T} = SV
     end
 end
 Base.propertynames(::SVD) = (:U, :S, :V, :Vt)
+
+# iteration for destructuring into components
+Base.iterate(S::SVD) = (S.U, Val(:S))
+Base.iterate(S::SVD, ::Val{:S}) = (S.S, Val(:V))
+Base.iterate(S::SVD, ::Val{:V}) = (S.V, Val(:done))
+Base.iterate(S::SVD, ::Val{:done}) = nothing
+
 function svd(A::AbstractMat; full=Val(false))
     F = svd(SArray(A); full)
     SVD(Tensor(F.U), Tensor(F.S), Tensor(F.Vt))
