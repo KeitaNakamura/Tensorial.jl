@@ -8,10 +8,10 @@ const AbstractSymmetricFourthOrderTensor{dim, T} = AbstractTensor{NTuple{2, @Sym
 const AbstractVec{dim, T} = AbstractTensor{Tuple{dim}, T, 1}
 const AbstractMat{m, n, T} = AbstractTensor{Tuple{m, n}, T, 2}
 
-const AbstractVecOrMat{T} = Union{AbstractVec{<: Any, T}, AbstractMat{<: Any, <: Any, T}}
 const AbstractMatLike{T} = Union{
     AbstractMat{<: Any, <: Any, T},
-    Transpose{T, <: AbstractVecOrMat{T}},
+    AbstractSymmetricSecondOrderTensor{<: Any, T},
+    Transpose{T, <: AbstractVec{<: Any, T}},
 }
 const AbstractVecOrMatLike{T} = Union{AbstractVec{<: Any, T}, AbstractMatLike{T}}
 
