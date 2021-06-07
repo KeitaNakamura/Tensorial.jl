@@ -8,9 +8,9 @@ using StaticArrays
 using Base: @pure, @_inline_meta, @_propagate_inbounds_meta
 using ForwardDiff: Dual, value, partials
 import SIMD
-import StaticArrays: qr, lu, svd # defined in LinearAlgebra, but call methods in StaticArrays
+import StaticArrays: qr, lu, svd, diag, diagm # defined in LinearAlgebra, but call methods in StaticArrays
 # re-exports from StaticArrays
-export qr, lu, svd
+export qr, lu, svd, diag, diagm
 
 import Base: transpose, inv
 import LinearAlgebra: dot, norm, normalize, tr, adjoint, det, cross, eigen, eigvals, eigvecs
