@@ -296,32 +296,33 @@ end
     @testset "qr" begin
         Random.seed!(1234)
         At = rand(Mat{3,3})
-        Ft = @inferred qr(At)
+        Q, R, p = @inferred qr(At)
         As = SArray(At)
         Fs = qr(As)
-        @test Ft.Q == Fs.Q
-        @test Ft.R == Fs.R
-        @test Ft.p == Fs.p
+        @test Q == Fs.Q
+        @test R == Fs.R
+        @test p == Fs.p
     end
     @testset "lu" begin
         Random.seed!(1234)
         At = rand(Mat{3,3})
-        Ft = @inferred lu(At)
+        L, U, p = @inferred lu(At)
         As = SArray(At)
         Fs = lu(As)
-        @test Ft.L == Fs.L
-        @test Ft.U == Fs.U
-        @test Ft.p == Fs.p
+        @test L == Fs.L
+        @test U == Fs.U
+        @test p == Fs.p
     end
     @testset "svd" begin
         Random.seed!(1234)
         At = rand(Mat{3,3})
         Ft = @inferred svd(At)
+        U, S, V = Ft
         As = SArray(At)
         Fs = svd(As)
-        @test Ft.U == Fs.U
-        @test Ft.S == Fs.S
-        @test Ft.V == Fs.V
+        @test U == Fs.U
+        @test S == Fs.S
+        @test V == Fs.V
         @test Ft.Vt == Fs.Vt
     end
 end
