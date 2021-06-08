@@ -71,8 +71,8 @@ end
     end
 end
 ## from StaticArray
-@inline function Tensor(A::StaticArray{S}) where {S}
-    Tensor{S}(Tuple(A))
+@inline function Tensor(A::StaticArray{S, T}) where {S, T}
+    Tensor{S, T}(Tuple(A))
 end
 
 ## for aliases

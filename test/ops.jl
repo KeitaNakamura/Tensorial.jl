@@ -273,6 +273,26 @@ end
             end
         end
     end
+    @testset "diag/diagm" begin
+        x = @Mat [1 2 3
+                  4 5 6
+                  7 8 9]
+        @test @inferred(diag(x)) === Vec(1,5,9)
+        @test @inferred(diag(x, Val(1))) === Vec(2,6)
+        @test @inferred(diag(x, Val(2))) === Vec(3)
+        @test @inferred(diag(x, Val(3))) === Vec{0,Int}()
+        @test @inferred(diag(x, Val(-1))) === Vec(4,8)
+        @test @inferred(diag(x, Val(-2))) === Vec(7)
+        @test @inferred(diag(x, Val(-3))) === Vec{0,Int}()
+        d = Vec(1,2,3)
+        @test @inferred(diagm(d)) === @Mat [1 0 0
+                                            0 2 0
+                                            0 0 3]
+        @test @inferred(diagm(Val(1)=>d, Val(-1)=>d)) === @Mat [0 1 0 0
+                                                                1 0 2 0
+                                                                0 2 0 3
+                                                                0 0 3 0]
+    end
     @testset "qr" begin
         Random.seed!(1234)
         At = rand(Mat{3,3})

@@ -625,6 +625,11 @@ end
 @inline Base.exp(x::AbstractSecondOrderTensor) = typeof(x)(exp(SArray(x)))
 @inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = typeof(x)(exp(Symmetric(SArray(x))))
 
+# diag/diagm
+@inline diag(x::Union{AbstractMat, AbstractSymmetricSecondOrderTensor}, ::Val{k} = Val(0)) where {k} = Tensor(diag(SArray(x), Val{k}))
+@inline diagm(kvs::Pair{<: Val, <: AbstractVec}...) = Tensor(diagm(map(kv -> kv.first => SArray(kv.second), kvs)...))
+@inline diagm(x::Vec) = diagm(Val(0) => x)
+
 # qr
 struct QR{Q, R, P}
     Q::Q
