@@ -27,18 +27,12 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
 
         # properties
         q = Quaternion{T}(1,2,3,4)
-        @test propertynames(q) == (:w, :x, :y, :z, :v, :data)
-        get_w = q -> q.w
-        get_x = q -> q.x
-        get_y = q -> q.y
-        get_z = q -> q.z
-        get_v = q -> q.v
+        @test propertynames(q) == (:scalar, :vector, :data)
+        get_scalar = q -> q.scalar
+        get_vector = q -> q.vector
         get_data = q -> q.data
-        @test (@inferred get_w(q))::T == T(1)
-        @test (@inferred get_x(q))::T == T(2)
-        @test (@inferred get_y(q))::T == T(3)
-        @test (@inferred get_z(q))::T == T(4)
-        @test (@inferred get_v(q))::Vec{3, T} == Vec{3, T}(2,3,4)
+        @test (@inferred get_scalar(q))::T == T(1)
+        @test (@inferred get_vector(q))::Vec{3, T} == Vec{3, T}(2,3,4)
         @test (@inferred get_data(q))::NTuple{4, T} == map(T, (1,2,3,4))
 
         # quaternion
@@ -105,17 +99,17 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
             # check multiplications
             x = rand(Vec{dim, T})
             x3 = ToVec3(x)
-            @test (q * x / q).v ≈ Rq ⋅ x3
-            @test (p * x / p).v ≈ Rp ⋅ x3
-            @test (r * x / r).v ≈ Rp ⋅ Rq ⋅ x3
-            @test (q * x * inv(q)).v ≈ Rq ⋅ x3
-            @test (p * x * inv(p)).v ≈ Rp ⋅ x3
-            @test (r * x * inv(r)).v ≈ Rp ⋅ Rq ⋅ x3
+            @test (q * x / q).vector ≈ Rq ⋅ x3
+            @test (p * x / p).vector ≈ Rp ⋅ x3
+            @test (r * x / r).vector ≈ Rp ⋅ Rq ⋅ x3
+            @test (q * x * inv(q)).vector ≈ Rq ⋅ x3
+            @test (p * x * inv(p)).vector ≈ Rp ⋅ x3
+            @test (r * x * inv(r)).vector ≈ Rp ⋅ Rq ⋅ x3
             # inverse of rotation
-            @test (inv(q) * x * q).v ≈ inv(Rq) ⋅ x3
+            @test (inv(q) * x * q).vector ≈ inv(Rq) ⋅ x3
             # check order of multiplications
-            @test ((q * x) / q).v ≈ Rq ⋅ x3
-            @test (q * (x / q)).v ≈ Rq ⋅ x3
+            @test ((q * x) / q).vector ≈ Rq ⋅ x3
+            @test (q * (x / q)).vector ≈ Rq ⋅ x3
             # rotate
             @test rotate(x, q) ≈ rotate(x, Rq)
             @test rotate(x, p) ≈ rotate(x, Rp)
