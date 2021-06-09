@@ -82,6 +82,9 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
         @test (@inferred norm(q))::T ≈ (@inferred abs(q))::T
         @test (@inferred norm(p))::T ≈ (@inferred abs(p))::T
 
+        # angleaxis
+        @test (quaternion((@inferred angleaxis(q))::Tuple{T, Vec{3, T}}...)) ≈ q
+
         a = rand(T)
         @test (@inferred exp(log(q)))::Quaternion{T} ≈ q
         @test (@inferred exp(log(p)))::Quaternion{T} ≈ p

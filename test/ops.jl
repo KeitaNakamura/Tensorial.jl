@@ -248,6 +248,14 @@ end
             @test (@inferred rotate(v, R))::Vec{2, T} ≈ (x = rotate(Vec(v[1], v[2], 0), R); Vec(x[1], x[2]))
         end
     end
+    @testset "angleaxis" begin
+        for T in (Float32, Float64)
+            a = normalize(rand(Vec{3, T}))
+            b = normalize(rand(Vec{3, T}))
+            R = rotmat(a => b)
+            @test rotmat((@inferred angleaxis(R))::Tuple{T, Vec{3, T}}...) ≈ R
+        end
+    end
 end
 
 @testset "Call methods in StaticArrays" begin

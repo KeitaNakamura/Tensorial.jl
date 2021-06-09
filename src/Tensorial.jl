@@ -70,7 +70,8 @@ export
     hessian,
 # quaternion
     Quaternion,
-    quaternion
+    quaternion,
+    angleaxis
 
 
 include("utils.jl")
