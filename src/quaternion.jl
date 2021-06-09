@@ -149,6 +149,13 @@ end
 @inline Base.:*(v::Vec, q::Quaternion) = Quaternion(v) * q
 @inline Base.:/(v::Vec, q::Quaternion) = v * inv(q)
 
+function angleaxis(q::Quaternion)
+    a = norm(q.vector)
+    θ = 2atan(a, q.scalar)
+    n = q.vector / a
+    θ, n
+end
+
 """
     rotate(x::Vec, q::Quaternion)
 
@@ -230,6 +237,7 @@ function rotmat_normalized(q::Quaternion)
           2(q₂q₃+q₁q₄)    q₁²-q₂²+q₃²-q₄² 2(q₃q₄-q₁q₂)
           2(q₂q₄-q₁q₃)    2(q₃q₄+q₁q₂)    q₁²-q₂²-q₃²+q₄²]
 end
+
 """
     rotmat(::Quaternion)
 

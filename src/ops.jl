@@ -607,6 +607,13 @@ julia> R ⋅ A ⋅ R'
     end
 end
 
+function angleaxis(R::SecondOrderTensor{3})
+    # https://math.stackexchange.com/questions/893984/conversion-of-rotation-matrix-to-quaternion
+    θ = acos((tr(R)-1) / 2)
+    n = Tensor(Real.(eigvecs(SArray(R))[:,3]))
+    θ, n
+end
+
 
 # ----------------------------------------------#
 # operations calling methods in StaticArrays.jl #
