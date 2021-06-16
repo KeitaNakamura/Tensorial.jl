@@ -167,7 +167,7 @@ function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr)
 end
 
 # for dummy indices
-function sumargs(x, ys...)
+@inline function sumargs(x, ys...)
     ret = *(x...)
     @simd for i in eachindex(ys)
         @inbounds ret += *(ys[i]...)
