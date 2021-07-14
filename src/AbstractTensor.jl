@@ -85,11 +85,10 @@ end
 
 # to SArray
 @generated function StaticArrays.SArray(x::AbstractTensor)
-    NewS = Space(size(x)) # remove Symmetry
-    exps = [getindex_expr(x, :x, i) for i in indices(NewS)]
+    exps = [getindex_expr(x, :x, i) for i in 1:length(x)]
     quote
         @_inline_meta
-        @inbounds SArray{Tuple{$(tensorsize(NewS)...)}}(tuple($(exps...)))
+        @inbounds SArray{Tuple{$(size(x)...)}}($(exps...))
     end
 end
 function StaticArrays.SArray(x::Transpose{<: T, <: AbstractVec{dim, T}}) where {dim, T}
