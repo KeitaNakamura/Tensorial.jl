@@ -181,17 +181,10 @@ end
     end
 end
 
-@generated function _solve(A::AbstractSquareTensor{dim}, b::AbstractVec{dim}) where {dim}
-    exps_A = [:(Tuple(A)[$i]) for i in independent_indices(A)]
-    exps_b = [:(Tuple(b)[$i]) for i in independent_indices(b)]
-    quote
-        @_inline_meta
-        @inbounds begin
-            SA = SMatrix{dim, dim}($(exps_A...))
-            Sb = SVector{dim}($(exps_b...))
-        end
-        Vec{dim}(Tuple(SA \ Sb))
-    end
+@inline function _solve(A::AbstractSquareTensor, b::AbstractVec)
+    SA = SArray(A)
+    Sb = SArray(b)
+    Vec(Tuple(SA \ Sb))
 end
 
 @inline Base.:\(A::AbstractSquareTensor, b::AbstractVec) = _solve(A, b)
