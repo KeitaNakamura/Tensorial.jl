@@ -127,21 +127,21 @@ end
 @inline Base.zero(x::Tensor) = zero(typeof(x))
 
 # identity tensors
-Base.one(::Type{Tensor{S}}) where {S} = _one(Tensor{S, Float64})
-Base.one(::Type{Tensor{S, T}}) where {S, T} = _one(Tensor{S, T})
-Base.one(::Type{TT}) where {TT} = one(basetype(TT))
+_one(::Type{Tensor{S}}) where {S} = __one(Tensor{S, Float64})
+_one(::Type{Tensor{S, T}}) where {S, T} = __one(Tensor{S, T})
+Base.one(::Type{TT}) where {TT <: Tensor} = _one(basetype(TT))
 Base.one(x::Tensor) = one(typeof(x))
-@inline function _one(TT::Type{<: Union{Tensor{Tuple{dim,dim}, T}, Tensor{Tuple{@Symmetry{dim,dim}}, T}}}) where {dim, T}
+@inline function __one(TT::Type{<: Union{Tensor{Tuple{dim,dim}, T}, Tensor{Tuple{@Symmetry{dim,dim}}, T}}}) where {dim, T}
     o = one(T)
     z = zero(T)
     TT((i,j) -> i == j ? o : z)
 end
-@inline function _one(TT::Type{Tensor{NTuple{4,dim}, T}}) where {dim, T}
+@inline function __one(TT::Type{Tensor{NTuple{4,dim}, T}}) where {dim, T}
     o = one(T)
     z = zero(T)
     TT((i,j,k,l) -> i == k && j == l ? o : z)
 end
-@inline function _one(TT::Type{Tensor{NTuple{2,@Symmetry{dim,dim}}, T}}) where {dim, T}
+@inline function __one(TT::Type{Tensor{NTuple{2,@Symmetry{dim,dim}}, T}}) where {dim, T}
     o = one(T)
     z = zero(T)
     δ(i,j) = i == j ? o : z
