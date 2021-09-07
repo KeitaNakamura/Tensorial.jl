@@ -50,6 +50,41 @@ true
 end
 
 """
+    vol(::Type{FourthOrderTensor{3}})
+    vol(::Type{SymmetricFourthOrderTensor{3}})
+
+Construct volumetric fourth order identity tensor.
+Support only for tensors in 3D.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3});
+
+julia> I = one(FourthOrderTensor{3});
+
+julia> I_vol = vol(FourthOrderTensor{3});
+
+julia> I_vol ⊡ x ≈ I ⊡ vol(x)
+true
+
+julia> vol(FourthOrderTensor{3}) + dev(FourthOrderTensor{3}) ≈ one(FourthOrderTensor{3})
+true
+```
+"""
+vol
+@inline function _vol(x::Type{Tensor{NTuple{4, 3}, T}}) where {T}
+    δ = one(SecondOrderTensor{3, T})
+    δ ⊗ δ / T(3)
+end
+@inline function _vol(x::Type{Tensor{NTuple{2, @Symmetry{3,3}}, T}}) where {T}
+    δ = one(SymmetricSecondOrderTensor{3, T})
+    δ ⊗ δ / T(3)
+end
+@inline _vol(x::Type{Tensor{NTuple{4, 3}}}) = _vol(Tensor{NTuple{4, 3}, Float64})
+@inline _vol(x::Type{Tensor{NTuple{2, @Symmetry{3,3}}}}) = _vol(Tensor{NTuple{2, @Symmetry{3,3}}, Float64})
+@inline vol(x::Type{TT}) where {TT <: Tensor} = _vol(basetype(TT))
+
+"""
     dev(::AbstractSecondOrderTensor{3})
     dev(::AbstractSymmetricSecondOrderTensor{3})
 
@@ -75,6 +110,30 @@ julia> tr(dev(x))
 ```
 """
 @inline dev(x::AbstractSquareTensor{3}) = x - vol(x)
+
+"""
+    dev(::Type{FourthOrderTensor{3}})
+    dev(::Type{SymmetricFourthOrderTensor{3}})
+
+Construct deviatoric fourth order identity tensor.
+Support only for tensors in 3D.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3});
+
+julia> I = one(FourthOrderTensor{3});
+
+julia> I_dev = dev(FourthOrderTensor{3});
+
+julia> I_dev ⊡ x ≈ I ⊡ dev(x)
+true
+
+julia> vol(FourthOrderTensor{3}) + dev(FourthOrderTensor{3}) ≈ one(FourthOrderTensor{3})
+true
+```
+"""
+@inline dev(x::Type{TT}) where {TT <: Tensor} = one(x) - vol(x)
 
 """
     stress_invariants(::AbstractSecondOrderTensor{3})
