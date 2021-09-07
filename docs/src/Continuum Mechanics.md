@@ -7,7 +7,7 @@ DocTestSetup = :(using Tensorial)
 Tensor operations for continuum mechanics.
 
 ```@docs
-mean(::Tensorial.AbstractSquareTensor)
+mean(::Tensorial.AbstractSquareTensor{3})
 ```
 
 ## Deviatoric--volumetric additive split
