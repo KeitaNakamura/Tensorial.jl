@@ -650,10 +650,13 @@ Base.iterate(S::QR, ::Val{:R}) = (S.R, Val(:p))
 Base.iterate(S::QR, ::Val{:p}) = (S.p, Val(:done))
 Base.iterate(S::QR, ::Val{:done}) = nothing
 
-function qr(A::AbstractMat, pivot::Union{Val{false}, Val{true}} = Val(false))
-    F = qr(SArray(A), pivot)
-    QR(Tensor(F.Q), Tensor(F.R), Tensor(F.p))
+for pv in (:true, :false)
+    @eval function qr(A::AbstractMat, pivot::Val{$pv})
+        F = qr(SArray(A), pivot)
+        QR(Tensor(F.Q), Tensor(F.R), Tensor(F.p))
+    end
 end
+qr(A::AbstractMat) = qr(A, Val(false))
 
 # lu
 struct LU{L, U, p}
@@ -668,10 +671,13 @@ Base.iterate(S::LU, ::Val{:U}) = (S.U, Val(:p))
 Base.iterate(S::LU, ::Val{:p}) = (S.p, Val(:done))
 Base.iterate(S::LU, ::Val{:done}) = nothing
 
-function lu(A::AbstractMat, pivot::Union{Val{false},Val{true}}=Val(true); check = true)
-    F = lu(SArray(A), pivot; check)
-    LU(LowerTriangular(Tensor(parent(F.L))), UpperTriangular(Tensor(parent(F.U))), Tensor(F.p))
+for pv in (:true, :false)
+    @eval function lu(A::AbstractMat, pivot::Val{$pv}; check = true)
+        F = lu(SArray(A), pivot; check)
+        LU(LowerTriangular(Tensor(parent(F.L))), UpperTriangular(Tensor(parent(F.U))), Tensor(F.p))
+    end
 end
+lu(A::AbstractMat; check = true) = lu(A, Val(true); check)
 
 # svd
 struct SVD{T, TU, TS, TVt} <: Factorization{T}
