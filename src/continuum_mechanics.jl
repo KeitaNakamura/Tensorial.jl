@@ -46,7 +46,7 @@ true
 @inline function vol(x::AbstractSquareTensor{3})
     v = mean(x)
     z = zero(v)
-    typeof(x)((i,j) -> i == j ? v : z)
+    typeof(x)((i,j) -> ifelse(i == j, v, z))
 end
 
 """
@@ -73,9 +73,7 @@ julia> vol(x) + dev(x) ≈ x
 true
 ```
 """
-@inline function vol(x::AbstractVec{3})
-    mean(x) * ones(typeof(x))
-end
+@inline vol(x::AbstractVec{3}) = mean(x) * ones(x)
 
 """
     vol(::Type{FourthOrderTensor{3}})
