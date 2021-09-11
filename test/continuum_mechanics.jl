@@ -12,6 +12,13 @@
             @test (@inferred vol(x))::typeof(x) ⊡ (@inferred dev(x))::typeof(x) ≈ zero(T)  atol = sqrt(eps(T))
             @test (@inferred vol(y))::typeof(y) ⊡ (@inferred dev(y))::typeof(y) ≈ zero(T)  atol = sqrt(eps(T))
 
+            # vol/dev for vectors
+            v = rand(Vec{3, T})
+            @test (@inferred vol(v)) + (@inferred dev(v)) ≈ v
+            @test sum(vol(v)) ≈ sum(v)
+            @test dev(vol(v)) ≈ zero(v) atol = sqrt(eps(T))
+            @test vol(dev(v)) ≈ zero(v) atol = sqrt(eps(T))
+
             # vol/dev for 4th-order tensors
             δ = one(SymmetricSecondOrderTensor{3, T})
             I_vol = @einsum (i,j,k,l) -> δ[i,j]*δ[k,l]/3
