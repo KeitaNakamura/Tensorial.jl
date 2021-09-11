@@ -99,7 +99,7 @@ julia> vol(FourthOrderTensor{3}) + dev(FourthOrderTensor{3}) ≈ one(FourthOrder
 true
 ```
 """
-vol
+@inline vol(x::Type{TT}) where {TT <: Tensor} = _vol(basetype(TT))
 @inline function _vol(x::Type{Tensor{NTuple{4, 3}, T}}) where {T}
     δ = one(SecondOrderTensor{3, T})
     δ ⊗ δ / T(3)
@@ -110,7 +110,6 @@ end
 end
 @inline _vol(x::Type{Tensor{NTuple{4, 3}}}) = _vol(Tensor{NTuple{4, 3}, Float64})
 @inline _vol(x::Type{Tensor{NTuple{2, @Symmetry{3,3}}}}) = _vol(Tensor{NTuple{2, @Symmetry{3,3}}, Float64})
-@inline vol(x::Type{TT}) where {TT <: Tensor} = _vol(basetype(TT))
 
 """
     dev(::AbstractSecondOrderTensor{3})
