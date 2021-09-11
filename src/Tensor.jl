@@ -122,9 +122,9 @@ for (op, el) in ((:zero, :(zero(T))), (:ones, :(one(T))), (:rand, :(()->rand(T))
         @inline Base.$op(::Type{Tensor{S, T, N, L}}) where {S, T, N, L} = $op(Tensor{S, T})
         @inline Base.$op(::Type{Tensor{S, T, N} where {T}}) where {S, N} = $op(Tensor{S, Float64})
         @inline Base.$op(::Type{Tensor{S, T, N, L} where {T}}) where {S, N, L} = $op(Tensor{S, Float64})
+        @inline Base.$op(x::Tensor) = $op(typeof(x))
     end
 end
-@inline Base.zero(x::Tensor) = zero(typeof(x))
 
 # identity tensors
 _one(::Type{Tensor{S}}) where {S} = __one(Tensor{S, Float64})
