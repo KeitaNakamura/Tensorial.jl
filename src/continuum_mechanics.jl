@@ -23,7 +23,7 @@ julia> mean(x)
     vol(::AbstractSymmetricSecondOrderTensor{3})
 
 Compute the volumetric part of a square tensor.
-Support only for tensors in 3D.
+Supported only for tensors in 3D.
 
 # Examples
 ```jldoctest
@@ -50,11 +50,39 @@ true
 end
 
 """
+    vol(::AbstractVec{3})
+
+Compute the volumetric part of a vector (assuming principal values of stresses and strains).
+Supported only for tensors in 3D.
+
+# Examples
+```jldoctest
+julia> x = rand(Vec{3})
+3-element Vec{3, Float64}:
+ 0.5908446386657102
+ 0.7667970365022592
+ 0.5662374165061859
+
+julia> vol(x)
+3-element Vec{3, Float64}:
+ 0.6412930305580518
+ 0.6412930305580518
+ 0.6412930305580518
+
+julia> vol(x) + dev(x) ≈ x
+true
+```
+"""
+@inline function vol(x::AbstractVec{3})
+    mean(x) * ones(typeof(x))
+end
+
+"""
     vol(::Type{FourthOrderTensor{3}})
     vol(::Type{SymmetricFourthOrderTensor{3}})
 
 Construct volumetric fourth order identity tensor.
-Support only for tensors in 3D.
+Supported only for tensors in 3D.
 
 # Examples
 ```jldoctest
@@ -89,7 +117,7 @@ end
     dev(::AbstractSymmetricSecondOrderTensor{3})
 
 Compute the deviatoric part of a square tensor.
-Support only for tensors in 3D.
+Supported only for tensors in 3D.
 
 # Examples
 ```jldoctest
@@ -112,11 +140,40 @@ julia> tr(dev(x))
 @inline dev(x::AbstractSquareTensor{3}) = x - vol(x)
 
 """
+    dev(::AbstractVec{3})
+
+Compute the deviatoric part of a vector (assuming principal values of stresses and strains).
+Supported only for tensors in 3D.
+
+# Examples
+```jldoctest
+julia> x = rand(Vec{3})
+3-element Vec{3, Float64}:
+ 0.5908446386657102
+ 0.7667970365022592
+ 0.5662374165061859
+
+julia> dev(x)
+ERROR: StackOverflowError:
+Stacktrace:
+ [1] vol(x::Vec{3, Float64}) (repeats 79984 times)
+   @ Tensorial ~/Documents/Source code/Julia/Tensorial/src/continuum_mechanics.jl:68
+
+julia> vol(x) + dev(x) ≈ x
+ERROR: StackOverflowError:
+Stacktrace:
+ [1] vol(x::Vec{3, Float64}) (repeats 79984 times)
+   @ Tensorial ~/Documents/Source code/Julia/Tensorial/src/continuum_mechanics.jl:68
+```
+"""
+@inline dev(x::AbstractVec{3}) = x - vol(x)
+
+"""
     dev(::Type{FourthOrderTensor{3}})
     dev(::Type{SymmetricFourthOrderTensor{3}})
 
 Construct deviatoric fourth order identity tensor.
-Support only for tensors in 3D.
+Supported only for tensors in 3D.
 
 # Examples
 ```jldoctest
