@@ -249,6 +249,7 @@ end
         end
     end
     @testset "angleaxis" begin
+        Random.seed!(1234)
         for T in (Float32, Float64)
             a = normalize(rand(Vec{3, T}))
             b = normalize(rand(Vec{3, T}))
