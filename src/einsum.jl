@@ -168,9 +168,9 @@ end
 
 # for dummy indices
 @inline function sumargs(x, ys...)
-    ret = *(x...)
+    ret = prod(x)
     @simd for i in eachindex(ys)
-        @inbounds ret += *(ys[i]...)
+        @inbounds ret += prod(ys[i])
     end
     ret
 end
