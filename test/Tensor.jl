@@ -160,15 +160,15 @@
 end
 
 @testset "Symmetric tensors" begin
-    x = rand(Tensor{Tuple{2, @Symmetry{2,2}, 3}})
+    x = rand(Tensor{Tuple{2, @Symmetry({2,2}), 3}})
     @test Tensorial.ncomponents(x) == 18
     for i in axes(x, 1), l in axes(x, 4)
         for j in axes(x, 2), k in axes(x, 3)
             @test x[i,j,k,l] == x[i,k,j,l]
         end
     end
-    x = rand(Tensor{Tuple{2, @Symmetry{3,3,3}}})
-    @test Tensorial.ncomponents(x) == 2 * Tensorial.ncomponents(@Symmetry{3,3,3}())
+    x = rand(Tensor{Tuple{2, @Symmetry({3,3,3})}})
+    @test Tensorial.ncomponents(x) == 2 * Tensorial.ncomponents(@Symmetry({3,3,3})())
     for i in axes(x, 1)
         for j in axes(x, 2), k in axes(x, 3), l in axes(x, 4)
             @test x[i,j,k,l] == x[i,k,j,l]
@@ -179,7 +179,7 @@ end
 end
 
 @testset "Indices" begin
-    x = rand(Tensor{Tuple{2, @Symmetry{2,2}, 3, @Symmetry{2,2}}})
+    x = rand(Tensor{Tuple{2, @Symmetry({2,2}), 3, @Symmetry({2,2})}})
     n = Tensorial.ncomponents(x)
     @test (@inferred Tensorial.independent_indices(x))::SArray{Tuple{size(x)...}, Int} |> unique == 1:n
     inds = (@inferred Tensorial.indices(x))::SVector{n, Int}
@@ -194,7 +194,7 @@ end
 @testset "Conversion" begin
     @testset "Tensor -> Tensor" begin
         A = Tensor{Tuple{3,3}}(1:9...)
-        S = Tensor{Tuple{@Symmetry{3,3}}}(1:6...)
+        S = Tensor{Tuple{@Symmetry({3,3})}}(1:6...)
         v = Vec(1:3...)
         for T in (Float32, Float64)
             # convert eltype
@@ -203,15 +203,15 @@ end
             @test (@inferred convert(SecondOrderTensor{3, T}, A))::Tensor{Tuple{3,3}, T} |> Tuple == Adata
             @test (@inferred convert(Mat{3, 3, T}, A))::Tensor{Tuple{3,3}, T} |> Tuple == Adata
             Sdata = map(T, (1:6...,))
-            @test (@inferred convert(Tensor{Tuple{@Symmetry{3,3}}, T}, S))::Tensor{Tuple{@Symmetry{3,3}}, T} |> Tuple == Sdata
-            @test (@inferred convert(SymmetricSecondOrderTensor{3, T}, S))::Tensor{Tuple{@Symmetry{3,3}}, T} |> Tuple == Sdata
+            @test (@inferred convert(Tensor{Tuple{@Symmetry({3,3})}, T}, S))::Tensor{Tuple{@Symmetry({3,3})}, T} |> Tuple == Sdata
+            @test (@inferred convert(SymmetricSecondOrderTensor{3, T}, S))::Tensor{Tuple{@Symmetry({3,3})}, T} |> Tuple == Sdata
             vdata = map(T, (1:3...,))
             @test (@inferred convert(Vec{3, T}, v))::Vec{3, T} |> Tuple == vdata
             # convert symmetric tensor to tensor
             (@inferred convert(Tensor{Tuple{3, 3}, T}, S))::Tensor{Tuple{3, 3}, T} == Array(S)
             (@inferred convert(Mat{3, 3, T}, S))::Tensor{Tuple{3, 3}, T} == Array(S)
             # convert tensor to symmetric tensor
-            @test_throws Exception convert(Tensor{Tuple{@Symmetry{3, 3}}, T}, A)
+            @test_throws Exception convert(Tensor{Tuple{@Symmetry({3, 3})}, T}, A)
         end
     end
     @testset "AbstractArray -> Tensor" begin
@@ -223,8 +223,8 @@ end
             @test (@inferred convert(SecondOrderTensor{2, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
             @test (@inferred convert(Mat{2, 2, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
             Sdata = map(T, (1,2,4))
-            @test (@inferred convert(Tensor{Tuple{@Symmetry{2,2}}, T}, A))::Tensor{Tuple{@Symmetry{2,2}}, T} |> Tuple == Sdata
-            @test (@inferred convert(SymmetricSecondOrderTensor{2, T}, A))::Tensor{Tuple{@Symmetry{2,2}}, T} |> Tuple == Sdata
+            @test (@inferred convert(Tensor{Tuple{@Symmetry({2,2})}, T}, A))::Tensor{Tuple{@Symmetry({2,2})}, T} |> Tuple == Sdata
+            @test (@inferred convert(SymmetricSecondOrderTensor{2, T}, A))::Tensor{Tuple{@Symmetry({2,2})}, T} |> Tuple == Sdata
             vdata = map(T, (1,2))
             @test (@inferred convert(Vec{2, T}, v))::Vec{2, T} |> Tuple == vdata
         end
@@ -249,7 +249,7 @@ end
     # size
     TT = Tensor{Tuple{2, 3}}
     @test (@inferred size(TT))::Tuple{Int, Int} == (2,3)
-    TT = Tensor{Tuple{2, 3, @Symmetry{3, 3}}}
+    TT = Tensor{Tuple{2, 3, @Symmetry({3, 3})}}
     @test (@inferred size(TT))::Tuple{Int, Int, Int, Int} == (2,3,3,3)
 end
 

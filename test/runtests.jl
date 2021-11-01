@@ -4,6 +4,10 @@ using Test, Random
 using LinearAlgebra: Symmetric
 using StaticArrays: SArray, SVector, SOneTo, SUnitRange
 
+if VERSION < v"1.4"
+    using Tensorial: only
+end
+
 include("Symmetry.jl")
 include("Space.jl")
 include("AbstractTensor.jl")

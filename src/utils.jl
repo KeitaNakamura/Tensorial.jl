@@ -31,3 +31,32 @@ end
 end
 
 tuple_sort(x::NTuple{N, Any}; kwargs...) where {N} = Tuple(sort(SVector(x); kwargs...))
+
+
+if VERSION < v"1.4"
+    Base.@propagate_inbounds function only(x)
+        i = iterate(x)
+        @boundscheck if i === nothing
+            throw(ArgumentError("Collection is empty, must contain exactly 1 element"))
+        end
+        (ret, state) = i
+        @boundscheck if iterate(x, state) !== nothing
+            throw(ArgumentError("Collection has multiple elements, must contain exactly 1 element"))
+        end
+        return ret
+    end
+
+    # Collections of known size
+    only(x::Ref) = x[]
+    only(x::Number) = x
+    only(x::Char) = x
+    only(x::Tuple{Any}) = x[1]
+    only(x::Tuple) = throw(
+        ArgumentError("Tuple contains $(length(x)) elements, must contain exactly 1 element")
+    )
+    only(a::AbstractArray{<:Any, 0}) = @inbounds return a[]
+    only(x::NamedTuple{<:Any, <:Tuple{Any}}) = first(x)
+    only(x::NamedTuple) = throw(
+        ArgumentError("NamedTuple contains $(length(x)) elements, must contain exactly 1 element")
+    )
+end

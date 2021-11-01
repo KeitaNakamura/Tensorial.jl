@@ -270,7 +270,7 @@ julia> skew(Vec(1,2,3))
 end
 
 # transpose/adjoint
-@inline transpose(x::AbstractTensor{Tuple{@Symmetry{dim, dim}}}) where {dim} = x
+@inline transpose(x::AbstractTensor{Tuple{@Symmetry({dim, dim})}}) where {dim} = x
 @inline transpose(x::AbstractTensor{Tuple{m, n}}) where {m, n} = Tensor{Tuple{n, m}}((i,j) -> @inbounds x[j,i])
 @inline adjoint(x::AbstractTensor) = transpose(x)
 
@@ -621,10 +621,10 @@ end
 
 # eigvals/eigen
 @inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
-    Tensor(eigvals(Symmetric(SArray(x)); permute, scale))
+    Tensor(eigvals(Symmetric(SArray(x)); permute = permute, scale = scale))
 end
-@inline function eigen(x::AbstractSymmetricSecondOrderTensor)
-    eig = eigen(Symmetric(SArray(x)))
+@inline function eigen(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
+    eig = eigen(Symmetric(SArray(x)); permute = permute, scale = scale)
     Eigen(Tensor(eig.values), Tensor(eig.vectors))
 end
 
@@ -673,11 +673,11 @@ Base.iterate(S::LU, ::Val{:done}) = nothing
 
 for pv in (:true, :false)
     @eval function lu(A::AbstractMat, pivot::Val{$pv}; check = true)
-        F = lu(SArray(A), pivot; check)
+        F = lu(SArray(A), pivot; check = check)
         LU(LowerTriangular(Tensor(parent(F.L))), UpperTriangular(Tensor(parent(F.U))), Tensor(F.p))
     end
 end
-lu(A::AbstractMat; check = true) = lu(A, Val(true); check)
+lu(A::AbstractMat; check = true) = lu(A, Val(true); check = check)
 
 # svd
 struct SVD{T, TU, TS, TVt} <: Factorization{T}
@@ -703,6 +703,6 @@ Base.iterate(S::SVD, ::Val{:V}) = (S.V, Val(:done))
 Base.iterate(S::SVD, ::Val{:done}) = nothing
 
 function svd(A::AbstractMat; full=Val(false))
-    F = svd(SArray(A); full)
+    F = svd(SArray(A); full = full)
     SVD(Tensor(F.U), Tensor(F.S), Tensor(F.Vt))
 end

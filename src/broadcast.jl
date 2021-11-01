@@ -41,5 +41,5 @@ function materialize!(dest::AbstractArray{<: AbstractTensor}, bc::Broadcasted{Te
     materialize!(dest, (copy(bc),))
 end
 function materialize!(dest::AbstractArray{<: Number}, bc::Broadcasted{TensorStyle})
-    copy!(dest, copy(bc))
+    copyto!(dest, copy(bc))
 end

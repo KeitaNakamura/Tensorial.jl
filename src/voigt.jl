@@ -218,7 +218,7 @@ end
 @generated function fromvoigt(::Type{TT},
                               v::AbstractVector{T};
                               order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim)),
-                              offdiagscale::T = one(T)) where {dim, T, TT <: Tensor{Tuple{@Symmetry{dim, dim}}}}
+                              offdiagscale::T = one(T)) where {dim, T, TT <: Tensor{Tuple{@Symmetry({dim, dim})}}}
     S = Space(TT)
     L = ncomponents(S)
     inds = independent_indices(S)
@@ -244,7 +244,7 @@ end
 @generated function fromvoigt(::Type{TT},
                               v::AbstractMatrix{T};
                               order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim)),
-                              offdiagscale::T = one(T)) where {dim, T, TT <: Tensor{NTuple{2, @Symmetry{dim, dim}}}}
+                              offdiagscale::T = one(T)) where {dim, T, TT <: Tensor{NTuple{2, @Symmetry({dim, dim})}}}
     S = Space(TT)
     L = Int(sqrt(ncomponents(S)))
     inds = independent_indices(S)

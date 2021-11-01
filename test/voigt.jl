@@ -2,8 +2,8 @@
     for dim in 1:3, T in (Float32, Float64)
         A = rand(Tensor{NTuple{2, dim}, T})
         AA = rand(Tensor{NTuple{4, dim}, T})
-        A_sym = rand(Tensor{Tuple{@Symmetry{dim, dim}}, T})
-        AA_sym = rand(Tensor{NTuple{2, @Symmetry{dim, dim}}, T})
+        A_sym = rand(Tensor{Tuple{@Symmetry({dim, dim})}, T})
+        AA_sym = rand(Tensor{NTuple{2, @Symmetry({dim, dim})}, T})
         # tovoigt
         @test (@inferred tovoigt(AA)) * (@inferred tovoigt(A)) ≈ tovoigt(AA ⊡ A)
         @test (@inferred tovoigt(AA_sym)) * (@inferred tovoigt(A_sym, offdiagscale=T(2))) ≈ tovoigt(AA_sym ⊡ A_sym)

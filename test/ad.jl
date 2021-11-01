@@ -9,7 +9,7 @@
         end
     end
     @testset "Real -> Tensor" begin
-        for RetType in (Tensor{Tuple{2,3}}, Tensor{Tuple{3, @Symmetry{3,3}}})
+        for RetType in (Tensor{Tuple{2,3}}, Tensor{Tuple{3, @Symmetry({3,3})}})
             for T in (Float32, Float64)
                 @eval begin
                     x = rand($T)
@@ -51,7 +51,7 @@
             @test (@inferred gradient(identity, y))::SymmetricFourthOrderTensor{dim, T} == one(SymmetricFourthOrderTensor{dim, T})
             @eval begin
                 @test (@inferred gradient(x -> one(SecondOrderTensor{$dim, Int}), $x))::FourthOrderTensor{$dim, Int} == zero(FourthOrderTensor{$dim, Int})
-                @test (@inferred gradient(x -> one(SecondOrderTensor{$dim, Int}), $y))::Tensor{Tuple{$dim,$dim,@Symmetry{$dim,$dim}}, Int} == zero(FourthOrderTensor{$dim, Int})
+                @test (@inferred gradient(x -> one(SecondOrderTensor{$dim, Int}), $y))::Tensor{Tuple{$dim,$dim,@Symmetry({$dim,$dim})}, Int} == zero(FourthOrderTensor{$dim, Int})
             end
         end
     end
