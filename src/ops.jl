@@ -623,8 +623,8 @@ end
 @inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
     Tensor(eigvals(Symmetric(SArray(x)); permute = permute, scale = scale))
 end
-@inline function eigen(x::AbstractSymmetricSecondOrderTensor)
-    eig = eigen(Symmetric(SArray(x)))
+@inline function eigen(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
+    eig = eigen(Symmetric(SArray(x)); permute = permute, scale = scale)
     Eigen(Tensor(eig.values), Tensor(eig.vectors))
 end
 
