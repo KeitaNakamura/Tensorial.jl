@@ -107,15 +107,15 @@ Base.hcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike) = Tensor(hcat(SArray
 Base.hcat(a::AbstractVecOrMatLike, b::AbstractVecOrMatLike, c::AbstractVecOrMatLike...) = hcat(hcat(a, b), hcat(c...))
 for op in (:vcat, :hcat)
     _op = Symbol(:_, op)
-    @eval @generated function $_op(xs::Union{AbstractVecOrMatLike, Real}...)
-        exps = [xs[i] <: Real ? :(Vec(xs[$i])) : :(xs[$i]) for i in 1:length(xs)]
+    @eval @generated function $_op(xs::Union{AbstractVecOrMatLike, Number}...)
+        exps = [xs[i] <: Number ? :(Vec(xs[$i])) : :(xs[$i]) for i in 1:length(xs)]
         quote
             $($op)($(exps...))
         end
     end
     for I in 0:10
-        xs = map(i -> :($(Symbol(:x, i))::Real), 1:I)
-        @eval Base.$op($(xs...), y::AbstractVecOrMatLike, zs::Union{AbstractVecOrMatLike, Real}...) = $_op($(xs...), y, zs...)
+        xs = map(i -> :($(Symbol(:x, i))::Number), 1:I)
+        @eval Base.$op($(xs...), y::AbstractVecOrMatLike, zs::Union{AbstractVecOrMatLike, Number}...) = $_op($(xs...), y, zs...)
     end
 end
 
