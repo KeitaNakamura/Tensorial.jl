@@ -113,9 +113,9 @@ function quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degr
     @inbounds Quaternion{T}(cos(ϕ), n)
 end
 quaternion(T::Type, θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) =
-    @inbounds quaternion(T, θ, Vec(x[1], x[2], 0); normalize, degree)
+    @inbounds quaternion(T, θ, Vec(x[1], x[2], 0); normalize = normalize, degree = degree)
 quaternion(θ::Real, x::Vec; normalize::Bool = true, degree::Bool = false) =
-    quaternion(promote_type(typeof(θ), eltype(x)), θ, x; normalize, degree)
+    quaternion(promote_type(typeof(θ), eltype(x)), θ, x; normalize = normalize, degree = degree)
 
 Base.length(::Quaternion) = 4
 Base.size(::Quaternion) = (4,)

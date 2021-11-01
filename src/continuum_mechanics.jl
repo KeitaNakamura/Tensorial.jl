@@ -221,7 +221,7 @@ julia> I₁, I₂, I₃ = stress_invariants(σ)
     I1 = trσ
     I2 = (trσ^2 - tr(σ^2)) / 2
     I3 = det(σ)
-    (; I1, I2, I3)
+    (; I1 = I1, I2 = I2, I3 = I3)
 end
 
 """
@@ -256,5 +256,5 @@ julia> J₁, J₂, J₃ = deviatoric_stress_invariants(σ)
     J1 = zero(eltype(σ))
     J2 = I1^2/3 - I2             # tr(s^2) / 2
     J3 = 2I1^3/27 - I1*I2/3 + I3 # tr(s^3) / 3
-    (; J1, J2, J3)
+    (; J1 = J1, J2 = J2, J3 = J3)
 end
