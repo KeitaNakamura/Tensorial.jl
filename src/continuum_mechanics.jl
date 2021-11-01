@@ -102,12 +102,12 @@ true
     δ = one(SecondOrderTensor{3, T})
     δ ⊗ δ / T(3)
 end
-@inline function _vol(x::Type{Tensor{NTuple{2, @Symmetry{3,3}}, T}}) where {T}
+@inline function _vol(x::Type{Tensor{NTuple{2, @Symmetry({3,3})}, T}}) where {T}
     δ = one(SymmetricSecondOrderTensor{3, T})
     δ ⊗ δ / T(3)
 end
 @inline _vol(x::Type{Tensor{NTuple{4, 3}}}) = _vol(Tensor{NTuple{4, 3}, Float64})
-@inline _vol(x::Type{Tensor{NTuple{2, @Symmetry{3,3}}}}) = _vol(Tensor{NTuple{2, @Symmetry{3,3}}, Float64})
+@inline _vol(x::Type{Tensor{NTuple{2, @Symmetry({3,3})}}}) = _vol(Tensor{NTuple{2, @Symmetry({3,3})}, Float64})
 
 """
     dev(::AbstractSecondOrderTensor{3})

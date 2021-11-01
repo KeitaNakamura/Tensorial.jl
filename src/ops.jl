@@ -270,7 +270,7 @@ julia> skew(Vec(1,2,3))
 end
 
 # transpose/adjoint
-@inline transpose(x::AbstractTensor{Tuple{@Symmetry{dim, dim}}}) where {dim} = x
+@inline transpose(x::AbstractTensor{Tuple{@Symmetry({dim, dim})}}) where {dim} = x
 @inline transpose(x::AbstractTensor{Tuple{m, n}}) where {m, n} = Tensor{Tuple{n, m}}((i,j) -> @inbounds x[j,i])
 @inline adjoint(x::AbstractTensor) = transpose(x)
 
