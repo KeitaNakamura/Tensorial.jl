@@ -90,14 +90,14 @@ end
             @test (@inferred norm(x)) ≈ norm(Array(x))
             @test (@inferred norm(z)) ≈ norm(Array(z))
             @test (@inferred normalize(x))::typeof(x) ≈ normalize(Array(x))
-            @test (@inferred normalize(z))::typeof(z) ≈ normalize(Array(z))
+            @test (@inferred normalize(z))::typeof(z) ≈ Array(z) / norm(Array(z))
             # nonsquare
             x = rand(Vec{3, T})
             y = rand(Vec{2, T})
             z = (@inferred x ⊗ y)::Tensor{Tuple{3,2}, T}
             @test z ≈ Array(x) * Array(y)'
             @test (@inferred norm(z)) ≈ norm(Array(z))
-            @test (@inferred normalize(z))::typeof(z) ≈ normalize(Array(z))
+            @test (@inferred normalize(z))::typeof(z) ≈ Array(z) / norm(Array(z))
         end
     end
     @testset "dotdot" begin
