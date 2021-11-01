@@ -34,7 +34,7 @@ end
         s = S[space_num]
         if length(group) == 1
             # if Symmetry, extract first dimension
-            # if Real, just return it
+            # if Number, just return it
             s[1]
         else
             if s isa Symmetry

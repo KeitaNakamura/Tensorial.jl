@@ -1,6 +1,6 @@
 struct Tensor{S <: Tuple, T, N, L} <: AbstractTensor{S, T, N}
     data::NTuple{L, T}
-    function Tensor{S, T, N, L}(data::NTuple{L, Real}) where {S, T, N, L}
+    function Tensor{S, T, N, L}(data::NTuple{L, Number}) where {S, T, N, L}
         check_tensor_parameters(S, T, Val(N), Val(L))
         new{S, T, N, L}(convert_ntuple(T, data))
     end
@@ -40,7 +40,7 @@ end
     Tensor{S, T, N, L}(data)
 end
 ## from Vararg
-@inline function (::Type{TT})(data::Vararg{Real}) where {TT <: Tensor}
+@inline function (::Type{TT})(data::Vararg{Number}) where {TT <: Tensor}
     TT(data)
 end
 ## from Function
@@ -185,8 +185,8 @@ end
 @inline Base.convert(::Type{TT}, x::Tuple) where {TT <: Tensor} = TT(x)
 
 # promotion
-@inline convert_eltype(::Type{T}, x::Real) where {T <: Real} = T(x)
-@generated function convert_eltype(::Type{T}, x::Tensor) where {T <: Real}
+@inline convert_eltype(::Type{T}, x::Number) where {T <: Number} = T(x)
+@generated function convert_eltype(::Type{T}, x::Tensor) where {T <: Number}
     S = Space(x)
     TT = tensortype(S)
     quote
@@ -194,7 +194,7 @@ end
         $TT{T}(x)
     end
 end
-@generated function promote_elements(xs::Vararg{Union{Real, Tensor}, N}) where {N}
+@generated function promote_elements(xs::Vararg{Union{Number, Tensor}, N}) where {N}
     T = promote_type(eltype.(xs)...)
     exps = [:(convert_eltype($T, xs[$i])) for i in 1:N]
     quote

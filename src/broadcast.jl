@@ -40,6 +40,6 @@ end
 function materialize!(dest::AbstractArray{<: AbstractTensor}, bc::Broadcasted{TensorStyle})
     materialize!(dest, (copy(bc),))
 end
-function materialize!(dest::AbstractArray{<: Real}, bc::Broadcasted{TensorStyle})
+function materialize!(dest::AbstractArray{<: Number}, bc::Broadcasted{TensorStyle})
     copy!(dest, copy(bc))
 end

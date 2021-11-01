@@ -14,9 +14,9 @@ end
 
 @inline Base.:+(x::AbstractTensor, y::AbstractTensor) = _map(+, x, y)
 @inline Base.:-(x::AbstractTensor, y::AbstractTensor) = _map(-, x, y)
-@inline Base.:*(y::Real, x::AbstractTensor) = _map(x -> x*y, x)
-@inline Base.:*(x::AbstractTensor, y::Real) = _map(x -> x*y, x)
-@inline Base.:/(x::AbstractTensor, y::Real) = _map(x -> x/y, x)
+@inline Base.:*(y::Number, x::AbstractTensor) = _map(x -> x*y, x)
+@inline Base.:*(x::AbstractTensor, y::Number) = _map(x -> x*y, x)
+@inline Base.:/(x::AbstractTensor, y::Number) = _map(x -> x/y, x)
 @inline Base.:+(x::AbstractTensor) = x
 @inline Base.:-(x::AbstractTensor) = _map(-, x)
 
@@ -26,7 +26,7 @@ end
 @generated Base.:-(x::AbstractTensor, y::AbstractArray) = :(@_inline_meta; x - convert($(tensortype(Space(size(x)))), y))
 @generated Base.:-(x::AbstractArray, y::AbstractTensor) = :(@_inline_meta; convert($(tensortype(Space(size(y)))), x) - y)
 
-@inline _add_uniform(x::AbstractSquareTensor, λ::Real) = x + λ * one(x)
+@inline _add_uniform(x::AbstractSquareTensor, λ::Number) = x + λ * one(x)
 @inline Base.:+(x::AbstractTensor, y::UniformScaling) = _add_uniform( x,  y.λ)
 @inline Base.:-(x::AbstractTensor, y::UniformScaling) = _add_uniform( x, -y.λ)
 @inline Base.:+(x::UniformScaling, y::AbstractTensor) = _add_uniform( y,  x.λ)
@@ -366,7 +366,7 @@ end
 
 # rotate
 """
-    rotmat(θ::Real; degree::Bool = false)
+    rotmat(θ::Number; degree::Bool = false)
 
 Construct 2D rotation matrix.
 
@@ -378,7 +378,7 @@ julia> rotmat(30, degree = true)
  0.5        0.866025
 ```
 """
-@inline function rotmat(θ::Real; degree::Bool = false)
+@inline function rotmat(θ::Number; degree::Bool = false)
     if degree
         θ = deg2rad(θ)
     end
@@ -390,9 +390,9 @@ end
 
 """
     rotmat(θ::Vec{3}; sequence::Symbol, degree::Bool = false)
-    rotmatx(θ::Real)
-    rotmaty(θ::Real)
-    rotmatz(θ::Real)
+    rotmatx(θ::Number)
+    rotmaty(θ::Number)
+    rotmatz(θ::Number)
 
 Convert Euler angles to rotation matrix.
 Use 3 characters belonging to the set (X, Y, Z) for intrinsic rotations,
@@ -445,7 +445,7 @@ function rotmat(θ::Vec{3}; sequence::Symbol, degree::Bool = false)
     sequence == :zxy && return rotmaty(γ) ⋅ rotmatx(β) ⋅ rotmatz(α)
     throw(ArgumentError("sequence $sequence is not supported"))
 end
-@inline function rotmatx(θ::Real; degree::Bool = false)
+@inline function rotmatx(θ::Number; degree::Bool = false)
     if degree
         θ = deg2rad(θ)
     end
@@ -457,7 +457,7 @@ end
           z cosθ -sinθ
           z sinθ  cosθ]
 end
-@inline function rotmaty(θ::Real; degree::Bool = false)
+@inline function rotmaty(θ::Number; degree::Bool = false)
     if degree
         θ = deg2rad(θ)
     end
@@ -469,7 +469,7 @@ end
            z    o z
           -sinθ z cosθ]
 end
-@inline function rotmatz(θ::Real; degree::Bool = false)
+@inline function rotmatz(θ::Number; degree::Bool = false)
     if degree
         θ = deg2rad(θ)
     end
@@ -549,7 +549,7 @@ julia> rotmat(π/2, n) ⋅ x
  0.0
 ```
 """
-function rotmat(θ::Real, x::Vec{3}; degree::Bool = false)
+function rotmat(θ::Number, x::Vec{3}; degree::Bool = false)
     if degree
         θ = deg2rad(θ)
     end

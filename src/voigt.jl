@@ -129,7 +129,7 @@ See also [`tovoigt`](@ref).
 """
 @inline function tomandel(x::Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor})
     @_propagate_inbounds_meta
-    tovoigt(x, offdiagscale = eltype(x)(√2))
+    tovoigt(x, offdiagscale = √eltype(x)(2))
 end
 
 
@@ -282,5 +282,5 @@ See also [`fromvoigt`](@ref).
 """
 @inline function frommandel(TT::Type{<: Union{SymmetricSecondOrderTensor, SymmetricFourthOrderTensor}}, v::AbstractArray{T}) where T
     @_propagate_inbounds_meta
-    fromvoigt(TT, v, offdiagscale = T(√2))
+    fromvoigt(TT, v, offdiagscale = √T(2))
 end
