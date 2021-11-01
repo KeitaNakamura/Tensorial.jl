@@ -1,7 +1,7 @@
+struct Point{dim, T} <: AbstractVec{dim, T}
+    x::NTuple{dim, T}
+end
 @testset "AbstractTensor" begin
-    struct Point{dim, T} <: AbstractVec{dim, T}
-        x::NTuple{dim, T}
-    end
     Base.Tuple(p::Point) = p.x
     Base.getindex(p::Point, i::Int) = p.x[i]
     for T in (Float32, Float64)
