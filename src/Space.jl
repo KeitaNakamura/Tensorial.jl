@@ -66,17 +66,18 @@ end
 
 # promote_space
 promote_space(x::Space) = x
-@generated function promote_space(x::Space{S1}, y::Space{S2}) where {S1, S2}
-    tensorsize(Space(S1)) == tensorsize(Space(S2)) || return :(throw(DimensionMismatch("dimensions must match")))
-    :(Space($(_promote_space(S1, S2, ()))))
+@pure function promote_space(x::Space{S1}, y::Space{S2}) where {S1, S2}
+    tensorsize(Space(S1)) == tensorsize(Space(S2)) || throw(DimensionMismatch("dimensions must match"))
+    Space(_promote_space(S1, S2, ()))
 end
-promote_space(x::Space, y::Space, z::Space...) = promote_space(promote_space(x, y), z...)
+@pure promote_space(x::Space, y::Space, z::Space...) = promote_space(promote_space(x, y), z...)
 ## helper functions
-_promote_space(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
-function _promote_space(x::Tuple, y::Tuple, promoted::Tuple)
+@pure _promote_space(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
+@pure function _promote_space(x::Tuple{Vararg{Union{Int, Symmetry}}}, y::Tuple{Vararg{Union{Int, Symmetry}}}, promoted::Tuple)
     x1 = x[1]
     y1 = y[1]
     if x1 == y1
+        # just use `x1`
         _promote_space(Base.tail(x), Base.tail(y), (promoted..., x1))
     else
         x1_len = length(x1)
@@ -87,7 +88,7 @@ function _promote_space(x::Tuple, y::Tuple, promoted::Tuple)
             _promote_space(Base.tail(x),
                            Tuple(dropfirst(Space(y), Val(x1_len))),
                            (promoted..., only(common)))
-        elseif length(x1) > length(y1)
+        elseif x1_len > y1_len
             common = promote_space(droplast(Space(x1), Val(x1_len - y1_len)),
                                    Space(y1)) |> Tuple
             _promote_space(Tuple(dropfirst(Space(x), Val(y1_len))),
