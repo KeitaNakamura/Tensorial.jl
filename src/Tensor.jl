@@ -161,12 +161,9 @@ ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
 @pure basetype(::Type{<: Tensor{S, T}}) where {S, T} = Tensor{S, T}
 
 # getindex
-@generated function Base.getindex(x::Tensor, i::Int)
-    quote
-        @_inline_meta
-        @boundscheck checkbounds(x, i)
-        @inbounds Tuple(x)[$(independent_indices(x))[i]]
-    end
+@inline function Base.getindex(x::Tensor, i::Int)
+    @boundscheck checkbounds(x, i)
+    @inbounds Tuple(x)[independent_indices(x)[i]]
 end
 
 # convert
