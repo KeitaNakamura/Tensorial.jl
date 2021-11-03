@@ -193,7 +193,7 @@ true
     stress_invariants(::AbstractSecondOrderTensor{3})
     stress_invariants(::AbstractSymmetricSecondOrderTensor{3})
 
-Return `NamedTuple` storing stress invariants.
+Return a tuple storing stress invariants.
 
 ```math
 \\begin{aligned}
@@ -228,12 +228,12 @@ end
     deviatoric_stress_invariants(::AbstractSecondOrderTensor{3})
     deviatoric_stress_invariants(::AbstractSymmetricSecondOrderTensor{3})
 
-Return `NamedTuple` storing deviatoric stress invariants.
+Return a tuple storing deviatoric stress invariants.
 
 ```math
 \\begin{aligned}
 J_1(\\bm{\\sigma}) &= \\mathrm{tr}(\\mathrm{dev}(\\bm{\\sigma})) = 0 \\\\
-J_2(\\bm{\\sigma}) &= -\\frac{1}{2} \\mathrm{tr}(\\mathrm{dev}(\\bm{\\sigma})^2) \\\\
+J_2(\\bm{\\sigma}) &= \\frac{1}{2} \\mathrm{tr}(\\mathrm{dev}(\\bm{\\sigma})^2) \\\\
 J_3(\\bm{\\sigma}) &= \\frac{1}{3} \\mathrm{tr}(\\mathrm{dev}(\\bm{\\sigma})^3)
 \\end{aligned}
 ```
