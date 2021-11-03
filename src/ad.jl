@@ -1,13 +1,15 @@
-@inline function dualize(x::Number)
-    Dual(x, one(x))
+using ForwardDiff: Dual, Tag, value, partials
+
+@inline function dualize(::Tg, x::Number) where {Tg <: Tag}
+    Dual{Tg}(x, one(x))
 end
-@generated function dualize(x::Tensor{S, T}) where {S, T}
+@generated function dualize(::Tg, x::Tensor{S, T}) where {Tg <: Tag, S, T}
      dups = duplicates(x)
      ex = Expr(:block, [:($(Symbol(:v_, i)) = v_1 / $i) for i in unique(dups) if i != 1]...)
      n = ncomponents(x)
      exps = map(1:n) do i
          partials = [j == i ? Symbol(:v_, dups[i]) : :z for j in 1:n]
-         :(Dual(Tuple(x)[$i], tuple($(partials...))))
+         :(Dual{Tg}(Tuple(x)[$i], tuple($(partials...))))
      end
      quote
          @_inline_meta
@@ -62,24 +64,24 @@ end
     end
 end
 
-function gradient(f::F, x::NumberOrTensor) where {F}
-    dx = dualize(x)
+function gradient(f, x::V) where {V <: NumberOrTensor}
+    dx = dualize(Tag(f, V), x)
     v = f(dx)
     extract_gradient(v, x)
 end
 
-function gradient(f::F, x::NumberOrTensor, ::Symbol) where {F}
-    dx = dualize(x)
+function gradient(f, x::V, ::Symbol) where {V <: NumberOrTensor}
+    dx = dualize(Tag(f, V), x)
     v = f(dx)
     extract_gradient(v, x), extract_value(v, x)
 end
 
-function hessian(f::F, x::NumberOrTensor) where {F}
+function hessian(f, x::NumberOrTensor)
     ∇f = v -> gradient(f, v)
     gradient(∇f, x)
 end
 
-function hessian(f::F, x::NumberOrTensor, ::Symbol) where {F}
+function hessian(f, x::NumberOrTensor, ::Symbol)
     ∇f = v -> gradient(f, v)
     gradient(∇f, x), gradient(f, x, :all)...
 end
