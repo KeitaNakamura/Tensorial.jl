@@ -6,7 +6,6 @@ export ⋅, ×, dot, tr, det, norm, normalize, mean, I, cross, eigen, eigvals, e
 
 using StaticArrays
 using Base: @pure, @_inline_meta, @_propagate_inbounds_meta
-using ForwardDiff: Dual, value, partials
 import StaticArrays: qr, lu, svd, diag, diagm # defined in LinearAlgebra, but call methods in StaticArrays
 # re-exports from StaticArrays
 export qr, lu, svd, diag, diagm

@@ -55,4 +55,18 @@
             end
         end
     end
+    @testset "Check nested differentiation" begin
+        @test gradient(x -> x * gradient(y -> x + y, 1), 1) == 1
+        @test gradient(v -> sum(v) * gradient(y -> y * norm(v), 1), Vec(1,2)) ≈ gradient(v -> sum(v) * norm(v), Vec(1,2))
+
+        f(a::Number, v::Vec{2}) = a^2 * v[1]^2 * 2v[2]^3
+        dfda(a::Number, v::Vec{2}) = 2a * v[1]^2 * 2v[2]^3
+        dfdv(a::Number, v::Vec{2}) = a^2 * Vec(2v[1] * 2v[2]^3, v[1]^2 * 6v[2]^2)
+        a = rand()
+        v = rand(Vec{2})
+        @test gradient(v -> gradient(a -> f(a, v), a), v) ≈ gradient(v -> dfda(a, v), v)
+        @test gradient(a -> gradient(v -> f(a, v), v), a) ≈ gradient(a -> dfdv(a, v), a)
+        @test gradient(v -> sum(v) * gradient(a -> f(a, v), a), v) ≈ gradient(v -> sum(v) * dfda(a, v), v)
+        @test gradient(a -> a * gradient(v -> f(a, v), v), a) ≈ gradient(a -> a * dfdv(a, v), a)
+    end
 end
