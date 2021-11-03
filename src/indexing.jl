@@ -74,8 +74,6 @@ end
 for func in (:independent_indices, :indices, :duplicates)
     @eval @generated function $func(::Space{S}) where {S}
         arr = $(Symbol(:_, func))(TensorIndices(S))
-        quote
-            SArray{Tuple{$(size(arr)...)}, Int}($arr)
-        end
+        SArray{Tuple{size(arr)...}, Int}(arr)
     end
 end
