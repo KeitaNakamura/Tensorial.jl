@@ -40,10 +40,16 @@
         for T in (Float32, Float64), x in (rand(SecondOrderTensor{3, T}),
                                            rand(SymmetricSecondOrderTensor{3, T}))
             # stress invariants
-            I₁, I₂, I₃ = (@inferred stress_invariants(x))::NamedTuple{(:I1,:I2,:I3), NTuple{3, T}}
+            I₁, I₂, I₃ = (@inferred stress_invariants(x))::NTuple{3, T}
+            @test I₁ ≈ tr(x)
+            @test I₂ ≈ (tr(x)^2 - tr(x^2)) / 2
+            @test I₃ ≈ det(x)
             @test x^3 - I₁*x^2 + I₂*x - I₃*I ≈ zero(x)  atol = sqrt(eps(T))
             # deviatoric stress invariants
-            J₁, J₂, J₃ = (@inferred deviatoric_stress_invariants(x))::NamedTuple{(:J1,:J2,:J3), NTuple{3, T}}
+            J₁, J₂, J₃ = (@inferred deviatoric_stress_invariants(x))::NTuple{3, T}
+            @test J₁ ≈ 0
+            @test J₂ ≈ dev(x) ⊡ dev(x)' / 2
+            @test J₃ ≈ det(dev(x))
             @test dev(x)^3 - J₁*dev(x)^2 - J₂*dev(x) - J₃*I ≈ zero(x)  atol = sqrt(eps(T))
         end
     end
