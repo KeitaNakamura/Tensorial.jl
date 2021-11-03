@@ -86,11 +86,9 @@ Supported only for tensors in 3D.
 ```jldoctest
 julia> x = rand(Mat{3,3});
 
-julia> I = one(FourthOrderTensor{3});
-
 julia> I_vol = vol(FourthOrderTensor{3});
 
-julia> I_vol ⊡ x ≈ I ⊡ vol(x)
+julia> I_vol ⊡ x ≈ vol(x)
 true
 
 julia> vol(FourthOrderTensor{3}) + dev(FourthOrderTensor{3}) ≈ one(FourthOrderTensor{3})
@@ -151,16 +149,13 @@ julia> x = rand(Vec{3})
  0.5662374165061859
 
 julia> dev(x)
-ERROR: StackOverflowError:
-Stacktrace:
- [1] vol(x::Vec{3, Float64}) (repeats 79984 times)
-   @ Tensorial ~/Documents/Source code/Julia/Tensorial/src/continuum_mechanics.jl:68
+3-element Vec{3, Float64}:
+ -0.050448391892341515
+  0.1255040059442074
+ -0.0750556140518659
 
 julia> vol(x) + dev(x) ≈ x
-ERROR: StackOverflowError:
-Stacktrace:
- [1] vol(x::Vec{3, Float64}) (repeats 79984 times)
-   @ Tensorial ~/Documents/Source code/Julia/Tensorial/src/continuum_mechanics.jl:68
+true
 ```
 """
 @inline dev(x::AbstractVec{3}) = x - vol(x)
@@ -176,11 +171,9 @@ Supported only for tensors in 3D.
 ```jldoctest
 julia> x = rand(Mat{3,3});
 
-julia> I = one(FourthOrderTensor{3});
-
 julia> I_dev = dev(FourthOrderTensor{3});
 
-julia> I_dev ⊡ x ≈ I ⊡ dev(x)
+julia> I_dev ⊡ x ≈ dev(x)
 true
 
 julia> vol(FourthOrderTensor{3}) + dev(FourthOrderTensor{3}) ≈ one(FourthOrderTensor{3})
