@@ -370,6 +370,13 @@ end
 
 Construct 2D rotation matrix.
 
+```math
+\\bm{R} = \\begin{bmatrix}
+\\cos{\\theta} & -\\sin{\\theta} \\\\
+\\sin{\\theta} &  \\cos{\\theta}
+\\end{bmatrix}
+```
+
 # Examples
 ```jldoctest
 julia> rotmat(30, degree = true)
@@ -390,9 +397,6 @@ end
 
 """
     rotmat(θ::Vec{3}; sequence::Symbol, degree::Bool = false)
-    rotmatx(θ::Number)
-    rotmaty(θ::Number)
-    rotmatz(θ::Number)
 
 Convert Euler angles to rotation matrix.
 Use 3 characters belonging to the set (X, Y, Z) for intrinsic rotations,
@@ -445,6 +449,20 @@ function rotmat(θ::Vec{3}; sequence::Symbol, degree::Bool = false)
     sequence == :zxy && return rotmaty(γ) ⋅ rotmatx(β) ⋅ rotmatz(α)
     throw(ArgumentError("sequence $sequence is not supported"))
 end
+
+"""
+    rotmatx(θ::Number; degree::Bool = false)
+
+Construct rotation matrix around `x` axis.
+
+```math
+\\bm{R}_x = \\begin{bmatrix}
+1 & 0 & 0 \\\\
+0 & \\cos{\\theta} & -\\sin{\\theta} \\\\
+0 & \\sin{\\theta} &  \\cos{\\theta}
+\\end{bmatrix}
+```
+"""
 @inline function rotmatx(θ::Number; degree::Bool = false)
     if degree
         θ = deg2rad(θ)
@@ -457,6 +475,20 @@ end
           z cosθ -sinθ
           z sinθ  cosθ]
 end
+
+"""
+    rotmaty(θ::Number; degree::Bool = false)
+
+Construct rotation matrix around `y` axis.
+
+```math
+\\bm{R}_y = \\begin{bmatrix}
+\\cos{\\theta} & 0 & \\sin{\\theta} \\\\
+0 & 1 & 0 \\\\
+-\\sin{\\theta} & 0 & \\cos{\\theta}
+\\end{bmatrix}
+```
+"""
 @inline function rotmaty(θ::Number; degree::Bool = false)
     if degree
         θ = deg2rad(θ)
@@ -469,6 +501,20 @@ end
            z    o z
           -sinθ z cosθ]
 end
+
+"""
+    rotmatz(θ::Number; degree::Bool = false)
+
+Construct rotation matrix around `z` axis.
+
+```math
+\\bm{R}_z = \\begin{bmatrix}
+\\cos{\\theta} & -\\sin{\\theta} & 0 \\\\
+\\sin{\\theta} &  \\cos{\\theta} & 0 \\\\
+0 & 0 & 1
+\\end{bmatrix}
+```
+"""
 @inline function rotmatz(θ::Number; degree::Bool = false)
     if degree
         θ = deg2rad(θ)
