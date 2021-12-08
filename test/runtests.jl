@@ -20,5 +20,6 @@ include("inv.jl")
 include("voigt.jl")
 include("ad.jl")
 include("broadcast.jl")
+include("misc.jl")
 
 include("quaternion.jl")
