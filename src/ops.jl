@@ -114,6 +114,7 @@ julia> A = x ⊗ y
 ```
 """
 @inline otimes(x1::AbstractTensor, x2::AbstractTensor) = contraction(x1, x2, Val(0))
+@inline otimes(x1::AbstractTensor, x2::AbstractTensor, others...) = otimes(otimes(x1, x2), others...)
 
 """
     dot(x::AbstractTensor, y::AbstractTensor)
