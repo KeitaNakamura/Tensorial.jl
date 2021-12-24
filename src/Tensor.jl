@@ -182,13 +182,12 @@ end
 @inline Base.convert(::Type{TT}, x::Tuple) where {TT <: Tensor} = TT(x)
 
 # promotion
-@inline convert_eltype(::Type{T}, x::Number) where {T <: Number} = T(x)
+@inline convert_eltype(::Type{T}, x::Number) where {T <: Number} = convert(T, x)
 @generated function convert_eltype(::Type{T}, x::Tensor) where {T <: Number}
-    S = Space(x)
-    TT = tensortype(S)
+    TT = tensortype(Space(x))
     quote
         @_inline_meta
-        $TT{T}(x)
+        convert($TT{T}, x)
     end
 end
 @generated function promote_elements(xs::Vararg{Union{Number, Tensor}, N}) where {N}
