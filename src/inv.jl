@@ -38,7 +38,8 @@ end
     exps = [x_22, :(-$x_21), :(-$x_12), x_11]
     quote
         @_inline_meta
-        @inbounds typeof(x)($(exps[indices(x)]...)) / det(x)
+        detinv = 1 / det(x)
+        @inbounds typeof(x)($(exps[indices(x)]...)) * detinv
     end
 end
 
@@ -52,18 +53,18 @@ end
     x_13 = getindex_expr(x, :x, 1, 3)
     x_23 = getindex_expr(x, :x, 2, 3)
     x_33 = getindex_expr(x, :x, 3, 3)
-    exps = [:(($x_22*$x_33 - $x_23*$x_32) * dinv),
-            :(($x_23*$x_31 - $x_21*$x_33) * dinv),
-            :(($x_21*$x_32 - $x_22*$x_31) * dinv),
-            :(($x_13*$x_32 - $x_12*$x_33) * dinv),
-            :(($x_11*$x_33 - $x_13*$x_31) * dinv),
-            :(($x_12*$x_31 - $x_11*$x_32) * dinv),
-            :(($x_12*$x_23 - $x_13*$x_22) * dinv),
-            :(($x_13*$x_21 - $x_11*$x_23) * dinv),
-            :(($x_11*$x_22 - $x_12*$x_21) * dinv)]
+    exps = [:( ($x_22*$x_33 - $x_23*$x_32) * detinv),
+            :(-($x_21*$x_33 - $x_23*$x_31) * detinv),
+            :( ($x_21*$x_32 - $x_22*$x_31) * detinv),
+            :(-($x_12*$x_33 - $x_13*$x_32) * detinv),
+            :( ($x_11*$x_33 - $x_13*$x_31) * detinv),
+            :(-($x_11*$x_32 - $x_12*$x_31) * detinv),
+            :( ($x_12*$x_23 - $x_13*$x_22) * detinv),
+            :(-($x_11*$x_23 - $x_13*$x_21) * detinv),
+            :( ($x_11*$x_22 - $x_12*$x_21) * detinv)]
     quote
         @_inline_meta
-        dinv = 1 / det(x)
+        detinv = 1 / det(x)
         @inbounds typeof(x)($(exps[indices(x)]...))
     end
 end
