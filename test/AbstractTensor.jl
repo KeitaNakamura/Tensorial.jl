@@ -31,7 +31,6 @@ end
     @testset "getindex for slicing" begin
         v = Vec(5,4,3,2,1)
         @test @inferred(v[:]) === Vec(5,4,3,2,1)
-        @test @inferred(v[SOneTo(3)]) === Vec(5,4,3)
         @test @inferred(v[SUnitRange(2,4)]) === Vec(4,3,2)
         @test @inferred(v[SVector(3,4,1)]) === Vec(3,2,5)
         A = Mat{2,3}(1,2,3,4,5,6)
@@ -47,6 +46,25 @@ end
         @test @Tensor(A[end,:]) === Vec(2,4,6)
         @test @Tensor(A[1,2:3]) === Vec(3,5)
         @test_throws Exception @Tensor(Array(A)[1,2:3])
+        # check symmetry
+        A = SymmetricSecondOrderTensor{3}(1,2,3,4,5,6)
+        @test @Tensor(A[:,[1,3]]) === @Mat [1 3; 2 5; 3 6]
+        @test @Tensor(A[1,:]) === Vec(1,2,3)
+        @test @Tensor(A[end,:]) === Vec(3,5,6)
+        @test @Tensor(A[1,2:3]) === Vec(2,3)
+        @test @Tensor(A[1:2,[1,2]]) === SymmetricSecondOrderTensor{2}(1,2,4)
+        n = 1 # dynamic
+        @test @Tensor(A[:,[n,3]]) === @Mat [1 3; 2 5; 3 6]
+        @test @Tensor(A[n,:]) === Vec(1,2,3)
+        @test @Tensor(A[n,2:3]) === Vec(2,3)
+        @test @Tensor(A[n:2,[1,2]]) === @Mat [1 2; 2 4]
+        @test @Tensor(A[n:2,[n,2]]) === @Mat [1 2; 2 4]
+        # complex version
+        A = rand(Tensor{Tuple{3,3,@Symmetry({3,3,3})}})
+        @test (@Tensor(A[1,2,1:2,2:3,3]))::Tensor{Tuple{2,2}} == Array(A)[1,2,1:2,2:3,3]
+        @test (@Tensor(A[1,2:3,2:3,2:3,3]))::Tensor{Tuple{2,@Symmetry({2,2})}} == Array(A)[1,2:3,2:3,2:3,3]
+        @test (@Tensor(A[1,2:3,2:3,2,2:3]))::Tensor{Tuple{2,@Symmetry({2,2})}} == Array(A)[1,2:3,2:3,2,2:3]
+        @test (@Tensor(A[1,2:3,2,2:3,2:3]))::Tensor{Tuple{2,@Symmetry({2,2})}} == Array(A)[1,2:3,2,2:3,2:3]
     end
     @testset "vcat/hcat" begin
         @test @inferred(vcat(Vec(1,2,3))) === Vec(1,2,3)
