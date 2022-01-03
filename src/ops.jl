@@ -642,7 +642,6 @@ julia> R ⋅ A ⋅ R'
 ```
 """
 @inline rotate(v::Vec, R::SecondOrderTensor) = R ⋅ v
-@inline rotate(v::Vec{2}, R::SecondOrderTensor{3}) = (R2x2 = Mat{2, 2}((i,j) -> @inbounds R[i,j]); R2x2 ⋅ v)
 @inline rotate(A::SecondOrderTensor, R::SecondOrderTensor) = @einsum R[i,j] * A[j,k] * R[l,k]
 @generated function rotate(A::SymmetricSecondOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim}
     _, exps = contraction_exprs(SecondOrderTensor{dim}, SecondOrderTensor{dim}, 1)
