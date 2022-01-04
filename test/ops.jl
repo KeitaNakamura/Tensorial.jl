@@ -245,10 +245,6 @@ end
                 @test (@inferred rotate(A, R))::SecondOrderTensor{dim, T} ≈ R ⋅ A ⋅ R'
                 @test (@inferred rotate(S, R))::SymmetricSecondOrderTensor{dim, T} ≈ R ⋅ S ⋅ R'
             end
-            # v in 2D, R in 3D
-            v = Vec{2, T}(1,0)
-            R = rotmatz(T(π/4))
-            @test (@inferred rotate(v, R))::Vec{2, T} ≈ (x = rotate(Vec(v[1], v[2], 0), R); Vec(x[1], x[2]))
         end
     end
     @testset "angleaxis" begin

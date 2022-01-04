@@ -114,12 +114,12 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
             @test ((q * x) / q).vector ≈ Rq ⋅ x3
             @test (q * (x / q)).vector ≈ Rq ⋅ x3
             # rotate
-            @test rotate(x, q) ≈ rotate(x, Rq)
-            @test rotate(x, p) ≈ rotate(x, Rp)
-            @test rotate(x, r) ≈ rotate(x, Rp ⋅ Rq)
-            @test rotate(x, inv(q)) ≈ rotate(x, inv(Rq))
-            @test rotate(x, inv(p)) ≈ rotate(x, inv(Rp))
-            @test rotate(x, inv(r)) ≈ rotate(x, inv(Rp ⋅ Rq))
+            @test rotate(x, q) ≈ rotate(x3, Rq)
+            @test rotate(x, p) ≈ rotate(x3, Rp)
+            @test rotate(x, r) ≈ rotate(x3, Rp ⋅ Rq)
+            @test rotate(x, inv(q)) ≈ rotate(x3, inv(Rq))
+            @test rotate(x, inv(p)) ≈ rotate(x3, inv(Rp))
+            @test rotate(x, inv(r)) ≈ rotate(x3, inv(Rp ⋅ Rq))
         end
         # test with rotmat(θ, n)
         θ = rand(T)
