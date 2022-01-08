@@ -28,7 +28,7 @@ end
 end
 
 @testset "Operations for array interface" begin
-    @testset "getindex for slicing" begin
+    @testset "static getindex" begin
         v = Vec(5,4,3,2,1)
         @test @inferred(v[:]) === Vec(5,4,3,2,1)
         @test @inferred(v[SUnitRange(2,4)]) === Vec(4,3,2)
