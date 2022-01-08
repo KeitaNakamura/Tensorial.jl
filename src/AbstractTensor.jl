@@ -100,7 +100,18 @@ _indexing(parent_size::Int, ::Type{Val{x}}, ex) where {x} = collect(x)
     TT = tensortype(newspace)
     inds_dim = map(_indexing, tensorsize(Space(x)), inds, [:(inds[$i]) for i in 1:length(inds)]) # indices on each dimension
     inds_all = collect(Iterators.product(inds_dim...)) # product of indices to get all indices
-    exps = map(i -> getindex_expr(x, :x, inds_all[i]...), indices(newspace))
+    if prod(tensorsize(newspace)) == length(inds_all)
+        exps = map(i -> getindex_expr(x, :x, inds_all[i]...), indices(newspace))
+    else # this is for `resize` function
+        exps = map(indices(newspace)) do i
+            I = CartesianIndices(newspace)[i]
+            if checkbounds(Bool, inds_all, I)
+                getindex_expr(x, :x, inds_all[I]...)
+            else
+                zero(eltype(x))
+            end
+        end
+    end
     quote
         @_inline_meta
         @inbounds $TT($(exps...))
