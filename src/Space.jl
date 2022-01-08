@@ -27,9 +27,17 @@ Base.getindex(s::Space, i::Int) = Tuple(s)[i]
 
 @pure tensorsize(s::Space) = Dims(s)
 @pure tensororder(s::Space) = length(tensorsize(s))
+@pure tensoraxes(s::Space) = map(Base.OneTo, tensorsize(s))
 # don't allow to use `size` and `ndims` because their names are confusing.
 Base.size(s::Space) = throw(ArgumentError("use `tensorsize` to get size of a tensor instead of `size`"))
 Base.ndims(s::Space) = throw(ArgumentError("use `tensororder` to get order of a tensor instead of `ndims`"))
+
+@inline Base.checkbounds(::Type{Bool}, space::Space, I...) = Base.checkbounds_indices(Bool, tensoraxes(space), I)
+@inline Base.checkbounds(::Type{Bool}, space::Space, I) = checkindex(Bool, Base.OneTo(prod(tensorsize(space))), I)
+@inline function Base.checkbounds(space::Space, I...)
+    checkbounds(Bool, space, I...) || Base.throw_boundserror(space, I)
+    nothing
+end
 
 function Base.show(io::IO, ::Space{S}) where {S}
     print(io, "Space", S)
@@ -110,4 +118,88 @@ end
 # LinearIndices/CartesianIndices
 for IndicesType in (LinearIndices, CartesianIndices)
     @eval (::Type{$IndicesType})(x::Space) = $IndicesType(tensorsize(x))
+end
+
+
+#############################
+# Static getindex interface #
+#############################
+
+abstract type AbstractDynamicIndex end
+struct DynamicIndex   <: AbstractDynamicIndex;           end
+struct DynamicIndices <: AbstractDynamicIndex; len::Int; end
+# Base.length(::DynamicIndex) = 1
+Base.length(x::DynamicIndices) = x.len
+
+static_dynamic_index(n::Int, ::Type{Int}) = DynamicIndex()
+static_dynamic_index(n::Int, ::Type{Colon}) = 1:n
+static_dynamic_index(n::Int, ::Type{<: StaticVector{len}}) where {len} = DynamicIndices(len)
+static_dynamic_index(n::Int, ::Type{Val{x}}) where {x} = x
+
+same_index(a::AbstractDynamicIndex, b::AbstractDynamicIndex) = false
+same_index(a::AbstractDynamicIndex, b::Any) = false
+same_index(a::Any, b::AbstractDynamicIndex) = false
+same_index(a::Any, b::Any) = _collect(a) == _collect(b)
+_collect(x::Any) = collect(x)
+_collect(::Nothing) = nothing
+
+_remove_val(x) = x
+_remove_val(::Val{x}) where {x} = SVector(x...)
+@generated function Base.getindex(space::Space{S}, inds::Union{Int, StaticVector{<: Any, Int}, Colon, Val}...) where {S}
+    dims = tensorsize(Space(S))
+    indices = map(static_dynamic_index, dims, inds)
+    quote
+        @boundscheck checkbounds(space, map(_remove_val, inds)...)
+        _getindex(space, Val(tuple($(indices...))))
+    end
+end
+
+@generated function Base.getindex(space::Space{S}, index::Union{Int, StaticVector{<: Any, Int}, Colon, Val}) where {S}
+    n = prod(tensorsize(Space(S)))
+    index = static_dynamic_index(n, index)
+    quote
+        @boundscheck checkbounds(space, _remove_val(index))
+        _getindex(space, Val(tuple($index)))
+    end
+end
+
+@generated function _getindex(::Space{S}, ::Val{indices}) where {S, indices}
+    # helper functions
+    isskipped(count) = count > length(indices) || indices[count] isa Union{Int, DynamicIndex}
+    newspace(x) = Any[x]
+    space_lastentry(x::Any) = x
+    space_lastentry(space::Vector) = isempty(space) ? nothing : space_lastentry(space[end])
+    spacesize(x) = length(x)
+
+    count = 0
+    new_spaces = []
+    for space in S
+        if space isa Symmetry
+            spaces = []
+            for i in 1:length(space)
+                isskipped(count += 1) && continue
+                if same_index(indices[count], space_lastentry(spaces))
+                    push!(spaces[end], indices[count])
+                else
+                    push!(spaces, newspace(indices[count]))
+                end
+            end
+            # symmetry wrap
+            for i in 1:length(spaces)
+                if length(spaces[i]) == 1
+                    spaces[i] = spacesize(only(spaces[i]))
+                else
+                    spaces[i] = Symmetry(spacesize.(spaces[i])...)
+                end
+            end
+            append!(new_spaces, spaces)
+        else
+            isskipped(count += 1) && continue
+            push!(new_spaces, length(indices[count]))
+        end
+    end
+    quote
+        Base.@_pure_meta
+        Space($(new_spaces...))
+    end
 end

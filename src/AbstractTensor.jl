@@ -54,10 +54,18 @@ end
 Space(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Space(S)
 Space(::AbstractTensor{S}) where {S} = Space(S)
 
-# getindex_expr
-function getindex_expr(x::Type{<: AbstractTensor}, ex::Union{Symbol, Expr}, i...)
-    inds = independent_indices(x)
-    :(Tuple($ex)[$(inds[i...])])
+@generated function getindex_expr(x::Type{<: AbstractTensor}, ex::Union{Symbol, Expr}, i...)
+    if any(x -> x <: Union{Symbol, Expr}, i)
+        quote
+            :($ex[$(i...)])
+        end
+    else
+        # static getindex
+        quote
+            inds = independent_indices(x)
+            :(Tuple($ex)[$(inds[i...])])
+        end
+    end
 end
 
 @generated function Base.getindex(x::AbstractTensor, I::Int...)
@@ -78,10 +86,28 @@ end
     end
 end
 
-function Base.getindex(x::AbstractTensor, inds::Union{Int, StaticArray{<:Tuple, Int}, SOneTo, Colon}...)
+function Base.getindex(x::AbstractTensor, inds::Union{Int, StaticArray{<: Any, Int}, Colon, Val}...)
     @_propagate_inbounds_meta
-    Tensor(SArray(x)[inds...])
+    _getindex(Space(x)[inds...], x, inds...)
 end
+
+_indexing(parent_size::Int, ::Type{Int}, ex) = [ex]
+_indexing(parent_size::Int, ::Type{<: StaticVector{n, Int}}, ex) where {n} = [:($ex[$i]) for i in 1:n]
+_indexing(parent_size::Int, ::Type{Colon}, ex) = [i for i in 1:parent_size]
+_indexing(parent_size::Int, ::Type{Val{x}}, ex) where {x} = collect(x)
+@generated function _getindex(::Space{S}, x::AbstractTensor, inds::Union{Int, StaticArray{<: Any, Int}, Colon, Val}...) where {S}
+    newspace = Space(S)
+    TT = tensortype(newspace)
+    inds_dim = map(_indexing, tensorsize(Space(x)), inds, [:(inds[$i]) for i in 1:length(inds)]) # indices on each dimension
+    inds_all = collect(Iterators.product(inds_dim...)) # product of indices to get all indices
+    exps = map(i -> getindex_expr(x, :x, inds_all[i]...), indices(newspace))
+    quote
+        @_inline_meta
+        @inbounds $TT($(exps...))
+    end
+end
+
+Base.getindex(x::AbstractTensor, ::Colon) = vec(x)
 
 # to SArray
 @generated function StaticArrays.SArray(x::AbstractTensor)
