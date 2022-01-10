@@ -94,7 +94,9 @@ macro Mat(ex)
     esc(:(Tensor(Tensorial.@SMatrix $ex)))
 end
 macro Tensor(expr)
-    if Meta.isexpr(expr, :ref)
+    if Meta.isexpr(expr, :braces)
+        esc(:(Tensor{Tuple{$(expr.args...)}}))
+    elseif Meta.isexpr(expr, :ref)
         newargs = map(expr.args) do ex
             if Meta.isexpr(ex, :call) && ex.args[1] == :(:)
                 if ex.args[2] isa Int && ex.args[3] isa Int # static indexing
