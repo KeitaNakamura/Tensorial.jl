@@ -243,6 +243,11 @@ end
 @testset "Promotion" begin
     @test (@inferred promote_rule(Vec{2, Float64}, Vec{2, Float32})) === Vec{2, Float64}
     @test (@inferred promote_rule(Mat{2, 2, Int, 4}, Mat{2, 2, Float32, 4})) === Mat{2, 2, Float32, 4}
+    x = Vec(1,2,3)
+    for T in (Float32, Float64)
+        res = (@inferred Tensorial.promote_elements(x, 3, rand(Mat{3,3,T})))
+        @test promote_type(map(eltype, res)...) == T
+    end
 end
 
 @testset "Tensor misc" begin
@@ -251,12 +256,7 @@ end
     @test (@inferred size(TT))::Tuple{Int, Int} == (2,3)
     TT = Tensor{Tuple{2, 3, @Symmetry({3, 3})}}
     @test (@inferred size(TT))::Tuple{Int, Int, Int, Int} == (2,3,3,3)
-end
-
-@testset "Promotion" begin
-    x = Vec(1,2,3)
-    for T in (Float32, Float64)
-        res = (@inferred Tensorial.promote_elements(x, 3, rand(Mat{3,3,T})))
-        @test promote_type(map(eltype, res)...) == T
-    end
+    # macro
+    @test @Tensor({3,3}) == Tensor{Tuple{3,3}}
+    @test @Tensor({@Symmetry({3,3}),2}) == Tensor{Tuple{Symmetry{Tuple{3,3}},2}}
 end
