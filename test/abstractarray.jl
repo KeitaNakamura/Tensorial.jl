@@ -28,7 +28,7 @@
         @test @Tensor(A[:,[n,3]]) === @Mat [1 3; 2 5; 3 6]
         @test @Tensor(A[n,:]) === Vec(1,2,3)
         @test @Tensor(A[n,2:3]) === Vec(2,3)
-        @test @Tensor(A[n:2,[1,2]]) === @Mat [1 2; 2 4]
+        @test @Tensor(A[n:2,[1,2]]) === SymmetricSecondOrderTensor{2}(1,2,4)
         @test @Tensor(A[n:2,[n,2]]) === @Mat [1 2; 2 4]
         # complex version
         A = rand(Tensor{Tuple{3,3,@Symmetry({3,3,3})}})
