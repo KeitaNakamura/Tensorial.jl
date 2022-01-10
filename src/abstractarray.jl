@@ -20,7 +20,7 @@
     end
 end
 
-function Base.getindex(x::AbstractTensor, inds::Union{Int, StaticArray{<: Any, Int}, Colon, Val}...)
+@inline function Base.getindex(x::AbstractTensor, inds::Union{Int, StaticArray{<: Any, Int}, Colon, Val}...)
     @_propagate_inbounds_meta
     _getindex(Space(x)[inds...], x, inds...)
 end
