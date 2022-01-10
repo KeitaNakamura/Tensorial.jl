@@ -97,11 +97,7 @@ macro Tensor(expr)
     if Meta.isexpr(expr, :ref)
         newargs = map(expr.args) do ex
             if Meta.isexpr(ex, :call) && ex.args[1] == :(:)
-                if ex.args[2] isa Int && ex.args[3] isa Int # static indexing
-                    :(Val($ex))
-                else
-                    Expr(:call, :($(StaticArrays.SUnitRange)), ex.args[2], ex.args[3])
-                end
+                :(Val($ex))
             elseif Meta.isexpr(ex, :vect)
                 if all(x -> x isa Int, ex.args) # static indexing
                     :(Val(tuple($(ex.args...))))
