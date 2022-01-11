@@ -171,11 +171,18 @@ end
     @test Tensorial.ncomponents(x) == 2 * Tensorial.ncomponents(@Symmetry({3,3,3})())
     for i in axes(x, 1)
         for j in axes(x, 2), k in axes(x, 3), l in axes(x, 4)
-            @test x[i,j,k,l] == x[i,k,j,l]
-            @test x[i,j,k,l] == x[i,j,l,k]
-            @test x[i,j,k,l] == x[i,l,k,j]
+            @test x[i,j,k,l] == x[i,k,j,l] == x[i,j,l,k] == x[i,l,k,j] == x[i,k,l,j] == x[i,l,j,k]
         end
     end
+    # totally symmetric third-order tensor
+    # https://arxiv.org/pdf/2009.10752.pdf
+    x = rand(Tensor{Tuple{@Symmetry({3,3,3})}})
+    A = zeros(3,3,3)
+    for I in CartesianIndices(x)
+        i, j, k = Tuple(I)
+        A[i,j,k] = (x[i,j,k] + x[j,k,i] + x[k,i,j] + x[j,i,k] + x[k,j,i] + x[i,k,j]) / 6
+    end
+    @test x ≈ A
 end
 
 @testset "Indices" begin
