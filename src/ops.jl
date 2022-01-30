@@ -391,8 +391,7 @@ julia> rotmat(30, degree = true)
     if degree
         θ = deg2rad(θ)
     end
-    sinθ = sin(θ)
-    cosθ = cos(θ)
+    sinθ, cosθ = sincos(θ)
     @Mat [cosθ -sinθ
           sinθ  cosθ]
 end
@@ -471,8 +470,7 @@ Construct rotation matrix around `x` axis.
     end
     o = one(θ)
     z = zero(θ)
-    sinθ = sin(θ)
-    cosθ = cos(θ)
+    sinθ, cosθ = sincos(θ)
     @Mat [o z     z
           z cosθ -sinθ
           z sinθ  cosθ]
@@ -497,8 +495,7 @@ Construct rotation matrix around `y` axis.
     end
     o = one(θ)
     z = zero(θ)
-    sinθ = sin(θ)
-    cosθ = cos(θ)
+    sinθ, cosθ = sincos(θ)
     @Mat [ cosθ z sinθ
            z    o z
           -sinθ z cosθ]
@@ -523,8 +520,7 @@ Construct rotation matrix around `z` axis.
     end
     o = one(θ)
     z = zero(θ)
-    sinθ = sin(θ)
-    cosθ = cos(θ)
+    sinθ, cosθ = sincos(θ)
     @Mat [cosθ -sinθ z
           sinθ  cosθ z
           z     z    o]
@@ -574,7 +570,7 @@ end
 """
     rotmat(θ, n::Vec; degree::Bool = false)
 
-Construct rotation matrix from angle `θ` and direction `n`.
+Construct rotation matrix from angle `θ` and axis `n`.
 
 # Examples
 ```jldoctest
@@ -597,13 +593,13 @@ julia> rotmat(π/2, n) ⋅ x
  0.0
 ```
 """
-function rotmat(θ::Number, x::Vec{3}; degree::Bool = false)
+function rotmat(θ::Number, n::Vec{3}; degree::Bool = false)
     if degree
         θ = deg2rad(θ)
     end
-    n = normalize(x)
-    W = skew(n)
-    I + W*sin(θ) + W^2*(1-cos(θ))
+    n′ = normalize(n)
+    sinθ, cosθ = sincos(θ)
+    cosθ*I + sinθ*skew(n′) + (1-cosθ)*(n′⊗n′)
 end
 
 """
