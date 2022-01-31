@@ -1,3 +1,5 @@
+import SIMD
+
 const SIMDTypes = Union{Float16, Float32, Float64}
 
 @generated function (::Type{TT})(data::SIMD.Vec{L}) where {TT <: Tensor, L}
@@ -8,6 +10,11 @@ const SIMDTypes = Union{Float16, Float32, Float64}
     end
 end
 
+@inline function Base.muladd(x::T, y::Tensor{S, T}, z::Tensor{S, T}) where {S, T <: SIMDTypes}
+    Tensor{S, T}(muladd(x, SIMD.Vec(Tuple(y)), SIMD.Vec(Tuple(z))))
+end
+
+#=
 @generated function contraction(x::Tensor{<: Any, T,}, y::Tensor{<: Any, T}, ::Val{N}) where {T <: SIMDTypes, N}
     S1 = Space(x)
     S2 = Space(y)
@@ -87,3 +94,4 @@ end
     v = SIMD.shufflevector(x*y′ - x′*y, Val((1,2,0)))
     Vec(v)
 end
+=#
