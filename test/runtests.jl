@@ -4,6 +4,8 @@ using Test, Random
 using LinearAlgebra: Symmetric
 using StaticArrays: SArray, SVector, SOneTo, SUnitRange
 
+import Combinatorics # for levicivita
+
 if VERSION < v"1.4"
     using Tensorial: only
 end
