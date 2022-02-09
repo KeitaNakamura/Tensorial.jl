@@ -48,7 +48,7 @@ function contraction_exprs(x::Type{<: AbstractTensor}, y::Type{<: AbstractTensor
     ij_x = UnitRange(1, nx)
     ij_y = UnitRange(nx + 1 - N, nx + ny - N)
     freeinds = find_freeindices([ij_x; ij_y])
-    einsum_contraction_expr(Tuple(freeinds), (x, y), (ij_x, ij_y))
+    einsum_contraction_expr(freeinds, [x, y], [ij_x, ij_y])
 end
 
 """

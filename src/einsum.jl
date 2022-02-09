@@ -175,7 +175,9 @@ end
     ret
 end
 
-function einsum_contraction_expr(freeinds::Tuple, tensors::Tuple{Vararg{Any, N}}, tensorinds::Tuple{Vararg{AbstractVector, N}}) where {N}
+function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::Vector)
+    @assert length(tensors) == length(tensorinds)
+
     allinds = vcat([collect(x) for x in tensorinds]...)
     dummyinds = setdiff(allinds, freeinds)
     allinds = [freeinds..., dummyinds...]
@@ -220,7 +222,7 @@ function einsum_contraction_expr(freeinds::Tuple, tensors::Tuple{Vararg{Any, N}}
         perm = map(freeinds) do index
             only(findall(==(index), vcat(tensorinds...)))
         end
-        TT = tensortype(_permutedims(otimes(map(Space, tensors)...), Val(perm))){T}
+        TT = tensortype(_permutedims(otimes(map(Space, tensors)...), Val(tuple(perm...)))){T}
         freeaxes = axes(TT)
         tupleinds = indices(TT)
     end
@@ -241,7 +243,7 @@ function einsum_contraction_expr(freeinds::Tuple, tensors::Tuple{Vararg{Any, N}}
 end
 
 @generated function _einsum_contraction(::Val{freeinds}, tensors::Tuple, tensorinds::Tuple{Vararg{Val}}) where {freeinds}
-    TT, exps = einsum_contraction_expr(freeinds, Tuple(tensors.parameters), Tuple(map(p -> collect(p.parameters[1]), tensorinds.parameters)))
+    TT, exps = einsum_contraction_expr(collect(freeinds), collect(tensors.parameters), map(p -> collect(p.parameters[1]), tensorinds.parameters))
     quote
         @_inline_meta
         $TT($(exps...))
