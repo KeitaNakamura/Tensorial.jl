@@ -210,25 +210,17 @@ end
             for (XYZ, zyx) in ((:XZX, :xzx), (:XYX, :xyx), (:YXY, :yxy), (:YZY, :yzy), (:ZYZ, :zyz), (:ZXZ, :zxz),
                                (:XZY, :yzx), (:XYZ, :zyx), (:YXZ, :zxy), (:YZX, :xzy), (:ZYX, :xyz), (:ZXY, :yxz))
                 @test (@inferred rotmat(Vec(α,β,γ), sequence = XYZ))::Mat{3,3,T} ≈ (@inferred rotmat(Vec(γ,β,α), sequence = zyx))::Mat{3,3,T}
-                @test (@inferred rotmat(Vec(α,β,γ), sequence = XYZ))::Mat{3,3,T} ≈ (@inferred rotmat(Vec(rad2deg(α),rad2deg(β),rad2deg(γ)), sequence = XYZ, degree = true))::Mat{3,3,T}
-                @test (@inferred rotmat(Vec(α,β,γ), sequence = zyx))::Mat{3,3,T} ≈ (@inferred rotmat(Vec(rad2deg(α),rad2deg(β),rad2deg(γ)), sequence = zyx, degree = true))::Mat{3,3,T}
             end
-            # 2D rotmat
-            @test (@inferred rotmat(α))::Mat{2,2,T} ≈ (@inferred rotmat(rad2deg(α), degree = true))
+            # 2D/3D rotmat
             @test (@inferred rotmat(α)) ≈ (@inferred rotmatx(α))[[2,3], [2,3]]
             @test (@inferred rotmat(α)) ≈ (@inferred rotmaty(α))[[3,1], [3,1]]
             @test (@inferred rotmat(α)) ≈ (@inferred rotmatz(α))[[1,2], [1,2]]
-            # 3D rotmat
-            @test (@inferred rotmatx(α))::Mat{3,3,T} ≈ (@inferred rotmatx(rad2deg(α), degree = true))::Mat{3,3,T}
-            @test (@inferred rotmaty(α))::Mat{3,3,T} ≈ (@inferred rotmaty(rad2deg(α), degree = true))::Mat{3,3,T}
-            @test (@inferred rotmatz(α))::Mat{3,3,T} ≈ (@inferred rotmatz(rad2deg(α), degree = true))::Mat{3,3,T}
             for dim in (2, 3)
                 a = normalize(rand(Vec{dim, T}))
                 b = normalize(rand(Vec{dim, T}))
                 @test (@inferred rotmat(a => b))::Mat{dim, dim, T} ⋅ a ≈ b
             end
             @test (@inferred rotmat(T(π/3), Vec{3, T}(0,0,1)))::Mat{3,3,T} ⋅ Vec(1,0,0) ≈ [cos(π/3), sin(π/3), 0]
-            @test (@inferred rotmat(T(60), Vec{3, T}(0,0,1); degree = true))::Mat{3,3,T} ⋅ Vec(1,0,0) ≈ [cos(π/3), sin(π/3), 0]
         end
         @test_throws Exception rotmat(Vec(1,0) => Vec(1,1)) # length of two vectors must be the same
     end

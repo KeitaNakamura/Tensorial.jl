@@ -75,7 +75,7 @@ Base.real(q::Quaternion) = q.scalar
 Base.isfinite(q::Quaternion) = prod(map(isfinite, Tuple(q)))
 
 """
-    quaternion(θ, n::Vec; [normalize = true, degree = false])
+    quaternion(θ, n::Vec; normalize = true)
 
 Construct `Quaternion` from angle `θ` and axis `n` as
 
@@ -100,10 +100,7 @@ julia> (q * x / q).vector ≈ rotmatz(π/4) ⋅ x
 true
 ```
 """
-function quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degree::Bool = false) where {T}
-    if degree
-        θ = deg2rad(θ)
-    end
+function quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true) where {T}
     ϕ = θ / 2
     if normalize
         n = LinearAlgebra.normalize(x) * sin(ϕ)
@@ -112,10 +109,10 @@ function quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true, degr
     end
     @inbounds Quaternion{T}(cos(ϕ), n)
 end
-quaternion(T::Type, θ::Real, x::Vec{2}; normalize::Bool = true, degree::Bool = false) =
-    @inbounds quaternion(T, θ, Vec(x[1], x[2], 0); normalize = normalize, degree = degree)
-quaternion(θ::Real, x::Vec; normalize::Bool = true, degree::Bool = false) =
-    quaternion(promote_type(typeof(θ), eltype(x)), θ, x; normalize = normalize, degree = degree)
+quaternion(T::Type, θ::Real, x::Vec{2}; normalize::Bool = true) =
+    @inbounds quaternion(T, θ, Vec(x[1], x[2], 0); normalize = normalize)
+quaternion(θ::Real, x::Vec; normalize::Bool = true) =
+    quaternion(promote_type(typeof(θ), eltype(x)), θ, x; normalize = normalize)
 
 Base.length(::Quaternion) = 4
 Base.size(::Quaternion) = (4,)

@@ -368,7 +368,7 @@ end
 
 # rotate
 """
-    rotmat(θ::Number; degree::Bool = false)
+    rotmat(θ::Number)
 
 Construct 2D rotation matrix.
 
@@ -381,23 +381,20 @@ Construct 2D rotation matrix.
 
 # Examples
 ```jldoctest
-julia> rotmat(30, degree = true)
+julia> rotmat(deg2rad(30))
 2×2 Tensor{Tuple{2, 2}, Float64, 2, 4}:
  0.866025  -0.5
  0.5        0.866025
 ```
 """
-@inline function rotmat(θ::Number; degree::Bool = false)
-    if degree
-        θ = deg2rad(θ)
-    end
+@inline function rotmat(θ::Number)
     sinθ, cosθ = sincos(θ)
     @Mat [cosθ -sinθ
           sinθ  cosθ]
 end
 
 """
-    rotmat(θ::Vec{3}; sequence::Symbol, degree::Bool = false)
+    rotmat(θ::Vec{3}; sequence::Symbol)
 
 Convert Euler angles to rotation matrix.
 Use 3 characters belonging to the set (X, Y, Z) for intrinsic rotations,
@@ -405,7 +402,7 @@ or (x, y, z) for extrinsic rotations.
 
 # Examples
 ```jldoctest
-julia> α, β, γ = rand(Vec{3});
+julia> α, β, γ = map(deg2rad, rand(3));
 
 julia> rotmat(Vec(α,β,γ), sequence = :XYZ) ≈ rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatz(γ)
 true
@@ -417,11 +414,8 @@ julia> rotmat(Vec(α,β,γ), sequence = :XYZ) ≈ rotmat(Vec(γ,β,α), sequence
 true
 ```
 """
-function rotmat(θ::Vec{3}; sequence::Symbol, degree::Bool = false)
+function rotmat(θ::Vec{3}; sequence::Symbol)
     @inbounds α, β, γ = θ[1], θ[2], θ[3]
-    if degree
-        α, β, γ = map(deg2rad, (α, β, γ))
-    end
     # intrinsic
     sequence == :XZX && return rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatz(γ)
     sequence == :XYX && return rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatx(γ)
@@ -452,7 +446,7 @@ function rotmat(θ::Vec{3}; sequence::Symbol, degree::Bool = false)
 end
 
 """
-    rotmatx(θ::Number; degree::Bool = false)
+    rotmatx(θ::Number)
 
 Construct rotation matrix around `x` axis.
 
@@ -464,10 +458,7 @@ Construct rotation matrix around `x` axis.
 \\end{bmatrix}
 ```
 """
-@inline function rotmatx(θ::Number; degree::Bool = false)
-    if degree
-        θ = deg2rad(θ)
-    end
+@inline function rotmatx(θ::Number)
     o = one(θ)
     z = zero(θ)
     sinθ, cosθ = sincos(θ)
@@ -477,7 +468,7 @@ Construct rotation matrix around `x` axis.
 end
 
 """
-    rotmaty(θ::Number; degree::Bool = false)
+    rotmaty(θ::Number)
 
 Construct rotation matrix around `y` axis.
 
@@ -489,10 +480,7 @@ Construct rotation matrix around `y` axis.
 \\end{bmatrix}
 ```
 """
-@inline function rotmaty(θ::Number; degree::Bool = false)
-    if degree
-        θ = deg2rad(θ)
-    end
+@inline function rotmaty(θ::Number)
     o = one(θ)
     z = zero(θ)
     sinθ, cosθ = sincos(θ)
@@ -502,7 +490,7 @@ Construct rotation matrix around `y` axis.
 end
 
 """
-    rotmatz(θ::Number; degree::Bool = false)
+    rotmatz(θ::Number)
 
 Construct rotation matrix around `z` axis.
 
@@ -514,10 +502,7 @@ Construct rotation matrix around `z` axis.
 \\end{bmatrix}
 ```
 """
-@inline function rotmatz(θ::Number; degree::Bool = false)
-    if degree
-        θ = deg2rad(θ)
-    end
+@inline function rotmatz(θ::Number)
     o = one(θ)
     z = zero(θ)
     sinθ, cosθ = sincos(θ)
@@ -568,7 +553,7 @@ function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {d
 end
 
 """
-    rotmat(θ, n::Vec; degree::Bool = false)
+    rotmat(θ, n::Vec)
 
 Construct rotation matrix from angle `θ` and axis `n`.
 
@@ -593,10 +578,7 @@ julia> rotmat(π/2, n) ⋅ x
  0.0
 ```
 """
-function rotmat(θ::Number, n::Vec{3}; degree::Bool = false)
-    if degree
-        θ = deg2rad(θ)
-    end
+function rotmat(θ::Number, n::Vec{3})
     n′ = normalize(n)
     sinθ, cosθ = sincos(θ)
     cosθ*I + sinθ*skew(n′) + (1-cosθ)*(n′⊗n′)
