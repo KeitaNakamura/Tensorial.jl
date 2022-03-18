@@ -56,6 +56,7 @@ export
 # continuum mechanics
     vol,
     dev,
+    vonmises,
     stress_invariants,
     deviatoric_stress_invariants,
 # voigt

@@ -36,6 +36,13 @@
             @test (vol(SymmetricFourthOrderTensor{3}) + dev(SymmetricFourthOrderTensor{3}))::SymmetricFourthOrderTensor{3} ≈ one(SymmetricFourthOrderTensor{3})
         end
     end
+    @testset "vonmises" begin
+        for T in (Float32, Float64)
+            σ = rand(SymmetricSecondOrderTensor{3, T})
+            J2 = deviatoric_stress_invariants(σ)[2]
+            @test (@inferred vonmises(σ))::T ≈ √(3J2)
+        end
+    end
     @testset "stress invariants" begin
         for T in (Float32, Float64), x in (rand(SecondOrderTensor{3, T}),
                                            rand(SymmetricSecondOrderTensor{3, T}))

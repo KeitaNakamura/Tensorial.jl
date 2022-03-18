@@ -183,6 +183,32 @@ true
 @inline dev(x::Type{TT}) where {TT <: Tensor} = one(x) - vol(x)
 
 """
+    vonmises(::AbstractSymmetricSecondOrderTensor{3})
+
+Compute the von Mises stress.
+
+```math
+q = \\sqrt{\\frac{3}{2} \\mathrm{dev}(\\bm{\\sigma}) : \\mathrm{dev}(\\bm{\\sigma})} = \\sqrt{3J_2}
+```
+
+# Examples
+```jldoctest
+julia> σ = rand(SymmetricSecondOrderTensor{3})
+3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
+ 0.325977  0.549051  0.218587
+ 0.549051  0.894245  0.353112
+ 0.218587  0.353112  0.394255
+
+julia> vonmises(σ)
+1.3078860814690232
+```
+"""
+@inline function vonmises(σ::SymmetricSecondOrderTensor{3, T}) where {T}
+    s = dev(σ)
+    sqrt(T(3/2) * (s ⊡ s))
+end
+
+"""
     stress_invariants(::AbstractSecondOrderTensor{3})
     stress_invariants(::AbstractSymmetricSecondOrderTensor{3})
 
