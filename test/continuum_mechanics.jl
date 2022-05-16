@@ -52,12 +52,24 @@
             @test I₂ ≈ (tr(x)^2 - tr(x^2)) / 2
             @test I₃ ≈ det(x)
             @test x^3 - I₁*x^2 + I₂*x - I₃*I ≈ zero(x)  atol = sqrt(eps(T))
+            if x isa SymmetricSecondOrderTensor # check principal stress version
+                I₁′, I₂′, I₃′ = (@inferred stress_invariants(eigen(x).values))::NTuple{3, T}
+                @test I₁ ≈ I₁′
+                @test I₂ ≈ I₂′
+                @test I₃ ≈ I₃′
+            end
             # deviatoric stress invariants
             J₁, J₂, J₃ = (@inferred deviatoric_stress_invariants(x))::NTuple{3, T}
             @test J₁ ≈ 0
             @test J₂ ≈ dev(x) ⊡ dev(x)' / 2
             @test J₃ ≈ det(dev(x))
             @test dev(x)^3 - J₁*dev(x)^2 - J₂*dev(x) - J₃*I ≈ zero(x)  atol = sqrt(eps(T))
+            if x isa SymmetricSecondOrderTensor # check principal stress version
+                J₁′, J₂′, J₃′ = (@inferred deviatoric_stress_invariants(eigen(x).values))::NTuple{3, T}
+                @test J₁ ≈ J₁′
+                @test J₂ ≈ J₂′
+                @test J₃ ≈ J₃′
+            end
         end
     end
 end
