@@ -77,6 +77,10 @@ end
                 Z[i,j,k,l,m,n] = X[i,j,k] * Y[l,m,n]
             end
             @test z ≈ Z
+            # dimension error
+            A = rand(Mat{3,3,T})
+            x = rand(Vec{3,T})
+            @test_throws Exception A ⊡ x
         end
     end
     @testset "otimes/dot/norm/normalize" begin
