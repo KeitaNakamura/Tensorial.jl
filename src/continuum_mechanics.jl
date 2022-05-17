@@ -211,6 +211,7 @@ end
 """
     stress_invariants(::AbstractSecondOrderTensor{3})
     stress_invariants(::AbstractSymmetricSecondOrderTensor{3})
+    stress_invariants(::Vec{3})
 
 Return a tuple storing stress invariants.
 
@@ -242,10 +243,18 @@ julia> I₁, I₂, I₃ = stress_invariants(σ)
     I3 = det(σ)
     I1, I2, I3
 end
+@inline function stress_invariants(σ::Vec{3})
+    @inbounds σ1, σ2, σ3 = σ
+    I1 = σ1 + σ2 + σ3
+    I2 = σ1*σ2 + σ2*σ3 + σ1*σ3
+    I3 = σ1 * σ2 * σ3
+    I1, I2, I3
+end
 
 """
     deviatoric_stress_invariants(::AbstractSecondOrderTensor{3})
     deviatoric_stress_invariants(::AbstractSymmetricSecondOrderTensor{3})
+    deviatoric_stress_invariants(::Vec{3})
 
 Return a tuple storing deviatoric stress invariants.
 
@@ -269,9 +278,8 @@ julia> J₁, J₂, J₃ = deviatoric_stress_invariants(σ)
 (0.0, 0.5701886673667987, 0.14845380911930367)
 ```
 """
-@inline function deviatoric_stress_invariants(σ::AbstractSquareTensor{3})
+@inline function deviatoric_stress_invariants(σ::Union{AbstractSquareTensor{3}, Vec{3}})
     I1, I2, I3 = stress_invariants(σ)
-    s = dev(σ)
     J1 = zero(eltype(σ))
     J2 = I1^2/3 - I2             # tr(s^2) / 2
     J3 = 2I1^3/27 - I1*I2/3 + I3 # tr(s^3) / 3
