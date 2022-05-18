@@ -78,6 +78,7 @@ Following symbols are also available for specific contractions:
 """
 @generated function contraction(x::AbstractTensor, y::AbstractTensor, ::Val{N}) where {N}
     TT, exps = contraction_exprs(x, y, N)
+    contraction(Space(x), Space(y), Val(N)) # check dimensions
     quote
         @_inline_meta
         tensors = (x, y)
