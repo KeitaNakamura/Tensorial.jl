@@ -156,6 +156,14 @@
                 @test (@inferred Mat{2, 3, T}(2I))::Mat{2, 3, T} == Matrix(2I, 2, 3)
             end
         end
+        @testset "Levi-Civita tensor" begin
+            for N in 2:4
+                ϵ = (@inferred levicivita(Val(N)))::Tensor{NTuple{N, N}, Int}
+                for I in CartesianIndices(ϵ)
+                    @test ϵ[I] == Combinatorics.levicivita(collect(Tuple(I)))
+                end
+            end
+        end
     end
 end
 

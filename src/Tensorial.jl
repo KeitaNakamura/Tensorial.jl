@@ -40,6 +40,8 @@ export
     @Mat,
     @Tensor,
     @einsum,
+# special tensors
+    levicivita,
 # operations
     contraction,
     otimes,

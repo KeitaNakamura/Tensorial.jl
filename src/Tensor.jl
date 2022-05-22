@@ -154,6 +154,44 @@ end
     TT((i,j,k,l) -> (δ(i,k)*δ(j,l) + δ(i,l)*δ(j,k))/2)
 end
 
+"""
+    levicivita(::Val{N} = Val(3))
+
+Return `N` dimensional Levi-Civita tensor.
+
+# Examples
+```jldoctest
+julia> ϵ = levicivita()
+3×3×3 Tensor{Tuple{3, 3, 3}, Int64, 3, 27}:
+[:, :, 1] =
+ 0   0  0
+ 0   0  1
+ 0  -1  0
+
+[:, :, 2] =
+ 0  0  -1
+ 0  0   0
+ 1  0   0
+
+[:, :, 3] =
+  0  1  0
+ -1  0  0
+  0  0  0
+```
+"""
+@pure function levicivita(::Val{dim} = Val(3)) where {dim}
+    Tensor{NTuple{dim, dim}, Int}(sgn)
+end
+@pure function sgn(x::Int...)
+    N = length(x)
+    even = true
+    @inbounds for i in 1:N, j in i+1:N
+        x[i] == x[j] && return 0
+        even ⊻= x[i] > x[j]
+    end
+    even ? 1 : -1
+end
+
 # UniformScaling
 @inline function (TT::Type{<: Tensor})(I::UniformScaling)
     TT((i,j) -> I[i,j])
