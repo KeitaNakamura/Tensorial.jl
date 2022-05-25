@@ -123,6 +123,10 @@
                     @test (@inferred TT(data...))::TT |> Tuple == data
                 end
             end
+            for T in (Float32, Float64)
+                x = rand(Vec{3, T})
+                @test Vec(x) ≈ x
+            end
         end
         @testset "Identity tensor" begin
             # second order tensor
