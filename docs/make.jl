@@ -21,7 +21,7 @@ makedocs(;
         ],
         "Manual" => [
             "Tensor Type.md",
-            # "Constructors.md",
+            "Constructors.md",
             "Tensor Operations.md",
             "Continuum Mechanics.md",
             "Voigt form.md",
