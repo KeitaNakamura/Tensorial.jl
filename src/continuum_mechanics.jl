@@ -23,7 +23,7 @@ julia> mean(x)
     vol(::AbstractSymmetricSecondOrderTensor{3})
 
 Compute the volumetric part of a square tensor.
-Supported only for tensors in 3D.
+This is only available in 3D.
 
 # Examples
 ```jldoctest
@@ -53,7 +53,7 @@ end
     vol(::AbstractVec{3})
 
 Compute the volumetric part of a vector (assuming principal values of stresses and strains).
-Supported only for tensors in 3D.
+This is only available in 3D.
 
 # Examples
 ```jldoctest
@@ -80,7 +80,7 @@ true
     vol(::Type{SymmetricFourthOrderTensor{3}})
 
 Construct volumetric fourth order identity tensor.
-Supported only for tensors in 3D.
+This is only available in 3D.
 
 # Examples
 ```jldoctest
@@ -112,7 +112,7 @@ end
     dev(::AbstractSymmetricSecondOrderTensor{3})
 
 Compute the deviatoric part of a square tensor.
-Supported only for tensors in 3D.
+This is only available in 3D.
 
 # Examples
 ```jldoctest
@@ -138,7 +138,7 @@ julia> tr(dev(x))
     dev(::AbstractVec{3})
 
 Compute the deviatoric part of a vector (assuming principal values of stresses and strains).
-Supported only for tensors in 3D.
+This is only available in 3D.
 
 # Examples
 ```jldoctest
@@ -165,7 +165,7 @@ true
     dev(::Type{SymmetricFourthOrderTensor{3}})
 
 Construct deviatoric fourth order identity tensor.
-Supported only for tensors in 3D.
+This is only available in 3D.
 
 # Examples
 ```jldoctest

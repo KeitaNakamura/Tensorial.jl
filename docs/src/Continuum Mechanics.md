@@ -8,6 +8,7 @@ Tensor operations for continuum mechanics.
 
 ```@docs
 mean(::Tensorial.AbstractSquareTensor{3})
+vonmises
 ```
 
 ## Deviatoric--volumetric additive split
