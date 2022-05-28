@@ -85,6 +85,7 @@ end
 end
 @inline Vec(data::Tuple{Vararg{Any, dim}}) where {dim} = Vec{dim}(data)
 @inline Vec{dim}(data::Tuple) where {dim} = (T = promote_ntuple_eltype(data); Vec{dim, T}(data))
+@inline Vec(x::AbstractVec) = vec(x)
 
 # macros
 macro Vec(ex)
