@@ -223,11 +223,11 @@ end
 @inline symmetric(x::AbstractSecondOrderTensor{dim}) where {dim} =
     SymmetricSecondOrderTensor{dim}((i,j) -> @inbounds i == j ? x[i,j] : (x[i,j] + x[j,i]) / 2)
 @inline symmetric(x::AbstractSecondOrderTensor{1}) =
-    @inbounds SymmetricSecondOrderTensor{1}(x[1,1])
+    @inbounds SymmetricSecondOrderTensor{1}(x[1])
 @inline symmetric(x::AbstractSecondOrderTensor{2}) =
-    @inbounds SymmetricSecondOrderTensor{2}(x[1,1], (x[2,1]+x[1,2])/2, x[2,2])
+    @inbounds SymmetricSecondOrderTensor{2}(x[1], (x[2]+x[3])/2, x[4])
 @inline symmetric(x::AbstractSecondOrderTensor{3}) =
-    @inbounds SymmetricSecondOrderTensor{3}(x[1,1], (x[2,1]+x[1,2])/2, (x[3,1]+x[1,3])/2, x[2,2], (x[3,2]+x[2,3])/2, x[3,3])
+    @inbounds SymmetricSecondOrderTensor{3}(x[1], (x[2]+x[4])/2, (x[3]+x[7])/2, x[5], (x[6]+x[8])/2, x[9])
 
 """
     skew(::AbstractSecondOrderTensor)
