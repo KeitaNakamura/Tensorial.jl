@@ -31,7 +31,7 @@ _indexing(parent_size::Int, ::Type{Colon}, ex) = [i for i in 1:parent_size]
 _indexing(parent_size::Int, ::Type{Val{x}}, ex) where {x} = collect(x)
 @generated function _getindex(::Space{S}, x::AbstractTensor, inds::Union{Int, StaticArray{<: Any, Int}, Colon, Val}...) where {S}
     newspace = Space(S)
-    TT = tensortype(newspace)
+    TT = tensortype(newspace){eltype(x)}
     inds_dim = map(_indexing, tensorsize(Space(x)), inds, [:(inds[$i]) for i in 1:length(inds)]) # indices on each dimension
     inds_all = collect(Iterators.product(inds_dim...)) # product of indices to get all indices
     if prod(tensorsize(newspace)) == length(inds_all)

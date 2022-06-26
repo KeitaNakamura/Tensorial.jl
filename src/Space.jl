@@ -144,7 +144,7 @@ _collect(x::Any) = collect(x)
 _collect(::Nothing) = nothing
 
 _remove_val(x) = x
-_remove_val(::Val{x}) where {x} = SVector(x...)
+_remove_val(::Val{x}) where {x} = SVector{length(x), Int}(x...)
 @generated function Base.getindex(space::Space{S}, inds::Union{Int, StaticVector{<: Any, Int}, Colon, Val}...) where {S}
     dims = tensorsize(Space(S))
     indices = map(static_dynamic_index, dims, inds)
