@@ -1,4 +1,77 @@
 """
+    adj(::AbstractSecondOrderTensor)
+    adj(::AbstractSymmetricSecondOrderTensor)
+
+Compute the adjugate matrix.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3});
+
+julia> Tensorial.adj(x) / det(x) ≈ inv(x)
+true
+```
+"""
+function adj end
+
+@inline adj(x::AbstractSquareTensor{1}) = one(x)
+@generated function adj(x::AbstractSquareTensor{2})
+    x_11 = getindex_expr(x, :x, 1, 1)
+    x_21 = getindex_expr(x, :x, 2, 1)
+    x_12 = getindex_expr(x, :x, 1, 2)
+    x_22 = getindex_expr(x, :x, 2, 2)
+    exps = [x_22, :(-$x_21), :(-$x_12), x_11]
+    quote
+        @_inline_meta
+        @inbounds typeof(x)($(exps[indices(x)]...))
+    end
+end
+@generated function adj(x::AbstractSquareTensor{3})
+    x_11 = getindex_expr(x, :x, 1, 1)
+    x_21 = getindex_expr(x, :x, 2, 1)
+    x_31 = getindex_expr(x, :x, 3, 1)
+    x_12 = getindex_expr(x, :x, 1, 2)
+    x_22 = getindex_expr(x, :x, 2, 2)
+    x_32 = getindex_expr(x, :x, 3, 2)
+    x_13 = getindex_expr(x, :x, 1, 3)
+    x_23 = getindex_expr(x, :x, 2, 3)
+    x_33 = getindex_expr(x, :x, 3, 3)
+    exps = [:( ($x_22*$x_33 - $x_23*$x_32)),
+            :(-($x_21*$x_33 - $x_23*$x_31)),
+            :( ($x_21*$x_32 - $x_22*$x_31)),
+            :(-($x_12*$x_33 - $x_13*$x_32)),
+            :( ($x_11*$x_33 - $x_13*$x_31)),
+            :(-($x_11*$x_32 - $x_12*$x_31)),
+            :( ($x_12*$x_23 - $x_13*$x_22)),
+            :(-($x_11*$x_23 - $x_13*$x_21)),
+            :( ($x_11*$x_22 - $x_12*$x_21))]
+    quote
+        @_inline_meta
+        @inbounds typeof(x)($(exps[indices(x)]...))
+    end
+end
+@generated function adj(x::AbstractSquareTensor)
+    exps = map(CartesianIndices(x)) do I
+        j, i = Tuple(I)
+        :($((-1)^(i+j)) * det(adj_ij(x, Val($i), Val($j))))
+    end
+    quote
+        @_inline_meta
+        @inbounds typeof(x)($(exps[indices(x)]...))
+    end
+end
+
+@generated function adj_ij(x::AbstractSquareTensor, ::Val{i}, ::Val{j}) where {i, j}
+    quote
+        @_inline_meta
+        vcat(
+            hcat((@Tensor x[1:i-1,   1:j-1]), (@Tensor x[1:i-1,   j+1:end])),
+            hcat((@Tensor x[i+1:end, 1:j-1]), (@Tensor x[i+1:end, j+1:end])),
+        )
+    end
+end
+
+"""
     inv(::AbstractSecondOrderTensor)
     inv(::AbstractSymmetricSecondOrderTensor)
     inv(::AbstractFourthOrderTensor)
@@ -26,48 +99,9 @@ true
 """
 function inv end
 
-@inline function _inv(x::AbstractSquareTensor{1})
-    typeof(x)(1/det(x))
-end
-
-@generated function _inv(x::AbstractSquareTensor{2})
-    x_11 = getindex_expr(x, :x, 1, 1)
-    x_21 = getindex_expr(x, :x, 2, 1)
-    x_12 = getindex_expr(x, :x, 1, 2)
-    x_22 = getindex_expr(x, :x, 2, 2)
-    exps = [x_22, :(-$x_21), :(-$x_12), x_11]
-    quote
-        @_inline_meta
-        detinv = 1 / det(x)
-        @inbounds typeof(x)($(exps[indices(x)]...)) * detinv
-    end
-end
-
-@generated function _inv(x::AbstractSquareTensor{3})
-    x_11 = getindex_expr(x, :x, 1, 1)
-    x_21 = getindex_expr(x, :x, 2, 1)
-    x_31 = getindex_expr(x, :x, 3, 1)
-    x_12 = getindex_expr(x, :x, 1, 2)
-    x_22 = getindex_expr(x, :x, 2, 2)
-    x_32 = getindex_expr(x, :x, 3, 2)
-    x_13 = getindex_expr(x, :x, 1, 3)
-    x_23 = getindex_expr(x, :x, 2, 3)
-    x_33 = getindex_expr(x, :x, 3, 3)
-    exps = [:( ($x_22*$x_33 - $x_23*$x_32) * detinv),
-            :(-($x_21*$x_33 - $x_23*$x_31) * detinv),
-            :( ($x_21*$x_32 - $x_22*$x_31) * detinv),
-            :(-($x_12*$x_33 - $x_13*$x_32) * detinv),
-            :( ($x_11*$x_33 - $x_13*$x_31) * detinv),
-            :(-($x_11*$x_32 - $x_12*$x_31) * detinv),
-            :( ($x_12*$x_23 - $x_13*$x_22) * detinv),
-            :(-($x_11*$x_23 - $x_13*$x_21) * detinv),
-            :( ($x_11*$x_22 - $x_12*$x_21) * detinv)]
-    quote
-        @_inline_meta
-        detinv = 1 / det(x)
-        @inbounds typeof(x)($(exps[indices(x)]...))
-    end
-end
+@inline _inv(x::AbstractSquareTensor{1}) = adj(x) * inv(det(x))
+@inline _inv(x::AbstractSquareTensor{2}) = adj(x) * inv(det(x))
+@inline _inv(x::AbstractSquareTensor{3}) = adj(x) * inv(det(x))
 
 @inline function _inv(x::AbstractSquareTensor{dim}) where {dim}
     typeof(x)(inv(SMatrix{dim, dim}(x)))
