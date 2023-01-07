@@ -1,3 +1,12 @@
+struct SquareMatrix{n, T, L} <: AbstractTensor{Tuple{n, n}, T, 2}
+    data::NTuple{L, T}
+end
+SquareMatrix{n, T, L}(x::AbstractMatrix) where {n, T, L} = SquareMatrix{n, T, L}(Tuple(SecondOrderTensor{n}(x)))
+Base.Tuple(x::SquareMatrix) = x.data
+Base.getindex(x::SquareMatrix, i::Int) = x.data[i]
+Base.rand(::Type{SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(Tensorial.fill_tuple(()->rand(T), Val(n*n)))
+Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(Tuple(one(SecondOrderTensor{n, T})))
+
 @testset "Automatic differentiation" begin
     @testset "Real -> Real" begin
         for T in (Float32, Float64, Int)
@@ -25,10 +34,15 @@
         I₁ = x -> tr(x)
         I₂ = x -> (tr(x)^2 - tr(x^2)) / 2
         I₃ = x -> det(x)
-        for RetType in (SecondOrderTensor, SymmetricSecondOrderTensor)
+        for GivenType in (SecondOrderTensor, SymmetricSecondOrderTensor, SquareMatrix)
             for T in (Float32, Float64), dim in 1:4
                 Random.seed!(1234)
-                x = rand(RetType{dim, T})
+                x = rand(GivenType{dim, T})
+                if GivenType == SquareMatrix
+                    RetType{dim, T} = SecondOrderTensor{dim, T}
+                else
+                    RetType{dim, T} = GivenType{dim, T}
+                end
                 @test (@inferred gradient(I₁, x))::RetType{dim, T} ≈ one(x)
                 @test (@inferred gradient(I₂, x))::RetType{dim, T} ≈ I₁(x)*one(x) - x'
                 @test (@inferred gradient(I₃, x))::RetType{dim, T} ≈ det(x)*inv(x)'
@@ -47,11 +61,14 @@
         for T in (Float32, Float64), dim in 1:4
             x = rand(SecondOrderTensor{dim, T})
             y = rand(SymmetricSecondOrderTensor{dim, T})
+            z = rand(SquareMatrix{dim, T})
             @test (@inferred gradient(identity, x))::FourthOrderTensor{dim, T} == one(FourthOrderTensor{dim, T})
             @test (@inferred gradient(identity, y))::SymmetricFourthOrderTensor{dim, T} == one(SymmetricFourthOrderTensor{dim, T})
+            @test (@inferred gradient(identity, z))::FourthOrderTensor{dim, T} == one(FourthOrderTensor{dim, T})
             @eval begin
                 @test (@inferred gradient(x -> one(SecondOrderTensor{$dim, Int}), $x))::FourthOrderTensor{$dim, Int} == zero(FourthOrderTensor{$dim, Int})
                 @test (@inferred gradient(x -> one(SecondOrderTensor{$dim, Int}), $y))::Tensor{Tuple{$dim,$dim,@Symmetry({$dim,$dim})}, Int} == zero(FourthOrderTensor{$dim, Int})
+                @test (@inferred gradient(x -> one(SquareMatrix{$dim, Int}), $z))::FourthOrderTensor{$dim, Int} == zero(FourthOrderTensor{$dim, Int})
             end
         end
     end

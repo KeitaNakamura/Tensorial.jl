@@ -3,7 +3,7 @@ using ForwardDiff: Dual, Tag, value, partials
 @inline function dualize(::Tg, x::Number) where {Tg <: Tag}
     Dual{Tg}(x, one(x))
 end
-@generated function dualize(::Tg, x::Tensor{S, T}) where {Tg <: Tag, S, T}
+@generated function dualize(::Tg, x::AbstractTensor{S, T}) where {Tg <: Tag, S, T}
      dups = duplicates(x)
      ex = Expr(:block, [:($(Symbol(:v_, i)) = v_1 / $i) for i in unique(dups) if i != 1]...)
      n = ncomponents(x)
@@ -20,11 +20,11 @@ end
      end
  end
 
-const NumberOrTensor = Union{Number, Tensor}
+const NumberOrTensor = Union{Number, AbstractTensor}
 
 @inline extract_value(v::NumberOrTensor, ::NumberOrTensor) = v
 @inline extract_value(v::Dual, ::NumberOrTensor) = value(v)
-@generated function extract_value(v::Tensor{S, <: Dual}, ::NumberOrTensor) where {S <: Tuple}
+@generated function extract_value(v::AbstractTensor{S, <: Dual}, ::NumberOrTensor) where {S <: Tuple}
     exps = [:(value(Tuple(v)[$i])) for i in 1:ncomponents(v)]
     quote
         @_inline_meta
@@ -34,8 +34,8 @@ end
 
 # Number case
 @inline extract_gradient(v::NumberOrTensor, ::Number) = zero(v)
-@inline extract_gradient(v::Number, x::Tensor{S}) where {S} = zero(Tensor{S, typeof(v)})
-@generated function extract_gradient(v::Tensor, x::Tensor)
+@inline extract_gradient(v::Number, x::AbstractTensor{S}) where {S} = zero(Tensor{S, typeof(v)})
+@generated function extract_gradient(v::AbstractTensor, x::AbstractTensor)
     S = otimes(Space(v), Space(x))
     TT = tensortype(S)
     quote
@@ -46,8 +46,8 @@ end
 
 # Dual case
 @inline extract_gradient(v::Dual, ::Number) = partials(v, 1)
-@inline extract_gradient(v::Dual, x::Tensor{S}) where {S} = Tensor{S}(partials(v).values)
-@generated function extract_gradient(v::Tensor{<: Tuple, <: Dual}, x::Tensor)
+@inline extract_gradient(v::Dual, x::AbstractTensor{S}) where {S} = Tensor{S}(partials(v).values)
+@generated function extract_gradient(v::AbstractTensor{<: Tuple, <: Dual}, x::AbstractTensor)
     S = otimes(Space(v), Space(x))
     TT = tensortype(S)
     exps = [:(partials(Tuple(v)[$i], $j)) for i in 1:ncomponents(v), j in 1:ncomponents(x)]
@@ -56,7 +56,7 @@ end
         @inbounds $TT($(exps...))
     end
 end
-@generated function extract_gradient(v::Tensor{S, <: Dual}, ::Number) where {S <: Tuple}
+@generated function extract_gradient(v::AbstractTensor{S, <: Dual}, ::Number) where {S <: Tuple}
     exps = [:(partials(Tuple(v)[$i], 1)) for i in 1:ncomponents(v)]
     return quote
         @_inline_meta
