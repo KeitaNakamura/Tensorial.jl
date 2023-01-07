@@ -23,7 +23,7 @@ function adj end
     exps = [x_22, :(-$x_21), :(-$x_12), x_11]
     quote
         @_inline_meta
-        @inbounds typeof(x)($(exps[indices(x)]...))
+        @inbounds typeof(x)(tuple($(exps[indices(x)]...)))
     end
 end
 @generated function adj(x::AbstractSquareTensor{3})
@@ -47,7 +47,7 @@ end
             :( ($x_11*$x_22 - $x_12*$x_21))]
     quote
         @_inline_meta
-        @inbounds typeof(x)($(exps[indices(x)]...))
+        @inbounds typeof(x)(tuple($(exps[indices(x)]...)))
     end
 end
 @generated function adj(x::AbstractSquareTensor)
@@ -57,7 +57,7 @@ end
     end
     quote
         @_inline_meta
-        @inbounds typeof(x)($(exps[indices(x)]...))
+        @inbounds typeof(x)(tuple($(exps[indices(x)]...)))
     end
 end
 

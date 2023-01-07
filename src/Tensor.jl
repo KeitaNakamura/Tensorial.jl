@@ -200,8 +200,6 @@ end
 
 # helpers
 Base.Tuple(x::Tensor) = x.data
-ncomponents(x::Tensor) = length(Tuple(x))
-ncomponents(::Type{<: Tensor{<: Any, <: Any, <: Any, L}}) where {L} = L
 @pure basetype(::Type{<: Tensor{S}}) where {S} = Tensor{S}
 @pure basetype(::Type{<: Tensor{S, T}}) where {S, T} = Tensor{S, T}
 
