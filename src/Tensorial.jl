@@ -97,4 +97,6 @@ include("quaternion.jl")
 const ⊗ = otimes
 const ⊡ = double_contraction
 
+include("precompile.jl")
+
 end # module
