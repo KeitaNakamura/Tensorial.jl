@@ -167,12 +167,11 @@ function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr)
 end
 
 # for dummy indices
-@inline function sumargs(x, ys...)
-    ret = prod(x)
-    @simd for i in eachindex(ys)
-        @inbounds ret += prod(ys[i])
+@inline function simdsum(x, ys...)
+    @inbounds @simd for y in ys
+        x += y
     end
-    ret
+    x
 end
 
 function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::Vector)
@@ -234,9 +233,9 @@ function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::
                 inds = ainds[whichindices[i]]
                 getindex_expr(t, :(tensors[$i]), inds...)
             end
-            Expr(:tuple, exps...)
+            :(*($(exps...)))
         end
-        :($sumargs($(xs...)))
+        :($simdsum($(xs...)))
     end
 
     TT, sumexps[tupleinds]
