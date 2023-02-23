@@ -23,7 +23,7 @@ function adj end
     exps = [x_22, :(-$x_21), :(-$x_12), x_11]
     quote
         @_inline_meta
-        @inbounds typeof(x)(tuple($(exps[indices(x)]...)))
+        @inbounds typeof(x)(tuple($(exps[indices_unique(x)]...)))
     end
 end
 @generated function adj(x::AbstractSquareTensor{3})
@@ -47,7 +47,7 @@ end
             :( ($x_11*$x_22 - $x_12*$x_21))]
     quote
         @_inline_meta
-        @inbounds typeof(x)(tuple($(exps[indices(x)]...)))
+        @inbounds typeof(x)(tuple($(exps[indices_unique(x)]...)))
     end
 end
 @generated function adj(x::AbstractSquareTensor)
@@ -57,7 +57,7 @@ end
     end
     quote
         @_inline_meta
-        @inbounds typeof(x)(tuple($(exps[indices(x)]...)))
+        @inbounds typeof(x)(tuple($(exps[indices_unique(x)]...)))
     end
 end
 
@@ -110,7 +110,7 @@ end
 @generated function toblocks(x::Mat{dim, dim}) where {dim}
     m = dim ÷ 2
     n = dim - m
-    inds = independent_indices(x)
+    inds = indices_all(x)
     a = [:(Tuple(x)[$(inds[I])]) for I in CartesianIndices((1:m, 1:m))]
     b = [:(Tuple(x)[$(inds[I])]) for I in CartesianIndices((1:m, m+1:dim))]
     c = [:(Tuple(x)[$(inds[I])]) for I in CartesianIndices((m+1:dim, 1:m))]

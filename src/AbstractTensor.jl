@@ -41,10 +41,9 @@ function Base.axes(TT::Type{<: AbstractTensor}, d::Int)
 end
 
 # indices
-for Indices in (:CartesianIndices, :LinearIndices)
-    @eval Base.$Indices(::Type{TT}) where {TT <: AbstractTensor} = $Indices(size(TT))
-end
-for func in (:independent_indices, :indices, :duplicates)
+Base.LinearIndices(::Type{TT}) where {TT <: AbstractTensor} = LinearIndices(size(TT))
+Base.CartesianIndices(::Type{TT}) where {TT <: AbstractTensor} = CartesianIndices(size(TT))
+for func in (:indices_all, :indices_unique, :indices_dup)
     @eval begin
         $func(::Type{TT}) where {S, TT <: AbstractTensor{S}} = $func(Space(S))
         $func(x::AbstractTensor) = $func(typeof(x))
@@ -65,7 +64,7 @@ ncomponents(x::AbstractTensor) = ncomponents(typeof(x))
     else
         # static getindex
         quote
-            inds = independent_indices(x)
+            inds = indices_all(x)
             :(Tuple($ex)[$(inds[i...])])
         end
     end

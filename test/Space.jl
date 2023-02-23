@@ -1,7 +1,5 @@
 @testset "Space" begin
     # basic
-    @test (@inferred length(Space(3,3))) == 2
-    @test (@inferred length(Space(Symmetry(3,3),3))) == 2
     @test (@inferred Tensorial.tensorsize(Space(Symmetry(3,3),3))) == (3,3,3)
     @test (@inferred Tensorial.tensororder(Space(Symmetry(3,3),3))) == 3
     @test (@inferred Tuple(Space(Symmetry(3,3),3))) == (Symmetry(3,3),3)

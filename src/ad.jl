@@ -4,7 +4,7 @@ using ForwardDiff: Dual, Tag, value, partials
     Dual{Tg}(x, one(x))
 end
 @generated function dualize(::Tg, x::AbstractTensor{S, T}) where {Tg <: Tag, S, T}
-     dups = duplicates(x)
+     dups = indices_dup(x)
      ex = Expr(:block, [:($(Symbol(:v_, i)) = v_1 / $i) for i in unique(dups) if i != 1]...)
      n = ncomponents(x)
      exps = map(1:n) do i

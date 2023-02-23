@@ -20,25 +20,25 @@
     end
 end
 
-@inline function Base.getindex(x::AbstractTensor, inds::Union{Int, StaticArray{<: Any, Int}, Colon, Val}...)
+@inline function Base.getindex(x::AbstractTensor, indices::Union{Int, StaticArray{<: Any, Int}, StaticIndex, Colon}...)
     @_propagate_inbounds_meta
-    _getindex(Space(x)[inds...], x, inds...)
+    _getindex(Space(x)[indices...], x, indices...)
 end
 
 _indexing(parent_size::Int, ::Type{Int}, ex) = [ex]
 _indexing(parent_size::Int, ::Type{<: StaticVector{n, Int}}, ex) where {n} = [:($ex[$i]) for i in 1:n]
 _indexing(parent_size::Int, ::Type{Colon}, ex) = [i for i in 1:parent_size]
-_indexing(parent_size::Int, ::Type{Val{x}}, ex) where {x} = collect(x)
-@generated function _getindex(::Space{S}, x::AbstractTensor, inds::Union{Int, StaticArray{<: Any, Int}, Colon, Val}...) where {S}
+_indexing(parent_size::Int, ::Type{StaticIndex{x}}, ex) where {x} = collect(x)
+@generated function _getindex(::Space{S}, x::AbstractTensor, indices::Union{Int, StaticArray{<: Any, Int}, StaticIndex, Colon}...) where {S}
     newspace = Space(S)
     TT = tensortype(newspace){eltype(x)}
-    inds_dim = map(_indexing, tensorsize(Space(x)), inds, [:(inds[$i]) for i in 1:length(inds)]) # indices on each dimension
+    inds_dim = map(_indexing, tensorsize(Space(x)), indices, [:(indices[$i]) for i in 1:length(indices)]) # indices on each dimension
     inds_all = collect(Iterators.product(inds_dim...)) # product of indices to get all indices
     if prod(tensorsize(newspace)) == length(inds_all)
-        exps = map(i -> getindex_expr(x, :x, inds_all[i]...), indices(newspace))
+        exps = map(i -> getindex_expr(x, :x, inds_all[i]...), indices_unique(newspace))
     else # this is for `resize` function
-        exps = map(indices(newspace)) do i
-            I = CartesianIndices(newspace)[i]
+        exps = map(indices_unique(newspace)) do i
+            I = CartesianIndices(tensorsize(newspace))[i]
             if checkbounds(Bool, inds_all, I)
                 getindex_expr(x, :x, inds_all[I]...)
             else
@@ -126,11 +126,12 @@ end
     end
 end
 
-@generated function resize(x::AbstractTensor{<: Any, <: Any, N}, inds::Vararg{Val, N}) where {N}
-    exps = [Base.OneTo(only(I.parameters)) for I in inds]
+@generated function resize(x::AbstractTensor{<: Any, <: Any, N}, I::Vararg{Val, N}) where {N}
+    dims = map(i->only(i.parameters)::Int, I)
+    inds = map(n->StaticIndex(1:n), dims)
     colons = [Colon() for _ in 1:ndims(x)]
     quote
-        newspace = _getindex(Space(x), Val(tuple($(exps...))))
+        newspace = _getindex(Space(x), $(inds...))
         _getindex(newspace, x, $(colons...))
     end
 end

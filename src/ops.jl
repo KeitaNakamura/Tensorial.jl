@@ -1,7 +1,7 @@
 # simd version is defined in simd.jl
 @generated function _map(f, xs::Vararg{AbstractTensor, N}) where {N}
     S = promote_space(map(Space, xs)...)
-    exps = map(indices(S)) do i
+    exps = map(indices_unique(S)) do i
         vals = [:(xs[$j][$i]) for j in 1:N]
         :(f($(vals...)))
     end
@@ -206,11 +206,11 @@ end
 for (uplo, filter) in ((:U, (inds,i,j) -> i ≤ j ? inds[i,j] : inds[j,i]),
                        (:L, (inds,i,j) -> i ≥ j ? inds[i,j] : inds[j,i]))
     @eval @generated function $(Symbol(:symmetric, uplo))(x::AbstractSecondOrderTensor{dim}) where {dim}
-        exps = [:(Tuple(x)[$($filter(independent_indices(x), Tuple(I)...))]) for I in CartesianIndices(x)]
+        exps = [:(Tuple(x)[$($filter(indices_all(x), Tuple(I)...))]) for I in CartesianIndices(x)]
         TT = SymmetricSecondOrderTensor{dim}
         quote
             @_inline_meta
-            @inbounds $TT($(exps[indices(TT)]...))
+            @inbounds $TT($(exps[indices_unique(TT)]...))
         end
     end
 end
@@ -363,7 +363,7 @@ end
     quote
         @_inline_meta
         tensors = (x, y)
-        @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices(x)]...))
+        @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices_unique(x)]...))
     end
 end
 
@@ -630,7 +630,7 @@ julia> R ⋅ A ⋅ R'
         @_inline_meta
         ARᵀ = @einsum A[i,j] * R[k,j]
         tensors = (R, ARᵀ)
-        @inbounds $TT($(exps[indices(TT)]...))
+        @inbounds $TT($(exps[indices_unique(TT)]...))
     end
 end
 

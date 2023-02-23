@@ -8,7 +8,7 @@ using StaticArrays
 using Base: @pure, @_inline_meta, @_propagate_inbounds_meta
 import StaticArrays: qr, lu, svd, diag, diagm # defined in LinearAlgebra, but call methods in StaticArrays
 # re-exports from StaticArrays
-export qr, lu, svd, diag, diagm
+export SArray, qr, lu, svd, diag, diagm
 
 import Base: transpose, inv
 import LinearAlgebra: dot, norm, normalize, tr, adjoint, det, cross, eigen, eigvals, eigvecs

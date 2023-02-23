@@ -9,11 +9,11 @@ end
 
 # Space
 
-@generated function _permutedims(::Space{S}, ::Val{perm}) where {S, perm}
+@generated function _permutedims(::Space{spaces}, ::Val{perm}) where {spaces, perm}
     # numbering each dimension
     num = Int[]
-    for (i, s) in enumerate(S)
-        append!(num, fill(i, length(s)))
+    for (i, space) in enumerate(spaces)
+        append!(num, fill(i, tensororder(space)))
     end
     num = num[collect(perm)] # allow to use invalid permutation in `_permutedims`
     # permute!(num, collect(perm))
@@ -31,14 +31,14 @@ end
     # apply `Symmetry` if needed
     newspace = map(groups) do group
         space_num = group[end]
-        s = S[space_num]
+        space = spaces[space_num]
         if length(group) == 1
             # if Symmetry, extract first dimension
             # if Number, just return it
-            s[1]
+            space[1]
         else
-            if s isa Symmetry
-                Symmetry(fill(s[1], length(group))...)
+            if space isa Symmetry
+                Symmetry(fill(space[1], length(group))...)
             else
                 error() # unreachable
             end
