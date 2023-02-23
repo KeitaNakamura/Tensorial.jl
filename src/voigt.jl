@@ -176,7 +176,7 @@ function fromvoigt end
                               order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim))) where {dim, TT <: Tensor{Tuple{dim, dim}}}
     S = Space(TT)
     L = ncomponents(S)
-    inds = independent_indices(S)
+    inds = indices_all(S)
     T = eltype(TT) == Any ? eltype(v) : eltype(TT)
     quote
         @_propagate_inbounds_meta
@@ -196,7 +196,7 @@ end
                               order::AbstractVector{Tuple{Int, Int}} = default_voigt_order(Val(dim))) where {dim, TT <: Tensor{NTuple{4, dim}}}
     S = Space(TT)
     L = Int(sqrt(ncomponents(S)))
-    inds = independent_indices(S)
+    inds = indices_all(S)
     T = eltype(TT) == Any ? eltype(v) : eltype(TT)
     quote
         @_propagate_inbounds_meta
@@ -221,7 +221,7 @@ end
                               offdiagscale::T = one(T)) where {dim, T, TT <: Tensor{Tuple{@Symmetry({dim, dim})}}}
     S = Space(TT)
     L = ncomponents(S)
-    inds = independent_indices(S)
+    inds = indices_all(S)
     T = eltype(TT) == Any ? eltype(v) : eltype(TT)
     quote
         @_propagate_inbounds_meta
@@ -247,7 +247,7 @@ end
                               offdiagscale::T = one(T)) where {dim, T, TT <: Tensor{NTuple{2, @Symmetry({dim, dim})}}}
     S = Space(TT)
     L = Int(sqrt(ncomponents(S)))
-    inds = independent_indices(S)
+    inds = indices_all(S)
     T = eltype(TT) == Any ? eltype(v) : eltype(TT)
     quote
         @_propagate_inbounds_meta

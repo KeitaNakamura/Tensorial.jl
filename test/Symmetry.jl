@@ -12,13 +12,11 @@
     @test Tensorial.ncomponents(Symmetry(3,3)) == 6
     @test Tensorial.ncomponents(Symmetry(2,2)) == 3
 
-    # Dims
-    @test Dims(Symmetry(3,3)) == (3,3)
-    @test Dims(Symmetry(2,2)) == (2,2)
-
-    # length
-    @test length(Symmetry(3,3,3)) == 3
-    @test length(Symmetry(2,2)) == 2
+    # tensororder/tensorsize
+    @test Tensorial.tensororder(Symmetry(3,3,3)) == 3
+    @test Tensorial.tensororder(Symmetry(2,2)) == 2
+    @test Tensorial.tensorsize(Symmetry(3,3,3)) == (3,3,3)
+    @test Tensorial.tensorsize(Symmetry(2,2)) == (2,2)
 
     # getindex
     S = Symmetry(3,3)

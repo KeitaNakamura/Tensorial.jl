@@ -46,8 +46,8 @@ end
 ## from Function
 @generated function (::Type{TT})(f::Function) where {TT <: Tensor}
     S = Space(TT)
-    tocartesian = CartesianIndices(S)
-    exps = [:(f($(Tuple(tocartesian[i])...))) for i in indices(S)]
+    tocartesian = CartesianIndices(tensorsize(S))
+    exps = [:(f($(Tuple(tocartesian[i])...))) for i in indices_unique(S)]
     quote
         @_inline_meta
         TT($(exps...))
@@ -57,10 +57,10 @@ end
 @generated function (::Type{TT})(A::AbstractArray) where {TT <: Tensor}
     S = Space(TT)
     if IndexStyle(A) isa IndexLinear
-        exps = [:(A[$i]) for i in indices(S)]
+        exps = [:(A[$i]) for i in indices_unique(S)]
     else
-        tocartesian = CartesianIndices(S)
-        exps = [:(A[$(tocartesian[i])]) for i in indices(S)]
+        tocartesian = CartesianIndices(tensorsize(S))
+        exps = [:(A[$(tocartesian[i])]) for i in indices_unique(S)]
     end
     quote
         @_inline_meta
@@ -100,12 +100,12 @@ macro Tensor(expr)
     elseif Meta.isexpr(expr, :ref)
         newargs = map(expr.args) do ex
             if Meta.isexpr(ex, :call) && ex.args[1] == :(:)
-                :(Val($ex))
+                :($StaticIndex($ex))
             elseif Meta.isexpr(ex, :vect)
                 if all(x -> x isa Int, ex.args) # static indexing
-                    :(Val(tuple($(ex.args...))))
+                    :($StaticIndex(SVector($(ex.args...))))
                 else
-                    Expr(:call, :($(StaticArrays.SVector)), ex.args...)
+                    Expr(:call, :($SVector), ex.args...)
                 end
             else
                 ex
@@ -206,7 +206,7 @@ Base.Tuple(x::Tensor) = x.data
 # getindex
 @inline function Base.getindex(x::Tensor, i::Int)
     @boundscheck checkbounds(x, i)
-    @inbounds Tuple(x)[independent_indices(x)[i]]
+    @inbounds Tuple(x)[indices_all(x)[i]]
 end
 
 # convert
@@ -216,7 +216,7 @@ end
     S = promote_space(Space(TT), Space(x))
     S == Space(TT) ||
         return :(throw(ArgumentError("Cannot `convert` an object of type $(typeof(x)) to an object of type $TT")))
-    exps = [getindex_expr(x, :x, i) for i in indices(S)]
+    exps = [getindex_expr(x, :x, i) for i in indices_unique(S)]
     quote
         @_inline_meta
         @inbounds TT(tuple($(exps...)))

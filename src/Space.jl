@@ -8,32 +8,66 @@ end
 @pure Space(dims::Tuple) = Space{dims}()
 
 _construct(x::Int) = x
-@pure _construct(::Type{Symmetry{S}}) where {S} = Symmetry{S}()
-@pure function Space(::Type{S}) where {S <: Tuple}
+_construct(::Type{Symmetry{S}}) where {S} = Symmetry{S}()
+@generated function Space(::Type{S}) where {S <: Tuple}
     check_size_parameters(S)
-    dims = map(_construct, tuple(S.parameters...))
-    Space(dims)
+    dims = map(_construct, S.parameters)
+    Space(dims...)
 end
 
 _ncomponents(x::Int) = x
 _ncomponents(x::Symmetry) = ncomponents(x)
 @pure ncomponents(::Space{S}) where {S} = prod(_ncomponents, S)
 
-@pure Base.Dims(::Space{S}) where {S} = flatten_tuple(map(Dims, S))
-@pure Base.Tuple(::Space{S}) where {S} = S
+Base.Tuple(::Space{S}) where {S} = S
 
-@pure Base.length(s::Space) = length(Tuple(s))
-Base.getindex(s::Space, i::Int) = Tuple(s)[i]
+Base.getindex(::Space{S}, i::Int) where {S} = S[i]
 
-@pure tensorsize(s::Space) = Dims(s)
+# tensorsize
+tensorsize(x::Int) = (x,)
+@pure tensorsize(::Space{S}) where {S} = flatten_tuple(map(tensorsize, S))
+# tensororder
+@pure tensororder(::Int) = 1
 @pure tensororder(s::Space) = length(tensorsize(s))
 @pure tensoraxes(s::Space) = map(Base.OneTo, tensorsize(s))
 # don't allow to use `size` and `ndims` because their names are confusing.
 Base.size(s::Space) = throw(ArgumentError("use `tensorsize` to get size of a tensor instead of `size`"))
 Base.ndims(s::Space) = throw(ArgumentError("use `tensororder` to get order of a tensor instead of `ndims`"))
 
-@inline Base.checkbounds(::Type{Bool}, space::Space, I...) = Base.checkbounds_indices(Bool, tensoraxes(space), I)
-@inline Base.checkbounds(::Type{Bool}, space::Space, I) = checkindex(Bool, Base.OneTo(prod(tensorsize(space))), I)
+###############
+# checkbounds #
+###############
+
+struct StaticIndex{index} # index is completely known in compile-time
+    StaticIndex{index}() where {index} = new{index::Union{Int, AbstractVector{Int}}}()
+end
+@pure StaticIndex(index) = StaticIndex{index}()
+@pure Base.length(::Type{StaticIndex{index}}) where {index} = length(index)
+@pure Base.length(index::StaticIndex) = length(typeof(index))
+
+struct Len{n}
+    Len{n}() where {n} = new{n::Int}()
+end
+@pure Len(n) = Len{n}()
+
+_checkindex(::Type{Bool}, ::Len{n}, i) where {n} = checkindex(Bool, Base.OneTo(n), i)
+@generated _checkindex(::Type{Bool}, ::Len{n}, ::StaticIndex{index}) where {n, index} = # static checkindex
+    checkindex(Bool, Base.OneTo(n), index)
+# linear index
+@inline function Base.checkbounds(::Type{Bool}, space::Space, I)
+    _checkindex(Bool, Len(prod(tensorsize(space))), I)
+end
+# cartesin index
+@generated function Base.checkbounds(::Type{Bool}, S::Space{spaces}, I...) where {spaces}
+    S = Space(spaces)
+    tensororder(S) != length(I) && return :(throw(BoundsError($S, I)))
+    dims = tensorsize(S)
+    exps = [:(_checkindex(Bool, Len($(dims[i])), I[$i])) for i in 1:length(I)]
+    quote
+        @_inline_meta
+        all(tuple($(exps...)))
+    end
+end
 @inline function Base.checkbounds(space::Space, I...)
     checkbounds(Bool, space, I...) || Base.throw_boundserror(space, I)
     nothing
@@ -43,6 +77,9 @@ function Base.show(io::IO, ::Space{S}) where {S}
     print(io, "Space", S)
 end
 
+##############
+# operations #
+##############
 
 # dropfirst/droplast
 dropfirst() = error()
@@ -80,7 +117,7 @@ promote_space(x::Space) = x
 end
 @pure promote_space(x::Space, y::Space, z::Space...) = promote_space(promote_space(x, y), z...)
 ## helper functions
-@pure _promote_space(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
+_promote_space(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
 @pure function _promote_space(x::Tuple{Vararg{Union{Int, Symmetry}}}, y::Tuple{Vararg{Union{Int, Symmetry}}}, promoted::Tuple)
     x1 = x[1]
     y1 = y[1]
@@ -88,8 +125,8 @@ end
         # just use `x1`
         _promote_space(Base.tail(x), Base.tail(y), (promoted..., x1))
     else
-        x1_len = length(x1)
-        y1_len = length(y1)
+        x1_len = tensororder(x1)
+        y1_len = tensororder(y1)
         if x1_len < y1_len
             common = promote_space(Space(x1),
                                    droplast(Space(y1), Val(y1_len - x1_len))) |> Tuple
@@ -115,91 +152,70 @@ _typeof(x::Symmetry) = typeof(x)
     Tensor{Tuple{map(_typeof, Tuple(x))...}, T, tensororder(x), ncomponents(x)} where {T}
 end
 
-# LinearIndices/CartesianIndices
-for IndicesType in (LinearIndices, CartesianIndices)
-    @eval (::Type{$IndicesType})(x::Space) = $IndicesType(tensorsize(x))
-end
-
-
 #############################
 # Static getindex interface #
 #############################
 
-abstract type AbstractDynamicIndex end
-struct DynamicIndex   <: AbstractDynamicIndex;           end
-struct DynamicIndices <: AbstractDynamicIndex; len::Int; end
-# Base.length(::DynamicIndex) = 1
-Base.length(x::DynamicIndices) = x.len
+@pure _toindex(size::Int, ::Colon) = StaticIndex(1:size)
+@pure _toindex(size::Int, index::Any) = index
 
-static_dynamic_index(n::Int, ::Type{Int}) = DynamicIndex()
-static_dynamic_index(n::Int, ::Type{Colon}) = 1:n
-static_dynamic_index(n::Int, ::Type{<: StaticVector{len}}) where {len} = DynamicIndices(len)
-static_dynamic_index(n::Int, ::Type{Val{x}}) where {x} = x
-
-same_index(a::AbstractDynamicIndex, b::AbstractDynamicIndex) = false
-same_index(a::AbstractDynamicIndex, b::Any) = false
-same_index(a::Any, b::AbstractDynamicIndex) = false
-same_index(a::Any, b::Any) = _collect(a) == _collect(b)
-_collect(x::Any) = collect(x)
-_collect(::Nothing) = nothing
-
-_remove_val(x) = x
-_remove_val(::Val{x}) where {x} = SVector{length(x), Int}(x...)
-@generated function Base.getindex(space::Space{S}, inds::Union{Int, StaticVector{<: Any, Int}, Colon, Val}...) where {S}
-    dims = tensorsize(Space(S))
-    indices = map(static_dynamic_index, dims, inds)
+@generated function Base.getindex(space::Space{spaces}, indices::Union{Int, StaticVector{<: Any, Int}, StaticIndex, Colon}...) where {spaces}
+    dims = tensorsize(Space(spaces))
+    exps = [:(_toindex($(dims[i]), indices[$i])) for i in 1:length(indices)]
     quote
-        @boundscheck checkbounds(space, map(_remove_val, inds)...)
-        _getindex(space, Val(tuple($(indices...))))
+        @_inline_meta
+        @boundscheck checkbounds(space, indices...)
+        _getindex(space, $(exps...))
     end
 end
 
-@generated function Base.getindex(space::Space{S}, index::Union{Int, StaticVector{<: Any, Int}, Colon, Val}) where {S}
-    n = prod(tensorsize(Space(S)))
-    index = static_dynamic_index(n, index)
-    quote
-        @boundscheck checkbounds(space, _remove_val(index))
-        _getindex(space, Val(tuple($index)))
-    end
+@inline function Base.getindex(space::Space, index::Union{Int, StaticVector{<: Any, Int}, StaticIndex, Colon})
+    @boundscheck checkbounds(space, index)
+    _getindex(space, _toindex(prod(tensorsize(space)), index))
 end
 
-@generated function _getindex(::Space{S}, ::Val{indices}) where {S, indices}
-    # helper functions
-    isskipped(count) = count > length(indices) || indices[count] isa Union{Int, DynamicIndex}
-    newspace(x) = Any[x]
-    space_lastentry(x::Any) = x
-    space_lastentry(space::Vector) = isempty(space) ? nothing : space_lastentry(space[end])
-    spacesize(x) = length(x)
+@generated function _getindex(::Space{spaces}, indices::Union{Int, StaticVector{<: Any, Int}, StaticIndex}...) where {spaces}
+    isnospace(count) = count>length(indices) || isintindex(indices[count]) # integer index will not create space
+    getlast(x::Any) = x
+    getlast(space::Vector) = isempty(space) ? nothing : getlast(space[end])
 
-    count = 0
+    dims = tensorsize(Space(spaces))
+    cnt = 0 # counter to walk `indices`
     new_spaces = []
-    for space in S
+    for space in spaces
         if space isa Symmetry
-            spaces = []
-            for i in 1:length(space)
-                isskipped(count += 1) && continue
-                if same_index(indices[count], space_lastentry(spaces))
-                    push!(spaces[end], indices[count])
+            tmp_spaces = []
+            for i in 1:tensororder(space)
+                isnospace(cnt+=1) && continue
+                if sameindex(indices[cnt], getlast(tmp_spaces))
+                    push!(tmp_spaces[end], indices[cnt]) # push! to existing space
                 else
-                    push!(spaces, newspace(indices[count]))
+                    push!(tmp_spaces, Any[indices[cnt]]) # create newspace
                 end
             end
-            # symmetry wrap
-            for i in 1:length(spaces)
-                if length(spaces[i]) == 1
-                    spaces[i] = spacesize(only(spaces[i]))
+            # replace index into space
+            for i in 1:length(tmp_spaces)
+                if length(tmp_spaces[i]) == 1 # single entry -> not symmetric space
+                    tmp_spaces[i] = length(only(tmp_spaces[i]))
                 else
-                    spaces[i] = Symmetry(spacesize.(spaces[i])...)
+                    # should keep Symmetry if index is completely the same
+                    tmp_spaces[i] = Symmetry(length.(tmp_spaces[i])...)
                 end
             end
-            append!(new_spaces, spaces)
+            # register
+            append!(new_spaces, tmp_spaces)
         else
-            isskipped(count += 1) && continue
-            push!(new_spaces, length(indices[count]))
+            isnospace(cnt+=1) && continue
+            push!(new_spaces, length(indices[cnt]))
         end
     end
-    quote
-        Base.@_pure_meta
-        Space($(new_spaces...))
-    end
+
+    Space(new_spaces...)
 end
+# isintindex
+isintindex(::Type{Int}) = true
+isintindex(::Type{StaticIndex{index}}) where {index} = index isa Int
+isintindex(::Any) = false
+# sameindex
+sameindex(::Any, ::Any) = false
+sameindex(::Type{StaticIndex{a}}, ::Type{StaticIndex{b}}) where {a, b} = collect(a) == collect(b)

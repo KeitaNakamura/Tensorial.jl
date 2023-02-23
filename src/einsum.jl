@@ -223,7 +223,7 @@ function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::
         end
         TT = tensortype(_permutedims(otimes(map(Space, tensors)...), Val(tuple(perm...)))){T}
         freeaxes = axes(TT)
-        tupleinds = indices(TT)
+        tupleinds = indices_unique(TT)
     end
 
     sumexps = map(CartesianIndices(freeaxes)) do finds
