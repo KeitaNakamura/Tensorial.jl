@@ -88,7 +88,7 @@ include("continuum_mechanics.jl")
 include("inv.jl")
 include("voigt.jl")
 include("ad.jl")
-# include("simd.jl")
+include("simd.jl")
 include("broadcast.jl")
 include("abstractarray.jl")
 

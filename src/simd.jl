@@ -1,3 +1,5 @@
+import SIMD
+
 const SIMDTypes = Union{Float16, Float32, Float64}
 
 @generated function (::Type{TT})(data::SIMD.Vec{L}) where {TT <: Tensor, L}
@@ -8,6 +10,7 @@ const SIMDTypes = Union{Float16, Float32, Float64}
     end
 end
 
+#=
 @generated function contraction(x::Tensor{<: Any, T,}, y::Tensor{<: Any, T}, ::Val{N}) where {T <: SIMDTypes, N}
     S1 = Space(x)
     S2 = Space(y)
@@ -56,6 +59,7 @@ end
         end
     end
 end
+=#
 
 @generated function __map(f, xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N}
     exps = [:(SIMD.Vec(Tuple(xs[$i]))) for i in 1:N]
@@ -67,8 +71,6 @@ end
 
 @inline _map(::typeof(+), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(+, xs...)
 @inline _map(::typeof(-), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(-, xs...)
-@inline _map(::typeof(*), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(*, xs...)
-@inline _map(::typeof(/), xs::Vararg{Tensor{S, T}, N}) where {S, T <: SIMDTypes, N} = __map(/, xs...)
 
 for op in (:*, :/)
     @eval @inline function Base.$op(x::TT, a::T) where {T <: SIMDTypes, TT <: Tensor{<: Any, T}}
@@ -79,11 +81,11 @@ end
     x * a
 end
 
-@inline function cross(_x::Vec{3, T}, _y::Vec{3, T}) where {T <: SIMDTypes}
-    x = SIMD.Vec(Tuple(_x))
-    y = SIMD.Vec(Tuple(_y))
-    x′ = SIMD.shufflevector(x, Val((1,2,0)))
-    y′ = SIMD.shufflevector(y, Val((1,2,0)))
-    v = SIMD.shufflevector(x*y′ - x′*y, Val((1,2,0)))
-    Vec(v)
-end
+# @inline function cross(_x::Vec{3, T}, _y::Vec{3, T}) where {T <: SIMDTypes}
+    # x = SIMD.Vec(Tuple(_x))
+    # y = SIMD.Vec(Tuple(_y))
+    # x′ = SIMD.shufflevector(x, Val((1,2,0)))
+    # y′ = SIMD.shufflevector(y, Val((1,2,0)))
+    # v = SIMD.shufflevector(x*y′ - x′*y, Val((1,2,0)))
+    # Vec(v)
+# end
