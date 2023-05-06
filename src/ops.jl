@@ -646,15 +646,6 @@ end
 # operations calling methods in StaticArrays.jl #
 # ----------------------------------------------#
 
-# eigvals/eigen
-@inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
-    Tensor(eigvals(Symmetric(SArray(x)); permute = permute, scale = scale))
-end
-@inline function eigen(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
-    eig = eigen(Symmetric(SArray(x)); permute = permute, scale = scale)
-    Eigen(Tensor(eig.values), Tensor(eig.vectors))
-end
-
 # exp
 @inline Base.exp(x::AbstractSecondOrderTensor) = typeof(x)(exp(SArray(x)))
 @inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = typeof(x)(exp(Symmetric(SArray(x))))

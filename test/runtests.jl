@@ -1,7 +1,7 @@
 using Tensorial
 using Test, Random
 
-using LinearAlgebra: Symmetric
+using LinearAlgebra: Symmetric, Eigen
 using StaticArrays: SArray, SVector, SOneTo, SUnitRange
 
 import Combinatorics # for levicivita
@@ -19,6 +19,7 @@ include("einsum.jl")
 include("ops.jl")
 include("continuum_mechanics.jl")
 include("inv.jl")
+include("eigen.jl")
 include("voigt.jl")
 include("ad.jl")
 include("broadcast.jl")

@@ -260,16 +260,6 @@ end
 end
 
 @testset "Call methods in StaticArrays" begin
-    @testset "eigen" begin
-        for T in (Float32, Float64)
-            for dim in (2, 3)
-                x = rand(SymmetricSecondOrderTensor{dim, T})
-                @test (@inferred eigvals(x)) ≈ eigvals(Array(x))
-                @test (@inferred eigen(x)).values ≈ eigen(Array(x)).values
-                @test (@inferred eigen(x)).vectors ≈ (@inferred eigvecs(x))
-            end
-        end
-    end
     @testset "exp" begin
         # error for `Float32`
         # see https://github.com/JuliaArrays/StaticArrays.jl/issues/785
