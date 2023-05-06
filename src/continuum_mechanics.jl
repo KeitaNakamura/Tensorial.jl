@@ -17,6 +17,7 @@ julia> mean(x)
 ```
 """
 @inline mean(x::AbstractSquareTensor{3}) = tr(x) / 3
+@inline mean(x::Vec{3}) = sum(Tuple(x)) / 3
 
 """
     vol(::AbstractSecondOrderTensor{3})
