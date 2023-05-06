@@ -653,17 +653,8 @@ end
 @inline function eigen(x::AbstractSymmetricSecondOrderTensor; permute::Bool=true, scale::Bool=true)
     _eig(x; permute=permute, scale=scale)
 end
-# special implementation for 3x3 case (https://hal.science/hal-01501221/document)
 function eigen(x::AbstractSymmetricSecondOrderTensor{3, T}; permute::Bool=true, scale::Bool=true) where {T}
     isapproxzero(x) = abs(x) < cbrt(eps(typeof(x))) # use `cbrt` for loose criterion
-    function _sortperm3(v)
-        local perm = SVector(1,2,3)
-        # unrolled bubble-sort
-        (v[perm[1]] > v[perm[2]]) && (perm = SVector(perm[2], perm[1], perm[3]))
-        (v[perm[2]] > v[perm[3]]) && (perm = SVector(perm[1], perm[3], perm[2]))
-        (v[perm[1]] > v[perm[2]]) && (perm = SVector(perm[2], perm[1], perm[3]))
-        perm
-    end
 
     a, d, f, b, e, c = Tuple(x)
 
@@ -676,6 +667,7 @@ function eigen(x::AbstractSymmetricSecondOrderTensor{3, T}; permute::Bool=true, 
         v₁ = Vec{3,T}(1,0,0)
         v₂ = vcat(0, vecs[:,1])
         v₃ = vcat(0, vecs[:,2])
+        return _eig33_construct((λ₁, λ₂, λ₃), (v₁, v₂, v₃), true)
     elseif !isapproxzero(b) && iszero(d) && iszero(e)
         vals, vecs = eigen(@Tensor(x[[1,3], [1,3]]); permute=permute, scale=scale)
         λ₁ = vals[1]
@@ -684,6 +676,7 @@ function eigen(x::AbstractSymmetricSecondOrderTensor{3, T}; permute::Bool=true, 
         v₁ = Vec(vecs[1,1], 0, vecs[2,1])
         v₂ = Vec{3,T}(0,1,0)
         v₃ = Vec(vecs[1,2], 0, vecs[2,2])
+        return _eig33_construct((λ₁, λ₂, λ₃), (v₁, v₂, v₃), true)
     elseif !isapproxzero(c) && iszero(f) && iszero(e)
         vals, vecs = eigen(@Tensor(x[[1,2], [1,2]]); permute=permute, scale=scale)
         λ₁ = vals[1]
@@ -692,7 +685,9 @@ function eigen(x::AbstractSymmetricSecondOrderTensor{3, T}; permute::Bool=true, 
         v₁ = vcat(vecs[:,1], 0)
         v₂ = vcat(vecs[:,2], 0)
         v₃ = Vec{3,T}(0,0,1)
+        return _eig33_construct((λ₁, λ₂, λ₃), (v₁, v₂, v₃), true)
     else
+        # special implementation for 3x3 case (https://hal.science/hal-01501221/document)
         isapproxzero(f) && return _eig(x; permute=permute, scale=scale)
         λ₁, λ₂, λ₃ = eigvals(x; permute=permute, scale=scale)
         if isapproxzero(λ₁) || isapproxzero(λ₂) || isapproxzero(λ₃) ||
@@ -706,12 +701,26 @@ function eigen(x::AbstractSymmetricSecondOrderTensor{3, T}; permute::Bool=true, 
         if !isfinite(v₁[2]) || !isfinite(v₂[2]) || !isfinite(v₃[2])
             return _eig(x; permute=permute, scale=scale)
         end
+        return _eig33_construct((λ₁, λ₂, λ₃), (v₁, v₂, v₃), false)
     end
-
+end
+@inline function _eig33_construct((λ₁,λ₂,λ₃), (v₁,v₂,v₃), permute)
+    function _sortperm3(v)
+        local perm = SVector(1,2,3)
+        # unrolled bubble-sort
+        (v[perm[1]] > v[perm[2]]) && (perm = SVector(perm[2], perm[1], perm[3]))
+        (v[perm[2]] > v[perm[3]]) && (perm = SVector(perm[1], perm[3], perm[2]))
+        (v[perm[1]] > v[perm[2]]) && (perm = SVector(perm[2], perm[1], perm[3]))
+        perm
+    end
     values = Vec(λ₁, λ₂, λ₃)
     vectors = hcat(normalize(v₁), normalize(v₂), normalize(v₃))
-    perm = _sortperm3(values)
-    Eigen(values[perm], vectors[:,perm])
+    if permute
+        perm = _sortperm3(values)
+        return Eigen(values[perm], vectors[:,perm])
+    else
+        return Eigen(values, vectors)
+    end
 end
 # fallback to StaticArrays.jl
 @inline function _eig(x::AbstractSymmetricSecondOrderTensor; permute::Bool, scale::Bool)
