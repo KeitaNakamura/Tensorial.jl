@@ -103,7 +103,7 @@ macro Tensor(expr)
                 :($StaticIndex($ex))
             elseif Meta.isexpr(ex, :vect)
                 if all(x -> x isa Int, ex.args) # static indexing
-                    :($StaticIndex(SVector($(ex.args...))))
+                    :($StaticIndex($SVector($(ex.args...))))
                 else
                     Expr(:call, :($SVector), ex.args...)
                 end
