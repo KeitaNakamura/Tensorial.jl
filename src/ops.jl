@@ -647,11 +647,40 @@ end
 # ----------------------------------------------#
 
 # eigvals/eigen
-@inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
-    Tensor(eigvals(Symmetric(SArray(x)); permute = permute, scale = scale))
+@inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool=true, scale::Bool=true)
+    Tensor(eigvals(Symmetric(SArray(x)); permute=permute, scale = scale))
 end
-@inline function eigen(x::AbstractSymmetricSecondOrderTensor; permute::Bool = true, scale::Bool = true)
-    eig = eigen(Symmetric(SArray(x)); permute = permute, scale = scale)
+@inline function eigen(x::AbstractSymmetricSecondOrderTensor; permute::Bool=true, scale::Bool=true)
+    _eig(x; permute=permute, scale=scale)
+end
+# special implementation for 3x3 case (https://hal.science/hal-01501221/document)
+@inline function eigen(x::AbstractSymmetricSecondOrderTensor{3}; permute::Bool=true, scale::Bool=true)
+    a, d, f, b, e, c = Tuple(x)
+    iszero(f) && return _eig(x; permute=permute, scale=scale)
+
+    λ₁, λ₂, λ₃ = eigvals(x; permute=permute, scale=scale)
+
+    isapproxzero(x) = abs(x) < sqrt(eps(typeof(x)))
+    if isapproxzero(λ₁) || isapproxzero(λ₂) || isapproxzero(λ₃) ||
+       isapproxzero(λ₁-λ₂) || isapproxzero(λ₁-λ₃) || isapproxzero(λ₂-λ₃)
+        return _eig(x; permute=permute, scale=scale)
+    end
+
+    v₁, v₂, v₃ = map((λ₁, λ₂, λ₃)) do λ
+        m = (d*(c-λ) - e*f) / (f*(b-λ) - d*e)
+        Vec((λ-c-e*m)/f, m, 1)
+    end
+    if !isfinite(v₁[2]) || !isfinite(v₂[2]) || !isfinite(v₃[2])
+        return _eig(x; permute=permute, scale=scale)
+    end
+
+    values = Vec(λ₁, λ₂, λ₃)
+    vectors = hcat(normalize(v₁), normalize(v₂), normalize(v₃))
+    Eigen(values, vectors)
+end
+# fallback to StaticArrays.jl
+@inline function _eig(x::AbstractSymmetricSecondOrderTensor; permute::Bool, scale::Bool)
+    eig = eigen(Symmetric(SArray(x)); permute=permute, scale=scale)
     Eigen(Tensor(eig.values), Tensor(eig.vectors))
 end
 

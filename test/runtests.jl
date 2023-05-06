@@ -1,7 +1,7 @@
 using Tensorial
 using Test, Random
 
-using LinearAlgebra: Symmetric
+using LinearAlgebra: Symmetric, Eigen
 using StaticArrays: SArray, SVector, SOneTo, SUnitRange
 
 import Combinatorics # for levicivita
