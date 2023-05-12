@@ -367,6 +367,9 @@ end
     end
 end
 
+# Hadamard product (element-wise multiplication)
+@inline ⊙(x::AbstractTensor, y::AbstractTensor) = x .* y
+
 # rotate
 """
     rotmat(θ::Number)

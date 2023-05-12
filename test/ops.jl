@@ -107,6 +107,15 @@ end
             @test (@inferred ⊗(x, y, x, y))::Tensor{Tuple{3,2,3,2}, T} ≈ x ⊗ y ⊗ x ⊗ y
         end
     end
+    @testset "Hadamard product" begin
+        for T in (Float32, Float64)
+            for TT in (Vec{3,T}, Mat{2,3,T})
+                x = rand(TT)
+                y = rand(TT)
+                @test (@inferred x ⊙ y)::TT == Array(x) .* Array(y)
+            end
+        end
+    end
     @testset "dotdot" begin
         for T in (Float32, Float64)
             x = rand(Vec{3, T})

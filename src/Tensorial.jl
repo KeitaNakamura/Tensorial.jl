@@ -50,6 +50,7 @@ export
     skew,
     ⊗,
     ⊡,
+    ⊙,
     rotmat,
     rotmatx,
     rotmaty,
