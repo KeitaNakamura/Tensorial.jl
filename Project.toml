@@ -1,7 +1,7 @@
 name = "Tensorial"
 uuid = "98f94333-fa9f-48a9-ad80-1c66397b2b38"
 authors = ["Keita Nakamura <keita.nakamura.1109@gmail.com>"]
-version = "0.12.11"
+version = "0.12.12"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"

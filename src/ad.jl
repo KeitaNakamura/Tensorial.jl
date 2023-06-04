@@ -22,9 +22,9 @@ end
 
 const NumberOrTensor = Union{Number, AbstractTensor}
 
-@inline extract_value(v::NumberOrTensor, ::NumberOrTensor) = v
-@inline extract_value(v::Dual, ::NumberOrTensor) = value(v)
-@generated function extract_value(v::AbstractTensor{S, <: Dual}, ::NumberOrTensor) where {S <: Tuple}
+@inline extract_value(v::NumberOrTensor) = v
+@inline extract_value(v::Dual) = value(v)
+@generated function extract_value(v::AbstractTensor{S, <: Dual}) where {S <: Tuple}
     exps = [:(value(Tuple(v)[$i])) for i in 1:ncomponents(v)]
     quote
         @_inline_meta
@@ -73,7 +73,7 @@ end
 function gradient(f, x::V, ::Symbol) where {V <: NumberOrTensor}
     dx = dualize(Tag(f, V), x)
     v = f(dx)
-    extract_gradient(v, x), extract_value(v, x)
+    extract_gradient(v, x), extract_value(v)
 end
 
 function hessian(f, x::NumberOrTensor)
