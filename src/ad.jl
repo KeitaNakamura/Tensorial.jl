@@ -1,24 +1,30 @@
-using ForwardDiff: Dual, Tag, value, partials
-
 @inline function dualize(::Tg, x::Number) where {Tg <: Tag}
     Dual{Tg}(x, one(x))
 end
 @generated function dualize(::Tg, x::AbstractTensor{S, T}) where {Tg <: Tag, S, T}
-     dups = indices_dup(x)
-     ex = Expr(:block, [:($(Symbol(:v_, i)) = v_1 / $i) for i in unique(dups) if i != 1]...)
-     n = ncomponents(x)
-     exps = map(1:n) do i
-         partials = [j == i ? Symbol(:v_, dups[i]) : :z for j in 1:n]
-         :(Dual{Tg}(Tuple(x)[$i], tuple($(partials...))))
-     end
-     quote
-         @_inline_meta
-         z = zero(T)
-         v_1 = one(T)
-         $ex
-         @inbounds Tensor{S}($(exps...))
-     end
- end
+    dups = indices_dup(x)
+    ex = Expr(:block, [:($(Symbol(:v_, i)) = v_1 / $i) for i in unique(dups) if i != 1]...)
+    n = ncomponents(x)
+    exps = map(1:n) do i
+        partials = [j == i ? Symbol(:v_, dups[i]) : :z for j in 1:n]
+        :(Dual{Tg}(Tuple(x)[$i], tuple($(partials...))))
+    end
+    quote
+        @_inline_meta
+        z = zero(T)
+        v_1 = one(T)
+        $ex
+        @inbounds Tensor{S}($(exps...))
+    end
+end
+
+# for AD insertion
+@inline function dualize(::Tg, f::Number, dfdx::Number) where {Tg <: Tag}
+    Dual{Tg}(f, dfdx)
+end
+@inline function dualize(::Tg, f::Number, dfdx::AbstractTensor) where {Tg <: Tag}
+    Dual{Tg}(f, Tuple(dfdx))
+end
 
 const NumberOrTensor = Union{Number, AbstractTensor}
 

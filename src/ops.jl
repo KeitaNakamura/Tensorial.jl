@@ -303,6 +303,15 @@ end
     det(SMatrix{dim, dim}(x))
 end
 
+# AD insertion
+@inline function det(g::AbstractSquareTensor{dim, <: Dual{Tg}}) where {dim, F, V, Tg <: Tag{F,V}}
+    x = extract_value(g)
+    f = det(x)
+    dfdg = adj(x)'
+    dgdx = extract_gradient(g, zero(V))
+    dualize(Tg(), f, dfdg ⊡ dgdx)
+end
+
 """
     cross(x::Vec{3}, y::Vec{3}) -> Vec{3}
     cross(x::Vec{2}, y::Vec{2}) -> Vec{3}
