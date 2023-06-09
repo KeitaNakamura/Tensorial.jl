@@ -5,6 +5,7 @@ SquareMatrix{n, T, L}(x::AbstractMatrix) where {n, T, L} = SquareMatrix{n, T, L}
 Base.Tuple(x::SquareMatrix) = x.data
 Base.getindex(x::SquareMatrix, i::Int) = x.data[i]
 Base.rand(::Type{SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(Tensorial.fill_tuple(()->rand(T), Val(n*n)))
+Base.zero(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(Tuple(zero(SecondOrderTensor{n, T})))
 Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(Tuple(one(SecondOrderTensor{n, T})))
 
 @testset "Automatic differentiation" begin
