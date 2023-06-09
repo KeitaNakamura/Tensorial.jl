@@ -8,7 +8,9 @@
     TT = tensortype(S)
     return quote
         @_inline_meta
-        @inbounds $TT($(exps...))
+        data = promote($(exps...))
+        T = eltype(data)
+        @inbounds $TT{T}(data)
     end
 end
 
