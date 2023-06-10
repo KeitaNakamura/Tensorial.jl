@@ -78,13 +78,31 @@ Following symbols are also available for specific contractions:
 - `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`): `contraction(x, y, Val(1))`
 - `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>`): `contraction(x, y, Val(2))`
 """
-@generated function contraction(x::AbstractTensor, y::AbstractTensor, ::Val{N}) where {N}
-    TT, exps = contraction_exprs(x, y, N)
-    contraction(Space(x), Space(y), Val(N)) # check dimensions
+@generated function contraction(t1::AbstractTensor, t2::AbstractTensor, ::Val{N}) where {N}
+    S1 = Space(t1)
+    S2 = Space(t2)
+    S1_rhs = S1[ntuple(_->1, Val(tensororder(S1)-N))..., ntuple(_->:, Val(N))...]
+    S2_lhs = S2[ntuple(_->:, Val(N))..., ntuple(_->1, Val(tensororder(S2)-N))...]
+    S_contracted = promote_space(S1_rhs, S2_lhs)
+    S1_new = otimes(droplast(S1, Val(N)), S_contracted)
+    S2_new = otimes(S_contracted, dropfirst(S2, Val(N)))
+    K = ncomponents(S_contracted)
+    I = ncomponents(S1_new) ÷ K
+    J = ncomponents(S2_new) ÷ K
+    TT = tensortype(contraction(S1, S2, Val(N)))
+    dups = indices_dup(S_contracted)
     quote
         @_inline_meta
-        tensors = (x, y)
-        @inbounds $TT($(exps...))
+        t1_new = convert($(tensortype(S1_new)), t1)
+        t2_new = convert($(tensortype(S2_new)), t2)
+        t1_vec = SVector(Tuple(t1_new))
+        t2_vec = SVector(Tuple(t2_new))
+        $(ndims(TT) == 0) && return dot(t1_vec, $dups .* t2_vec)
+        t1_array = reshape(t1_vec, Size($I, $K))
+        t2_array = reshape(t2_vec, Size($K, $J))
+        data = Tuple(t1_array * ($dups .* t2_array))
+        T = eltype(data)
+        $TT{T}(data)
     end
 end
 

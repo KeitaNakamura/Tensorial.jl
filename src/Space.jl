@@ -18,10 +18,9 @@ end
 _ncomponents(x::Int) = x
 _ncomponents(x::Symmetry) = ncomponents(x)
 @pure ncomponents(::Space{S}) where {S} = prod(_ncomponents, S)
+@pure ncomponents(::Space{()}) = 1
 
 Base.Tuple(::Space{S}) where {S} = S
-
-Base.getindex(::Space{S}, i::Int) where {S} = S[i]
 
 # tensorsize
 tensorsize(x::Int) = (x,)
