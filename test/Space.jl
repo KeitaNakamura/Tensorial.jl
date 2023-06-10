@@ -3,8 +3,8 @@
     @test (@inferred Tensorial.tensorsize(Space(Symmetry(3,3),3))) == (3,3,3)
     @test (@inferred Tensorial.tensororder(Space(Symmetry(3,3),3))) == 3
     @test (@inferred Tuple(Space(Symmetry(3,3),3))) == (Symmetry(3,3),3)
-    @test Space(3,2)[1] == 3
-    @test Space(3,2)[2] == 2
+    @test Tuple(Space(3,2))[1] == 3
+    @test Tuple(Space(3,2))[2] == 2
     # prohibited
     @test_throws Exception size(Space(Symmetry(3,3),3))
     @test_throws Exception ndims(Space(Symmetry(3,3),3))
