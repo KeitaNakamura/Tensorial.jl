@@ -70,6 +70,31 @@ end
     end
 end
 
+"""
+    gradient(f, x)
+    gradient(f, x, :all)
+
+Compute the gradient of `f` with respect to `x` by the automatic differentiation.
+If pseudo keyword `:all` is given, the value of `f(x)` is also returned.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.325977  0.894245  0.953125
+ 0.549051  0.353112  0.795547
+ 0.218587  0.394255  0.49425
+
+julia> gradient(tr, x)
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 1.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  1.0
+
+julia> ∇f, f = gradient(tr, x, :all)
+([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0], 1.1733382401532275)
+```
+"""
 function gradient(f, x::V) where {V <: NumberOrTensor}
     dx = dualize(Tag(f, V), x)
     v = f(dx)
@@ -82,6 +107,31 @@ function gradient(f, x::V, ::Symbol) where {V <: NumberOrTensor}
     extract_gradient(v, x), extract_value(v)
 end
 
+"""
+    hessian(f, x)
+    hessian(f, x, :all)
+
+Compute the hessian of `f` with respect to `x` by the automatic differentiation.
+If pseudo keyword `:all` is given, the value of `f(x)` is also returned.
+
+# Examples
+```jldoctest
+julia> x = rand(Vec{3})
+3-element Vec{3, Float64}:
+ 0.32597672886359486
+ 0.5490511363155669
+ 0.21858665481883066
+
+julia> hessian(norm, x)
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+  1.13603   -0.582196  -0.231782
+ -0.582196   0.501079  -0.390397
+ -0.231782  -0.390397   1.32626
+
+julia> ∇∇f, ∇f, f = hessian(norm, x, :all)
+([1.1360324375454411 -0.5821964220304534 -0.23178236037013888; -0.5821964220304533 0.5010791569244991 -0.39039709608344814; -0.23178236037013886 -0.39039709608344814 1.3262640626479867], [0.4829957515506539, 0.8135223859352438, 0.3238771859304809], 0.6749059962060727)
+```
+"""
 function hessian(f, x::NumberOrTensor)
     ∇f = v -> gradient(f, v)
     gradient(∇f, x)
