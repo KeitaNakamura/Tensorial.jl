@@ -1,7 +1,7 @@
-@inline function dualize(::Tg, x::Number) where {Tg <: Tag}
+@inline function dualize(::Tg, x::Number) where {Tg}
     Dual{Tg}(x, one(x))
 end
-@generated function dualize(::Tg, x::AbstractTensor{S, T}) where {Tg <: Tag, S, T}
+@generated function dualize(::Tg, x::AbstractTensor{S, T}) where {Tg, S, T}
     dups = indices_dup(x)
     ex = Expr(:block, [:($(Symbol(:v_, i)) = v_1 / $i) for i in unique(dups) if i != 1]...)
     n = ncomponents(x)
@@ -19,10 +19,10 @@ end
 end
 
 # for AD insertion
-@inline function dualize(::Tg, f::Number, dfdx::Number) where {Tg <: Tag}
+@inline function dualize(::Tg, f::Number, dfdx::Number) where {Tg}
     Dual{Tg}(f, dfdx)
 end
-@inline function dualize(::Tg, f::Number, dfdx::AbstractTensor) where {Tg <: Tag}
+@inline function dualize(::Tg, f::Number, dfdx::AbstractTensor) where {Tg}
     Dual{Tg}(f, Tuple(dfdx))
 end
 
