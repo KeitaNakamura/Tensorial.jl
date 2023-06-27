@@ -1,21 +1,27 @@
+# generate duals from values and partials
+@generated function generate_duals(::Tg, v::NTuple{N, T}, p::NTuple{N, T}) where {Tg, T, N}
+    quote
+        @_inline_meta
+        @ntuple $N i -> begin
+            partials = @ntuple $N j -> j==i ? p[i] : zero(T)
+            Dual{Tg}(v[i], partials)
+        end
+    end
+end
+
+# generate values
+dual_values(x::Number) = (x,)
+dual_values(x::AbstractTensor) = Tuple(x)
+
+# generate partials
+dual_partials(x::Number) = (one(x),)
+dual_partials(x::AbstractTensor) = convert_ntuple(eltype(x), Tuple(inv.(indices_dup(x))))
+
 @inline function dualize(::Tg, x::Number) where {Tg}
     Dual{Tg}(x, one(x))
 end
-@generated function dualize(::Tg, x::AbstractTensor{S, T}) where {Tg, S, T}
-    dups = indices_dup(x)
-    ex = Expr(:block, [:($(Symbol(:v_, i)) = v_1 / $i) for i in unique(dups) if i != 1]...)
-    n = ncomponents(x)
-    exps = map(1:n) do i
-        partials = [j == i ? Symbol(:v_, dups[i]) : :z for j in 1:n]
-        :(Dual{Tg}(Tuple(x)[$i], tuple($(partials...))))
-    end
-    quote
-        @_inline_meta
-        z = zero(T)
-        v_1 = one(T)
-        $ex
-        @inbounds Tensor{S}($(exps...))
-    end
+@inline function dualize(::Tg, x::AbstractTensor{S, T}) where {Tg, S, T}
+    Tensor{S}(generate_duals(Tg(), dual_values(x), dual_partials(x)))
 end
 
 # for AD insertion
@@ -38,7 +44,7 @@ const NumberOrTensor = Union{Number, AbstractTensor}
     end
 end
 
-# Number case
+# Non-dual case
 @inline extract_gradient(v::NumberOrTensor, ::Number) = zero(v)
 @inline extract_gradient(v::Number, x::AbstractTensor{S}) where {S} = zero(Tensor{S, typeof(v)})
 @generated function extract_gradient(v::AbstractTensor, x::AbstractTensor)

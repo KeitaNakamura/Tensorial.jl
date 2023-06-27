@@ -1,6 +1,7 @@
 module Tensorial
 
 using Base: @pure, @_inline_meta, @_propagate_inbounds_meta
+using Base.Cartesian: @ntuple
 
 using LinearAlgebra, Statistics
 # re-exports from LinearAlgebra and Statistics
