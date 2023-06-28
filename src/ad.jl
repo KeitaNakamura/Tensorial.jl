@@ -25,10 +25,10 @@ end
 end
 
 # for AD insertion
-@inline function dualize(::Tg, f::Number, dfdx::Number) where {Tg}
+@inline function create_dual(::Tg, f::Number, dfdx::Number) where {Tg}
     Dual{Tg}(f, dfdx)
 end
-@inline function dualize(::Tg, f::Number, dfdx::AbstractTensor) where {Tg}
+@inline function create_dual(::Tg, f::Number, dfdx::AbstractTensor) where {Tg}
     Dual{Tg}(f, Tuple(dfdx))
 end
 
