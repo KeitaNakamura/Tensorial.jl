@@ -87,4 +87,17 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
         @test gradient(v -> sum(v) * gradient(a -> f(a, v), a), v) ≈ gradient(v -> sum(v) * dfda(a, v), v)
         @test gradient(a -> a * gradient(v -> f(a, v), v), a) ≈ gradient(a -> a * dfdv(a, v), a)
     end
+    @testset "Multiple arguments" begin
+        for T in (Float32, Float64)
+            a = rand(T)
+            x = rand(SymmetricSecondOrderTensor{2,T})
+            @test (@inferred gradient((x,y) -> x * tr(y), a, x))::Tuple{T, SymmetricSecondOrderTensor{2,T}} === (tr(x), a*one(SymmetricSecondOrderTensor{2,T}))
+            @test (@inferred gradient((x,y) -> x * tr(y), a, x, :all))::Tuple{Tuple{T, SymmetricSecondOrderTensor{2,T}}, T} === ((tr(x), a*one(SymmetricSecondOrderTensor{2,T})), a*tr(x))
+            @test (@inferred gradient((x,y) -> x * y, a, x))::Tuple{SymmetricSecondOrderTensor{2,T}, SymmetricFourthOrderTensor{2,T}} === (x, a*one(SymmetricFourthOrderTensor{2,T}))
+            @test (@inferred gradient((x,y) -> x * y, a, x, :all))::Tuple{Tuple{SymmetricSecondOrderTensor{2,T}, SymmetricFourthOrderTensor{2,T}}, SymmetricSecondOrderTensor{2,T}} === ((x, a*one(SymmetricFourthOrderTensor{2,T})), a*x)
+            # nested differentiation
+            @test gradient((x,z) -> x * gradient(y -> x + y, 1), 1, x) === (one(T), zero(x))
+            @test gradient((x,z) -> x * gradient(y -> x + y, 1), 1, x, :all) === ((one(T), zero(x)), one(T))
+        end
+    end
 end

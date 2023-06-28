@@ -18,12 +18,14 @@ end
 # generate values
 dual_values(x::Number) = (x,)
 dual_values(x::AbstractTensor) = Tuple(x)
-@generated dual_values(xs::Tuple{Vararg{NumberOrTensor, N}}) where {N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_values(xs[i])))
+dual_values(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_values(promote_elements(xs...))
+@generated _dual_values(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}, N}}) where {T, N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_values(xs[i])))
 
 # generate partials
 dual_partials(x::Number) = (one(x),)
 dual_partials(x::AbstractTensor) = convert_ntuple(eltype(x), Tuple(inv.(indices_dup(x))))
-@generated dual_partials(xs::Tuple{Vararg{NumberOrTensor, N}}) where {N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_partials(xs[i])))
+dual_partials(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_partials(promote_elements(xs...))
+@generated _dual_partials(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}, N}}) where {T, N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_partials(xs[i])))
 
 @inline function dualize(::Tg, x::Number) where {Tg}
     Dual{Tg}(x, one(x))
