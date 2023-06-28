@@ -327,7 +327,7 @@ end
     f = det(x)
     dfdg = adj(x)'
     dgdx = extract_gradient(g, zero(V))
-    dualize(Tg(), f, dfdg ⊡ dgdx)
+    create_dual(Tg(), f, dfdg ⊡ dgdx)
 end
 
 """
