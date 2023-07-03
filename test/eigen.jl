@@ -7,6 +7,11 @@
             @test (@inferred eigen(x)).vectors ≈ (@inferred eigvecs(x))
         end
     end
+    @testset "2x2" begin
+        # `eigen(Symmetric(SMatrix{2,2}([1.0 1.9932760451045367e-17; 1.9932760451045367e-17 1.0])))` fails in StaticArrays.jl
+        @test eigvals(SymmetricSecondOrderTensor{2}([1.0 1.9932760451045367e-17; 1.9932760451045367e-17 1.0])) == Vec(1,1)
+        @test eigvecs(SymmetricSecondOrderTensor{2}([1.0 1.9932760451045367e-17; 1.9932760451045367e-17 1.0])) == one(Mat{2,2})
+    end
     # copyied from StaticArrays.jl
     @testset "3x3 degenerate cases" begin
         # Rank 1
