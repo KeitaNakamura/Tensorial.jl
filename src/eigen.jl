@@ -6,13 +6,26 @@ end
     _eig(x; permute=permute, scale=scale)
 end
 
+function eigen(x::AbstractSymmetricSecondOrderTensor{2, T}; permute::Bool=true, scale::Bool=true) where {T}
+    _iszero(x) = abs(x) < eps(typeof(x))
+    a, c, b = Tuple(x)
+    if _iszero(c)
+        # check diagonal case
+        # `eigen(Symmetric(SMatrix{2,2}([1.0 1.9932760451045367e-17; 1.9932760451045367e-17 1.0])))` fails in StaticArrays.jl
+        return Eigen(Vec(a,b), one(Mat{2,2,T}))
+    else
+        return _eig(x; permute=permute, scale=scale)
+    end
+end
+
 function eigen(x::AbstractSymmetricSecondOrderTensor{3, T}; permute::Bool=true, scale::Bool=true) where {T}
-    isapproxzero(x) = abs(x) < cbrt(eps(typeof(x))) # use `cbrt` for loose criterion
+    _isapproxzero(x) = abs(x) < cbrt(eps(typeof(x))) # sqrt fails, so use `cbrt`
+    _iszero(x) = abs(x) < eps(typeof(x))
 
     a, d, f, b, e, c = Tuple(x)
 
     # block diagonal
-    if !isapproxzero(a) && iszero(d) && iszero(f)
+    if !_isapproxzero(a) && _iszero(d) && _iszero(f)
         vals, vecs = eigen(@Tensor(x[[2,3], [2,3]]); permute=permute, scale=scale)
         λ₁ = a
         λ₂ = vals[1]
@@ -21,7 +34,7 @@ function eigen(x::AbstractSymmetricSecondOrderTensor{3, T}; permute::Bool=true, 
         v₂ = vcat(0, vecs[:,1])
         v₃ = vcat(0, vecs[:,2])
         return _eig33_construct((λ₁, λ₂, λ₃), (v₁, v₂, v₃), true)
-    elseif !isapproxzero(b) && iszero(d) && iszero(e)
+    elseif !_isapproxzero(b) && _iszero(d) && _iszero(e)
         vals, vecs = eigen(@Tensor(x[[1,3], [1,3]]); permute=permute, scale=scale)
         λ₁ = vals[1]
         λ₂ = b
@@ -30,7 +43,7 @@ function eigen(x::AbstractSymmetricSecondOrderTensor{3, T}; permute::Bool=true, 
         v₂ = Vec{3,T}(0,1,0)
         v₃ = Vec(vecs[1,2], 0, vecs[2,2])
         return _eig33_construct((λ₁, λ₂, λ₃), (v₁, v₂, v₃), true)
-    elseif !isapproxzero(c) && iszero(f) && iszero(e)
+    elseif !_isapproxzero(c) && _iszero(f) && _iszero(e)
         vals, vecs = eigen(@Tensor(x[[1,2], [1,2]]); permute=permute, scale=scale)
         λ₁ = vals[1]
         λ₂ = vals[2]
@@ -41,10 +54,10 @@ function eigen(x::AbstractSymmetricSecondOrderTensor{3, T}; permute::Bool=true, 
         return _eig33_construct((λ₁, λ₂, λ₃), (v₁, v₂, v₃), true)
     else
         # special implementation for 3x3 case (https://hal.science/hal-01501221/document)
-        isapproxzero(f) && return _eig(x; permute=permute, scale=scale)
+        _isapproxzero(f) && return _eig(x; permute=permute, scale=scale)
         λ₁, λ₂, λ₃ = eigvals(x; permute=permute, scale=scale)
-        if isapproxzero(λ₁) || isapproxzero(λ₂) || isapproxzero(λ₃) ||
-           isapproxzero(λ₁-λ₂) || isapproxzero(λ₁-λ₃) || isapproxzero(λ₂-λ₃)
+        if _isapproxzero(λ₁) || _isapproxzero(λ₂) || _isapproxzero(λ₃) ||
+           _isapproxzero(λ₁-λ₂) || _isapproxzero(λ₁-λ₃) || _isapproxzero(λ₂-λ₃)
             return _eig(x; permute=permute, scale=scale)
         end
         v₁, v₂, v₃ = map((λ₁, λ₂, λ₃)) do λ
