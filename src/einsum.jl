@@ -37,12 +37,19 @@ julia> @einsum A[i,j] * B[i,j]
 ```
 """
 macro einsum(expr)
+    einsum_exprssion(:Any, expr)
+end
+macro einsum(TT, expr)
+    einsum_exprssion(TT, expr)
+end
+
+function einsum_exprssion(TT, expr)
     freeinds, body = anonymous_args_body(expr)
-    einex = einsum_instantiate(body)
+    einex = einsum_instantiate(body, TT)
     freeinds === nothing && return einex.ex
     isempty(freeinds) && return einex.ex
     perm = find_perm(einex.freeinds => freeinds)
-    :(permutedims($(einex.ex), $(ValTuple(perm...))))
+    :(convert($TT, permutedims($(einex.ex), $(ValTuple(perm...)))))
 end
 
 ValTuple(x...) = Val(x)
@@ -97,16 +104,16 @@ end
 
 isscalarexpr(x::EinsumExpr) = isempty(x.freeinds)
 
-function einsum_instantiate(expr)
+function einsum_instantiate(expr, TT) # TT is :Any if not given in @einsum or not top level
     if Meta.isexpr(expr, :call)
         if expr.args[1] == :*
-            return einsum_instantiate_contraction(map(einsum_instantiate, expr.args[2:end]))
+            return einsum_instantiate_contraction(TT, map(x -> einsum_instantiate(x, :Any), expr.args[2:end]))
         elseif expr.args[1] == :/
-            lhs = einsum_instantiate(expr.args[2])
-            rhs = einsum_instantiate(expr.args[3])
+            lhs = einsum_instantiate(expr.args[2], TT)
+            rhs = einsum_instantiate(expr.args[3], :Any)
             return einsum_instantiate_division(lhs, rhs)
         elseif expr.args[1] == :+ || expr.args[1] == :-
-            return mapreduce(einsum_instantiate,
+            return mapreduce(x -> einsum_instantiate(x, TT),
                              (x, y) -> einsum_instantiate_addition(expr.args[1], x, y),
                              expr.args[2:end])
         end
@@ -122,7 +129,7 @@ end
 # ref case
 function einsum_instantiate_tensor(einex::EinsumExpr)
     if isscalarexpr(einex) # handle `A[i,i]`
-        ex = :($einsum_contraction(Val(()), ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
+        ex = :($einsum_contraction(Any, Val(()), ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
         return EinsumExpr(ex, einex.freeinds, einex.allinds)
     else
         return einex
@@ -152,12 +159,12 @@ function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr)
     else
         freeinds = find_freeindices([lhs.freeinds; rhs.freeinds])
         allinds = [lhs.allinds; rhs.allinds]
-        ex = :($einsum_contraction($(ValTuple(freeinds...)), ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
+        ex = :($einsum_contraction(Any, $(ValTuple(freeinds...)), ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
         return EinsumExpr(ex, freeinds, allinds)
     end
 end
 
-function einsum_instantiate_contraction(exprs::Vector{EinsumExpr})
+function einsum_instantiate_contraction(TT, exprs::Vector{EinsumExpr})
     freeinds = find_freeindices(mapreduce(x->x.freeinds, vcat, exprs))
 
     list = findall(exprs) do einex # tensors having only dummy indices
@@ -188,7 +195,7 @@ function einsum_instantiate_contraction(exprs::Vector{EinsumExpr})
     end
 
     allinds = mapreduce(x->x.allinds, vcat, exprs)
-    ex = :($einsum_contraction($(ValTuple(freeinds...)), ($([x.ex for x in exprs]...),), ($([ValTuple(x.freeinds...) for x in exprs]...),)))
+    ex = :($einsum_contraction($TT, $(ValTuple(freeinds...)), ($([x.ex for x in exprs]...),), ($([ValTuple(x.freeinds...) for x in exprs]...),)))
     return EinsumExpr(ex, freeinds, allinds)
 end
 
@@ -242,14 +249,12 @@ function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::
     if isempty(freeinds)
         TT = T
         freeaxes = ()
-        tupleinds = Colon()
     else
         perm = map(freeinds) do index
             only(findall(==(index), reduce(vcat, tensorinds)))
         end
         TT = tensortype(_permutedims(otimes(map(Space, tensors)...), Val(tuple(perm...)))){T}
         freeaxes = axes(TT)
-        tupleinds = indices_unique(TT)
     end
 
     sumexps = map(CartesianIndices(freeaxes)) do finds
@@ -264,15 +269,17 @@ function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::
         Expr(:call, simdsum, xs...)
     end
 
-    TT, sumexps[tupleinds]
+    TT, sumexps
 end
 
-@generated function einsum_contraction(::Val{freeinds}, tensors::Tuple{Vararg{AbstractTensor, N}}, tensorinds::Tuple{Vararg{Val, N}}) where {freeinds, N}
-    TT, exps = einsum_contraction_expr(collect(freeinds),
-                                       collect(Type{<: AbstractTensor}, tensors.parameters),
-                                       Vector{Symbol}[collect(p.parameters[1]) for p in tensorinds.parameters])
+@generated function einsum_contraction(::Type{TT1}, ::Val{freeinds}, tensors::Tuple{Vararg{AbstractTensor, N}}, tensorinds::Tuple{Vararg{Val, N}}) where {TT1, freeinds, N}
+    TT2, exps = einsum_contraction_expr(collect(freeinds),
+                                        collect(Type{<: AbstractTensor}, tensors.parameters),
+                                        Vector{Symbol}[collect(p.parameters[1]) for p in tensorinds.parameters])
+    TT = TT1 <: AbstractTensor ? TT1 : TT2
+    tupleinds = TT <: Real ? Colon() : indices_unique(TT)
     quote
         @_inline_meta
-        $TT($(exps...))
+        $TT($(exps[tupleinds]...))
     end
 end
