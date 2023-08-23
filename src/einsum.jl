@@ -100,9 +100,7 @@ isscalarexpr(x::EinsumExpr) = isempty(x.freeinds)
 function einsum_instantiate(expr)
     if Meta.isexpr(expr, :call)
         if expr.args[1] == :*
-            return mapreduce(einsum_instantiate,
-                             einsum_instantiate_contraction,
-                             expr.args[2:end])
+            return einsum_instantiate_contraction(map(einsum_instantiate, expr.args[2:end]))
         elseif expr.args[1] == :/
             lhs = einsum_instantiate(expr.args[2])
             rhs = einsum_instantiate(expr.args[3])
@@ -148,18 +146,50 @@ end
 
 # contraction
 function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr)
-    if isscalarexpr(lhs)
+    if isscalarexpr(lhs) || isscalarexpr(rhs)
         ex = Expr(:call, :*, lhs.ex, rhs.ex)
-        return EinsumExpr(ex, rhs.freeinds, [lhs.allinds; rhs.allinds])
-    elseif isscalarexpr(rhs)
-        ex = Expr(:call, :*, lhs.ex, rhs.ex)
-        return EinsumExpr(ex, lhs.freeinds, [lhs.allinds; rhs.allinds])
+        return EinsumExpr(ex, [lhs.freeinds; rhs.freeinds], [lhs.allinds; rhs.allinds])
     else
         freeinds = find_freeindices([lhs.freeinds; rhs.freeinds])
         allinds = [lhs.allinds; rhs.allinds]
         ex = :($einsum_contraction($(ValTuple(freeinds...)), ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
         return EinsumExpr(ex, freeinds, allinds)
     end
+end
+
+function einsum_instantiate_contraction(exprs::Vector{EinsumExpr})
+    freeinds = find_freeindices(mapreduce(x->x.freeinds, vcat, exprs))
+
+    list = findall(exprs) do einex # tensors having only dummy indices
+        isscalarexpr(einex) || !any(in(freeinds), einex.freeinds)
+    end
+
+    if !isempty(list)
+        dummy_tensors = exprs[list]
+        deleteat!(exprs, list)
+        if !isempty(exprs)
+            dummy_tensors = [dummy_tensors; popfirst!(exprs)]
+        end
+        push!(exprs, reduce(einsum_instantiate_contraction, dummy_tensors))
+    end
+
+    length(exprs) == 1 && return only(exprs)
+
+    exprs::Vector{EinsumExpr} = foldl(exprs) do x, y
+        lhs::EinsumExpr = x isa Vector ? x[end] : x
+        rhs::EinsumExpr = y
+        if isscalarexpr(lhs) || isscalarexpr(rhs)
+            ex = Expr(:call, :*, lhs.ex, rhs.ex)
+            tails = [EinsumExpr(ex, [lhs.freeinds; rhs.freeinds], [lhs.allinds; rhs.allinds])]
+        else
+            tails = [lhs, rhs]
+        end
+        x isa Vector ? append!(x[1:end-1], tails) : tails
+    end
+
+    allinds = mapreduce(x->x.allinds, vcat, exprs)
+    ex = :($einsum_contraction($(ValTuple(freeinds...)), ($([x.ex for x in exprs]...),), ($([ValTuple(x.freeinds...) for x in exprs]...),)))
+    return EinsumExpr(ex, freeinds, allinds)
 end
 
 # for dummy indices
