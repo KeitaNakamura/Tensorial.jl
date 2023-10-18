@@ -27,6 +27,7 @@ makedocs(;
             "Voigt form.md",
             "Tensor Inversion.md",
             "Broadcast.md",
+            "Automatic differentiation.md",
             "Einstein summation.md",
             "Quaternion.md",
         ],
