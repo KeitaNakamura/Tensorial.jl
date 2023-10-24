@@ -37,12 +37,19 @@ julia> @einsum A[i,j] * B[i,j]
 ```
 """
 macro einsum(expr)
+    einsum_exprssion(:Any, expr)
+end
+macro einsum(TT, expr)
+    einsum_exprssion(TT, expr)
+end
+
+function einsum_exprssion(TT, expr)
     freeinds, body = anonymous_args_body(expr)
-    einex = einsum_instantiate(body)
+    einex = einsum_instantiate(body, TT)
     freeinds === nothing && return einex.ex
     isempty(freeinds) && return einex.ex
     perm = find_perm(einex.freeinds => freeinds)
-    :(permutedims($(einex.ex), $(ValTuple(perm...))))
+    :(convert($TT, permutedims($(einex.ex), $(ValTuple(perm...)))))
 end
 
 ValTuple(x...) = Val(x)
@@ -97,24 +104,18 @@ end
 
 isscalarexpr(x::EinsumExpr) = isempty(x.freeinds)
 
-function einsum_instantiate(expr)
+function einsum_instantiate(expr, TT) # TT is :Any if not given in @einsum or not top level
     if Meta.isexpr(expr, :call)
         if expr.args[1] == :*
-            einex = einsum_instantiate(expr.args[2])
-            for ex in expr.args[3:end]
-                einex = einsum_instantiate_contraction(einex, einsum_instantiate(ex))
-            end
-            return einex
+            return einsum_instantiate_contraction(TT, map(x -> einsum_instantiate(x, :Any), expr.args[2:end]))
         elseif expr.args[1] == :/
-            lhs = einsum_instantiate(expr.args[2])
-            rhs = einsum_instantiate(expr.args[3])
+            lhs = einsum_instantiate(expr.args[2], TT)
+            rhs = einsum_instantiate(expr.args[3], :Any)
             return einsum_instantiate_division(lhs, rhs)
         elseif expr.args[1] == :+ || expr.args[1] == :-
-            einex = einsum_instantiate(expr.args[2])
-            for ex in expr.args[3:end]
-                einex = einsum_instantiate_addition(expr.args[1], einex, einsum_instantiate(ex))
-            end
-            return einex
+            return mapreduce(x -> einsum_instantiate(x, TT),
+                             (x, y) -> einsum_instantiate_addition(expr.args[1], x, y),
+                             expr.args[2:end])
         end
     elseif Meta.isexpr(expr, :ref)
         ex = esc(expr.args[1])
@@ -128,7 +129,7 @@ end
 # ref case
 function einsum_instantiate_tensor(einex::EinsumExpr)
     if isscalarexpr(einex) # handle `A[i,i]`
-        ex = :($einsum_contraction(Val(()), ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
+        ex = :($einsum_contraction(Any, Val(()), ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
         return EinsumExpr(ex, einex.freeinds, einex.allinds)
     else
         return einex
@@ -152,18 +153,50 @@ end
 
 # contraction
 function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr)
-    if isscalarexpr(lhs)
+    if isscalarexpr(lhs) || isscalarexpr(rhs)
         ex = Expr(:call, :*, lhs.ex, rhs.ex)
-        return EinsumExpr(ex, rhs.freeinds, vcat(lhs.allinds, rhs.allinds))
-    elseif isscalarexpr(rhs)
-        ex = Expr(:call, :*, lhs.ex, rhs.ex)
-        return EinsumExpr(ex, lhs.freeinds, vcat(lhs.allinds, rhs.allinds))
+        return EinsumExpr(ex, [lhs.freeinds; rhs.freeinds], [lhs.allinds; rhs.allinds])
     else
-        freeinds = find_freeindices(vcat(lhs.freeinds, rhs.freeinds))
-        allinds = vcat(lhs.allinds, rhs.allinds)
-        ex = :($einsum_contraction($(ValTuple(freeinds...)), ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
+        freeinds = find_freeindices([lhs.freeinds; rhs.freeinds])
+        allinds = [lhs.allinds; rhs.allinds]
+        ex = :($einsum_contraction(Any, $(ValTuple(freeinds...)), ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
         return EinsumExpr(ex, freeinds, allinds)
     end
+end
+
+function einsum_instantiate_contraction(TT, exprs::Vector{EinsumExpr})
+    freeinds = find_freeindices(mapreduce(x->x.freeinds, vcat, exprs))
+
+    list = findall(exprs) do einex # tensors having only dummy indices
+        isscalarexpr(einex) || !any(in(freeinds), einex.freeinds)
+    end
+
+    if !isempty(list)
+        dummy_tensors = exprs[list]
+        deleteat!(exprs, list)
+        if !isempty(exprs)
+            dummy_tensors = [dummy_tensors; popfirst!(exprs)]
+        end
+        push!(exprs, reduce(einsum_instantiate_contraction, dummy_tensors))
+    end
+
+    length(exprs) == 1 && return only(exprs)
+
+    exprs::Vector{EinsumExpr} = foldl(exprs) do x, y
+        lhs::EinsumExpr = x isa Vector ? x[end] : x
+        rhs::EinsumExpr = y
+        if isscalarexpr(lhs) || isscalarexpr(rhs)
+            ex = Expr(:call, :*, lhs.ex, rhs.ex)
+            tails = [EinsumExpr(ex, [lhs.freeinds; rhs.freeinds], [lhs.allinds; rhs.allinds])]
+        else
+            tails = [lhs, rhs]
+        end
+        x isa Vector ? append!(x[1:end-1], tails) : tails
+    end
+
+    allinds = mapreduce(x->x.allinds, vcat, exprs)
+    ex = :($einsum_contraction($TT, $(ValTuple(freeinds...)), ($([x.ex for x in exprs]...),), ($([ValTuple(x.freeinds...) for x in exprs]...),)))
+    return EinsumExpr(ex, freeinds, allinds)
 end
 
 # for dummy indices
@@ -174,20 +207,20 @@ end
     x
 end
 
-function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::Vector)
+function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::Vector{<: AbstractVector})
     @assert length(tensors) == length(tensorinds)
 
-    allinds = vcat([collect(x) for x in tensorinds]...)
+    allinds = mapreduce(collect, vcat, tensorinds)
     dummyinds = setdiff(allinds, freeinds)
-    allinds = [freeinds..., dummyinds...]
+    allinds = [freeinds; dummyinds]
 
     # check dimensions
     dummyaxes = Base.OneTo{Int}[]
-    for symbol in dummyinds
+    for di in dummyinds
         dim = 0
         count = 0
         for (i, inds) in enumerate(tensorinds)
-            for I in findall(==(symbol), inds)
+            for I in findall(==(di), inds)
                 if dim == 0
                     dim = size(tensors[i], I)
                     push!(dummyaxes, axes(tensors[i], I))
@@ -200,7 +233,7 @@ function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::
         count == 2 || error("@einsum: index $symbol appears more than twice")
     end
 
-    # tensor -> global indices (connectivities)
+    # tensor -> global indices
     whichindices = Vector{Int}[]
     for (i, inds) in enumerate(tensorinds)
         length(inds) == ndims(tensors[i]) || error("@einsum: the number of indices does not match the number of dimensions")
@@ -209,21 +242,19 @@ function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::
             @assert I !== nothing
             only(I)
         end
-        push!(whichindices, collect(whichinds))
+        push!(whichindices, whichinds)
     end
 
     T = promote_type(map(eltype, tensors)...)
     if isempty(freeinds)
         TT = T
         freeaxes = ()
-        tupleinds = Colon()
     else
         perm = map(freeinds) do index
-            only(findall(==(index), vcat(tensorinds...)))
+            only(findall(==(index), reduce(vcat, tensorinds)))
         end
         TT = tensortype(_permutedims(otimes(map(Space, tensors)...), Val(tuple(perm...)))){T}
         freeaxes = axes(TT)
-        tupleinds = indices_unique(TT)
     end
 
     sumexps = map(CartesianIndices(freeaxes)) do finds
@@ -233,54 +264,22 @@ function einsum_contraction_expr(freeinds::Vector, tensors::Vector, tensorinds::
                 inds = ainds[whichindices[i]]
                 getindex_expr(t, :(tensors[$i]), inds...)
             end
-            :(*($(exps...)))
+            Expr(:call, :*, exps...)
         end
-        :($simdsum($(xs...)))
+        Expr(:call, simdsum, xs...)
     end
 
-    TT, sumexps[tupleinds]
+    TT, sumexps
 end
 
-@generated function _einsum_contraction(::Val{freeinds}, tensors::Tuple, tensorinds::Tuple{Vararg{Val}}) where {freeinds}
-    TT, exps = einsum_contraction_expr(collect(freeinds), collect(tensors.parameters), map(p -> collect(p.parameters[1]), tensorinds.parameters))
+@generated function einsum_contraction(::Type{TT1}, ::Val{freeinds}, tensors::Tuple{Vararg{AbstractTensor, N}}, tensorinds::Tuple{Vararg{Val, N}}) where {TT1, freeinds, N}
+    TT2, exps = einsum_contraction_expr(collect(freeinds),
+                                        collect(Type{<: AbstractTensor}, tensors.parameters),
+                                        Vector{Symbol}[collect(p.parameters[1]) for p in tensorinds.parameters])
+    TT = TT1 <: AbstractTensor ? TT1 : TT2
+    tupleinds = TT <: Real ? Colon() : indices_unique(TT)
     quote
         @_inline_meta
-        $TT($(exps...))
+        $TT($(exps[tupleinds]...))
     end
-end
-
-# call contraction methods if possible
-@generated function einsum_contraction(_freeinds::Val{freeinds}, tensors::Tuple, _tensorinds::Tuple{Vararg{Val}}) where {freeinds}
-    default = quote
-        @_inline_meta
-        _einsum_contraction(_freeinds, tensors, _tensorinds)
-    end
-
-    length(tensors.parameters) != 2 && return default
-    lhsall, rhsall = map(p -> collect(p.parameters[1]), _tensorinds.parameters)
-
-    lhsdummy = Int[]
-    rhsdummy = Int[]
-    for i in eachindex(lhsall)
-        index = lhsall[i]
-        I = findall(==(index), rhsall)
-        isempty(I) && continue
-        push!(lhsdummy, i)
-        push!(rhsdummy, only(I))
-    end
-
-    issequence(x) = isempty(x) ? false : x == first(x):first(x)+length(x)-1
-    if issequence(lhsdummy) && issequence(rhsdummy) &&
-       last(lhsdummy) == lastindex(lhsall) && first(rhsdummy) == firstindex(rhsall)
-        lhsfree = deleteat!(lhsall, lhsdummy)
-        rhsfree = deleteat!(rhsall, rhsdummy)
-        if freeinds == tuple(lhsfree..., rhsfree...)
-            return quote
-                @_inline_meta
-                contraction(tensors..., $(Val(length(lhsdummy))))
-            end
-        end
-    end
-
-    default
 end
