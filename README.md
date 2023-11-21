@@ -3,7 +3,7 @@
 *Statically sized tensors and related operations for Julia*
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://KeitaNakamura.github.io/Tensorial.jl/stable)
-[![Build Status](https://github.com/KeitaNakamura/Tensorial.jl/workflows/CI/badge.svg)](https://github.com/KeitaNakamura/Tensorial.jl/actions?query=workflow%3ACI)
+[![CI](https://github.com/KeitaNakamura/Tensorial.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/KeitaNakamura/Tensorial.jl/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/KeitaNakamura/Tensorial.jl/branch/main/graph/badge.svg?token=V58DXDI1R5)](https://codecov.io/gh/KeitaNakamura/Tensorial.jl)
 
 Tensorial provides useful tensor operations (e.g., contraction; tensor product, `⊗`; `inv`; etc.) written in the [Julia programming language](https://julialang.org).
