@@ -296,6 +296,7 @@ end
 @inline transpose(x::AbstractTensor{Tuple{@Symmetry({dim, dim})}}) where {dim} = x
 @inline transpose(x::AbstractTensor{Tuple{m, n}}) where {m, n} = Tensor{Tuple{n, m}}((i,j) -> @inbounds x[j,i])
 @inline adjoint(x::AbstractTensor) = transpose(x)
+@inline adjoint(::AbstractVec) = throw(ArgumentError("adjoint for `AbstractVec` is not allowed"))
 
 # det
 @generated function extract_vecs(x::AbstractSquareTensor{dim}) where {dim}
