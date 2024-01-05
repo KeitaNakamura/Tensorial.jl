@@ -51,6 +51,7 @@ export
     otimes,
     dotdot,
     symmetric,
+    minorsymmetric,
     skew,
     ⊗,
     ⊡,

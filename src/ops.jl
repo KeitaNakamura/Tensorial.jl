@@ -214,7 +214,33 @@ julia> tr(x)
 """
 @inline tr(x::AbstractSquareTensor) = @einsum x[i,i]
 
-# symmetric
+"""
+    symmetric(::AbstractSecondOrderTensor)
+    symmetric(::AbstractSecondOrderTensor, uplo)
+
+Compute the symmetric part of a second order tensor.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.325977  0.894245  0.953125
+ 0.549051  0.353112  0.795547
+ 0.218587  0.394255  0.49425
+
+julia> symmetric(x)
+3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
+ 0.325977  0.721648  0.585856
+ 0.721648  0.353112  0.594901
+ 0.585856  0.594901  0.49425
+
+julia> symmetric(x, :U)
+3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
+ 0.325977  0.894245  0.953125
+ 0.894245  0.353112  0.795547
+ 0.953125  0.795547  0.49425
+```
+"""
 @inline symmetric(x::AbstractSymmetricSecondOrderTensor) = x
 @inline function symmetric(x::AbstractSymmetricSecondOrderTensor, uplo::Symbol)
     if uplo == :U || uplo == :L
@@ -248,6 +274,28 @@ end
     @inbounds SymmetricSecondOrderTensor{2}(x[1], (x[2]+x[3])/2, x[4])
 @inline symmetric(x::AbstractSecondOrderTensor{3}) =
     @inbounds SymmetricSecondOrderTensor{3}(x[1], (x[2]+x[4])/2, (x[3]+x[7])/2, x[5], (x[6]+x[8])/2, x[9])
+
+"""
+    minorsymmetric(::AbstractFourthOrderTensor) -> SymmetricFourthOrderTensor
+
+Compute the minor symmetric part of a fourth order tensor.
+
+# Examples
+```jldoctest
+julia> x = rand(Tensor{Tuple{3,3,3,3}});
+
+julia> minorsymmetric(x) ≈ @einsum (i,j,k,l) -> (x[i,j,k,l] + x[j,i,k,l] + x[i,j,l,k] + x[j,i,l,k]) / 4
+true
+```
+"""
+@inline function minorsymmetric(x::AbstractFourthOrderTensor{dim}) where {dim}
+    SymmetricFourthOrderTensor{dim}(
+        @inline function(i,j,k,l)
+            @inbounds i==j && k==l ? x[i,j,k,l] : (x[i,j,k,l]+x[j,i,k,l]+x[i,j,l,k]+x[j,i,l,k])/4
+        end
+    )
+end
+@inline minorsymmetric(x::AbstractSymmetricFourthOrderTensor) = x
 
 """
     skew(::AbstractSecondOrderTensor)
