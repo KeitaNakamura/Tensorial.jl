@@ -214,7 +214,21 @@ julia> tr(x)
 """
 @inline tr(x::AbstractSquareTensor) = @einsum x[i,i]
 
-# symmetric
+"""
+    symmetric(::AbstractSecondOrderTensor)
+    symmetric(::AbstractSecondOrderTensor, uplo)
+
+Compute the symmetric part of a second order tensor.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3})
+
+julia> symmetric(x)
+
+julia> symmetric(x, :U)
+```
+"""
 @inline symmetric(x::AbstractSymmetricSecondOrderTensor) = x
 @inline function symmetric(x::AbstractSymmetricSecondOrderTensor, uplo::Symbol)
     if uplo == :U || uplo == :L
