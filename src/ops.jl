@@ -264,6 +264,20 @@ end
     @inbounds SymmetricSecondOrderTensor{3}(x[1], (x[2]+x[4])/2, (x[3]+x[7])/2, x[5], (x[6]+x[8])/2, x[9])
 
 """
+    minorsymmetric(::AbstractFourthOrderTensor)
+
+Compute the minor symmetric part of a fourth order tensor.
+"""
+@inline function minorsymmetric(x::AbstractFourthOrderTensor{dim}) where {dim}
+    SymmetricFourthOrderTensor{dim}(
+        @inline function(i,j,k,l)
+            @inbounds i==j && k==l ? x[i,j,k,l] : (x[i,j,k,l]+x[j,i,k,l]+x[i,j,l,k]+x[j,i,l,k])/4
+        end
+    )
+end
+@inline minorsymmetric(x::AbstractSymmetricFourthOrderTensor) = x
+
+"""
     skew(::AbstractSecondOrderTensor)
     skew(::AbstractSymmetricSecondOrderTensor)
 
