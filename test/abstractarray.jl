@@ -16,7 +16,8 @@
         @test @Tensor(A[1,:]) === Vec(1,3,5)
         @test @Tensor(A[end,:]) === Vec(2,4,6)
         @test @Tensor(A[1,2:3]) === Vec(3,5)
-        @test_throws Exception @Tensor(Array(A)[1,2:3])
+        @test @Tensor(Array(A)[1,2:3])::Vector{Int} == [3,5]
+        @test @Tensor(Array(A)[1,[2,3]])::Vector{Int} == [3,5]
         # check symmetry
         A = SymmetricSecondOrderTensor{3}(1,2,3,4,5,6)
         @test @Tensor(A[:,[1,3]]) === @Mat [1 3; 2 5; 3 6]
