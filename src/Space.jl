@@ -38,9 +38,10 @@ Base.ndims(s::Space) = throw(ArgumentError("use `tensororder` to get order of a 
 ###############
 
 struct StaticIndex{index} # index is completely known in compile-time
-    StaticIndex{index}() where {index} = new{index::Union{Int, AbstractVector{Int}}}()
+    StaticIndex{index}() where {index} = new{index::Union{Int, Tuple{Vararg{Int}}}}()
 end
 @pure StaticIndex(index) = StaticIndex{index}()
+@pure StaticIndex(index::UnitRange) = StaticIndex{tuple(index...)}()
 @pure Base.length(::Type{StaticIndex{index}}) where {index} = length(index)
 @pure Base.length(index::StaticIndex) = length(typeof(index))
 
@@ -51,7 +52,7 @@ end
 
 _checkindex(::Type{Bool}, ::Len{n}, i) where {n} = checkindex(Bool, Base.OneTo(n), i)
 @generated _checkindex(::Type{Bool}, ::Len{n}, ::StaticIndex{index}) where {n, index} = # static checkindex
-    checkindex(Bool, Base.OneTo(n), index)
+    checkindex(Bool, Base.OneTo(n), collect(index))
 # linear index
 @inline function Base.checkbounds(::Type{Bool}, space::Space, I)
     _checkindex(Bool, Len(prod(tensorsize(space))), I)
@@ -70,6 +71,12 @@ end
 @inline function Base.checkbounds(space::Space, I...)
     checkbounds(Bool, space, I...) || Base.throw_boundserror(space, I)
     nothing
+end
+
+function Base.to_index(A, ::StaticIndex{i}) where {i}
+    i isa Int && return i
+    i isa Tuple{Vararg{Int}} && return collect(i)
+    error("unreachable")
 end
 
 function Base.show(io::IO, ::Space{S}) where {S}
