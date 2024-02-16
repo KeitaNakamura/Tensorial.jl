@@ -63,6 +63,12 @@ end
         check_value_and_type((@einsum (i,j) -> S3[j,k,i] * v1[k]), permutedims(S3, Val((3,1,2))) ⋅ v1, (@tensor t[i,j] := Array(S3)[j,k,i] * Array(v1)[k]))
         check_value_and_type((@einsum (j) -> v1[i] * S3[j,k,i] * v1[k]), (S3 ⋅ v1) ⋅ v1, (@tensor t[j] := Array(v1)[i] * Array(S3)[j,k,i] * Array(v1)[k]))
         check_value_and_type((@einsum v1[i] * S3[j,k,i] * v1[k]), (S3 ⋅ v1) ⋅ v1, (@tensor t[j] := Array(v1)[i] * Array(S3)[j,k,i] * Array(v1)[k]))
+
+        # unary operator (#201)
+        a = Vec(1,0,0)
+        b = Vec(0,1,0)
+        check_value_and_type((@einsum -a[μ]*a[v] + b[μ]*b[v]), -a ⊗ a + b ⊗ b, (@tensor t[μ,v] := -Array(a)[μ] * Array(a)[v] + Array(b)[μ] * Array(b)[v]))
+        check_value_and_type((@einsum b[μ]*b[v] + -a[μ]*a[v]), b ⊗ b + -a ⊗ a, (@tensor t[μ,v] := Array(b)[μ] * Array(b)[v] + -Array(a)[μ] * Array(a)[v]))
     end
     @testset "errors" begin
         S1 = rand(SymmetricSecondOrderTensor{3})

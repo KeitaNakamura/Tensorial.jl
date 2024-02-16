@@ -113,9 +113,13 @@ function einsum_instantiate(expr, TT) # TT is :Any if not given in @einsum or no
             rhs = einsum_instantiate(expr.args[3], :Any)
             return einsum_instantiate_division(lhs, rhs)
         elseif expr.args[1] == :+ || expr.args[1] == :-
-            return mapreduce(x -> einsum_instantiate(x, TT),
-                             (x, y) -> einsum_instantiate_addition(expr.args[1], x, y),
-                             expr.args[2:end])
+            if length(expr.args) == 2 # handle unary operator `-a[i]` (#201)
+                return einsum_instantiate(Expr(:call, :*, ifelse(expr.args[1]==:+, 1, -1), expr.args[2]), TT)
+            else
+                return mapreduce(x -> einsum_instantiate(x, TT),
+                                 (x, y) -> einsum_instantiate_addition(expr.args[1], x, y),
+                                 expr.args[2:end])
+            end
         end
     elseif Meta.isexpr(expr, :ref)
         ex = esc(expr.args[1])
