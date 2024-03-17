@@ -41,6 +41,7 @@
             σ = rand(SymmetricSecondOrderTensor{3, T})
             J2 = deviatoric_stress_invariants(σ)[2]
             @test (@inferred vonmises(σ))::T ≈ √(3J2)
+            @test (@inferred vonmises(Mat{3,3}(σ)))::T ≈ √(3J2)
         end
     end
     @testset "stress invariants" begin

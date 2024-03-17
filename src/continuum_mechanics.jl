@@ -204,8 +204,8 @@ julia> vonmises(σ)
 1.3078860814690232
 ```
 """
-@inline function vonmises(σ::SymmetricSecondOrderTensor{3, T}) where {T}
-    s = dev(σ)
+@inline function vonmises(σ::AbstractSquareTensor{3, T}) where {T}
+    s = dev(convert(SymmetricSecondOrderTensor{3, T}, σ))
     sqrt(T(3/2) * (s ⊡ s))
 end
 
