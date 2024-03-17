@@ -245,3 +245,18 @@ end
 function Base.promote_rule(::Type{Tensor{S, T, N, L}}, ::Type{Tensor{S, U, N, L}}) where {S, T, U, N, L}
     Tensor{S, promote_type(T, U), N, L}
 end
+
+@generated function Base.:(==)(x::Tensor, y::Tensor)
+    axes(x) != axes(y) && return false
+    L = length(x)
+    exps = map(1:L) do i
+        xi = getindex_expr(x, :x, i)
+        yi = getindex_expr(y, :y, i)
+        :($xi == $yi || return false)
+    end
+    quote
+        @_inline_meta
+        $(exps...)
+        true
+    end
+end
