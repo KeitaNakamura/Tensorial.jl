@@ -213,13 +213,14 @@ end
 @inline Base.convert(::Type{TT}, x::TT) where {TT <: Tensor} = x
 @inline Base.convert(::Type{TT}, x::AbstractArray) where {TT <: Tensor} = TT(x)
 @generated function Base.convert(::Type{TT}, x::AbstractTensor) where {TT <: Tensor}
-    S = promote_space(Space(TT), Space(x))
-    S == Space(TT) ||
-        return :(throw(ArgumentError("Cannot `convert` an object of type $(typeof(x)) to an object of type $TT")))
-    exps = [getindex_expr(x, :x, i) for i in indices_unique(S)]
+    Sy = Space(TT)
+    S = promote_space(Sy, Space(x))
+    exps = [getindex_expr(x, :x, i) for i in indices_unique(TT)]
     quote
         @_inline_meta
-        @inbounds TT(tuple($(exps...)))
+        @inbounds y = $TT(tuple($(exps...)))
+        $(S != Sy) && x != y && throw(InexactError(:convert, TT, x))
+        y
     end
 end
 @inline Base.convert(::Type{TT}, x::Tuple) where {TT <: Tensor} = TT(x)
