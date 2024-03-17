@@ -103,8 +103,13 @@ function inv end
 @inline _inv(x::AbstractSquareTensor{2}) = adj(x) * inv(det(x))
 @inline _inv(x::AbstractSquareTensor{3}) = adj(x) * inv(det(x))
 
-@inline function _inv(x::AbstractSquareTensor{dim}) where {dim}
+@inline function _inv(x::AbstractSecondOrderTensor{dim}) where {dim}
     typeof(x)(inv(SMatrix{dim, dim}(x)))
+end
+@inline function _inv(x::AbstractSymmetricSecondOrderTensor{dim}) where {dim}
+    # `InexactError` occurs without `symmetric`
+    sa = inv(SMatrix{dim, dim}(x))
+    typeof(x)(symmetric(Tensor(sa), :U))
 end
 
 @generated function toblocks(x::Mat{dim, dim}) where {dim}
@@ -175,7 +180,8 @@ function _inv_with_blocks(x::Mat{dim, dim}) where {dim}
 end
 
 @inline function _inv_with_blocks(x::Tensor{Tuple{@Symmetry({dim, dim})}}) where {dim}
-    typeof(x)(_inv_with_blocks(convert(Mat{dim, dim}, x)))
+    # `InexactError` occurs without `symmetric`
+    typeof(x)(symmetric(_inv_with_blocks(convert(Mat{dim, dim}, x)), :U))
 end
 
 @inline inv(x::AbstractSquareTensor) = _inv(x)
