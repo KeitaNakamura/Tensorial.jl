@@ -242,9 +242,8 @@ end
             @test (@inferred convert(Tensor{Tuple{2,2}, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
             @test (@inferred convert(SecondOrderTensor{2, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
             @test (@inferred convert(Mat{2, 2, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
-            Sdata = map(T, (1,2,4))
-            @test (@inferred convert(Tensor{Tuple{@Symmetry({2,2})}, T}, A))::Tensor{Tuple{@Symmetry({2,2})}, T} |> Tuple == Sdata
-            @test (@inferred convert(SymmetricSecondOrderTensor{2, T}, A))::Tensor{Tuple{@Symmetry({2,2})}, T} |> Tuple == Sdata
+            @test_throws InexactError convert(Tensor{Tuple{@Symmetry({2,2})}, T}, A)
+            @test_throws InexactError convert(SymmetricSecondOrderTensor{2, T}, A)
             vdata = map(T, (1,2))
             @test (@inferred convert(Vec{2, T}, v))::Vec{2, T} |> Tuple == vdata
         end

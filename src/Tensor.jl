@@ -55,19 +55,17 @@ end
 end
 ## from AbstractArray
 @generated function (::Type{TT})(A::AbstractArray) where {TT <: Tensor}
-    S = Space(TT)
+    S = Space(tensorsize(Space(TT)))
     if IndexStyle(A) isa IndexLinear
         exps = [:(A[$i]) for i in indices_unique(S)]
-    else
+    else # IndexStyle(A) isa IndexCartesian
         tocartesian = CartesianIndices(tensorsize(S))
         exps = [:(A[$(tocartesian[i])]) for i in indices_unique(S)]
     end
     quote
         @_inline_meta
-        @boundscheck if length(TT) != length(A)
-            throw(DimensionMismatch("expected input array of length $(length(A)), got length $(length(TT))"))
-        end
-        @inbounds TT($(exps...))
+        length(TT) == length(A) || throw(DimensionMismatch("expected input array of length $(length(A)), got length $(length(TT))"))
+        @inbounds convert(TT, $(tensortype(S))($(exps...)))
     end
 end
 ## from StaticArray
