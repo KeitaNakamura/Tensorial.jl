@@ -227,10 +227,11 @@ end
             vdata = map(T, (1:3...,))
             @test (@inferred convert(Vec{3, T}, v))::Vec{3, T} |> Tuple == vdata
             # convert symmetric tensor to tensor
-            (@inferred convert(Tensor{Tuple{3, 3}, T}, S))::Tensor{Tuple{3, 3}, T} == Array(S)
-            (@inferred convert(Mat{3, 3, T}, S))::Tensor{Tuple{3, 3}, T} == Array(S)
+            @test (@inferred convert(Tensor{Tuple{3, 3}, T}, S))::Tensor{Tuple{3, 3}, T} == Array(S)
+            @test (@inferred convert(Mat{3, 3, T}, S))::Tensor{Tuple{3, 3}, T} == Array(S)
             # convert tensor to symmetric tensor
-            @test_throws Exception convert(Tensor{Tuple{@Symmetry({3, 3})}, T}, A)
+            @test (@inferred convert(Tensor{Tuple{@Symmetry({3, 3})}, T}, A+A')) == Array(A+A')
+            @test_throws InexactError convert(Tensor{Tuple{@Symmetry({3, 3})}, T}, A)
         end
     end
     @testset "AbstractArray -> Tensor" begin
