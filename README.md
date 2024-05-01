@@ -110,10 +110,10 @@ randn(Mat{2,3})
 x = @Mat [1 2
           3 4
           5 6]
-@Tensor(x[2:3, :])   == @Mat [3 4
-                              5 6]
-@Tensor(x[[1,3], :]) == @Mat [1 2
-                              5 6]
+@Tensor(x[2:3, :])   === @Mat [3 4
+                               5 6]
+@Tensor(x[[1,3], :]) === @Mat [1 2
+                               5 6]
 
 # contraction and tensor product
 x = rand(Mat{2,2})

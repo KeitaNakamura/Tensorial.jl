@@ -45,10 +45,10 @@ SymmetricSecondOrderTensor{2}((i,j) -> i == j ? 1 : 0) == one(SymmetricSecondOrd
 x = @Mat [1 2
           3 4
           5 6]
-@Tensor(x[2:3, :])   == @Mat [3 4
-                              5 6]
-@Tensor(x[[1,3], :]) == @Mat [1 2
-                              5 6]
+@Tensor(x[2:3, :])   === @Mat [3 4
+                               5 6]
+@Tensor(x[[1,3], :]) === @Mat [1 2
+                               5 6]
 ```
 
 ## Tensor Operations
