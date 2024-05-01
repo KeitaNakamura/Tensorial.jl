@@ -187,17 +187,17 @@ end
 @inline inv(x::AbstractSquareTensor) = _inv(x)
 
 # fast inv for dim ≤ 10
-@inline fastinv(x::AbstractSquareTensor{1, Float64}) = _inv(x)
-@inline fastinv(x::AbstractSquareTensor{2, Float64}) = _inv(x)
-@inline fastinv(x::AbstractSquareTensor{3, Float64}) = _inv(x)
-@inline fastinv(x::AbstractSquareTensor{4, Float64}) = _inv(x)
-@inline fastinv(x::AbstractSquareTensor{5, Float64}) = _inv_with_blocks(x)
-@inline fastinv(x::AbstractSquareTensor{6, Float64}) = _inv_with_blocks(x)
-@inline fastinv(x::AbstractSquareTensor{7, Float64}) = _inv_with_blocks(x)
-@inline fastinv(x::AbstractSquareTensor{8, Float64}) = _inv_with_blocks(x)
-@inline fastinv(x::AbstractSquareTensor{9, Float64}) = _inv_with_blocks(x)
-@inline fastinv(x::AbstractSquareTensor{10, Float64}) = _inv_with_blocks(x)
-@inline fastinv(x::AbstractSquareTensor{<: Any, Float64}) = _inv(x)
+@inline fastinv(x::AbstractSquareTensor{1}) = _inv(x)
+@inline fastinv(x::AbstractSquareTensor{2}) = _inv(x)
+@inline fastinv(x::AbstractSquareTensor{3}) = _inv(x)
+@inline fastinv(x::AbstractSquareTensor{4}) = _inv(x)
+@inline fastinv(x::AbstractSquareTensor{5}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{6}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{7}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{8}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{9}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{10}) = _inv_with_blocks(x)
+@inline fastinv(x::AbstractSquareTensor{<: Any}) = _inv(x)
 
 # don't use `voigt` or `mandel` for fast computations
 @generated function inv(x::FourthOrderTensor{dim}) where {dim}

@@ -34,12 +34,15 @@
                 Random.seed!(1234)
                 x = rand(SecondOrderTensor{dim, T})
                 y = rand(SymmetricSecondOrderTensor{dim, T})
+                xinv = (@inferred Tensorial.fastinv(x))::typeof(x)
+                yinv = (@inferred Tensorial.fastinv(y))::typeof(y)
                 if T == Float64
-                    @test (@inferred Tensorial.fastinv(x))::typeof(x) ⋅ x ≈ one(x)
-                    @test (@inferred Tensorial.fastinv(y))::typeof(y) ⋅ y ≈ one(y)
+                    @test xinv ⋅ x ≈ one(x)
+                    @test yinv ⋅ y ≈ one(y)
+                    @test xinv ≈ inv(x)
+                    @test yinv ≈ inv(y)
                 else
-                    @test_throws Exception Tensorial.fastinv(x)
-                    @test_throws Exception Tensorial.fastinv(y)
+                    # not accurate enough to satisfy above conditions
                 end
             end
         end
