@@ -1,5 +1,13 @@
 @testset "Permutation" begin
     @testset "permutedims" begin
+        @testset "Vec" begin
+            for T in (Float64, Float32)
+                for dim in 1:10
+                    x = rand(Vec{dim, T})
+                    @test (@inferred permutedims(x)) === Mat{1,dim,T}(x)
+                end
+            end
+        end
         @testset "Space" begin
             S = Space(4, 3, Symmetry(2, 2))
 
