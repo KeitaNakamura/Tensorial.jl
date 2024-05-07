@@ -7,6 +7,9 @@ permute_error() = throw(ArgumentError("invalid permutation of dimensions"))
     end
 end
 
+# Vec
+Base.permutedims(x::Vec{dim}) where {dim} = Mat{1,dim}(Tuple(x))
+
 # Space
 
 @generated function _permutedims(::Space{spaces}, ::Val{perm}) where {spaces, perm}
