@@ -320,6 +320,13 @@ end
         @test U == Fs.U
         @test p == Fs.p
     end
+    @testset "eigen" begin
+        Random.seed!(1234)
+        x = rand(SymmetricSecondOrderTensor{3})
+        @test (@inferred eigvals(x)) ≈ eigvals(Array(x))
+        @test (@inferred eigen(x)).values ≈ eigen(Array(x)).values
+        @test (@inferred eigen(x)).vectors ≈ (@inferred eigvecs(x))
+    end
     @testset "svd" begin
         Random.seed!(1234)
         At = rand(Mat{3,3})

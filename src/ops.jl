@@ -775,6 +775,16 @@ for pv in (:true, :false)
 end
 lu(A::AbstractMat; check = true) = lu(A, Val(true); check = check)
 
+# eigen
+@inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool=true, scale::Bool=true)
+    Tensor(eigvals(Symmetric(SArray(x)); permute=permute, scale = scale))
+end
+
+@inline function eigen(x::AbstractSymmetricSecondOrderTensor; permute::Bool=true, scale::Bool=true)
+    eig = eigen(Symmetric(SArray(x)); permute=permute, scale=scale)
+    Eigen(Tensor(eig.values), Tensor(eig.vectors))
+end
+
 # svd
 struct SVD{T, TU, TS, TVt} <: Factorization{T}
     U::TU
