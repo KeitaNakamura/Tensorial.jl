@@ -6,11 +6,7 @@
 [![CI](https://github.com/KeitaNakamura/Tensorial.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/KeitaNakamura/Tensorial.jl/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/KeitaNakamura/Tensorial.jl/branch/main/graph/badge.svg?token=V58DXDI1R5)](https://codecov.io/gh/KeitaNakamura/Tensorial.jl)
 
-Tensorial provides useful tensor operations (e.g., contraction; tensor product, `⊗`; `inv`; etc.) written in the [Julia programming language](https://julialang.org).
-The library supports arbitrary size of non-symmetric and symmetric tensors, where symmetries should be specified to avoid wasteful duplicate computations.
-The way to give a size of the tensor is similar to [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl), and symmetries of tensors can be specified by using `@Symmetry`.
-For example, symmetric fourth-order tensor (symmetrizing tensor) is represented in this library as `Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}`.
-Einstein summation macro and automatic differentiation functions are also provided.
+Tensorial provides useful tensor operations, such as contraction, tensor product (`⊗`), and inversion (`inv`), implemented in the Julia programming language. The library supports tensors of arbitrary size, including both symmetric and non-symmetric tensors, where symmetries can be specified to avoid redundant computations. The approach for defining the size of a tensor is similar to that used in [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl), and tensor symmetries can be specified using the `@Symmetry` macro. For instance, a symmetric fourth-order tensor (a symmetrized tensor) is represented in this library as `Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}`. The library also includes an Einstein summation macro `@einsum` and functions for automatic differentiation, such as `gradient` and `hessian`.
 
 ## Speed
 
