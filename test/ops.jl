@@ -265,6 +265,16 @@ end
             @test rotmat((@inferred angleaxis(R))::Tuple{T, Vec{3, T}}...) ≈ R
         end
     end
+    @testset "exp/log" begin
+        for T in (Float32, Float64)
+            for dim in (2, 3)
+                x = rand(SymmetricSecondOrderTensor{dim, T})
+                y = exp(x)
+                @test (@inferred exp(x))::SymmetricSecondOrderTensor{dim, T} ≈ exp(Array(x))
+                @test (@inferred log(y))::SymmetricSecondOrderTensor{dim, T} ≈ x
+            end
+        end
+    end
 end
 
 @testset "Call methods in StaticArrays" begin

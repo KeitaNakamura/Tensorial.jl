@@ -719,6 +719,15 @@ function angleaxis(R::SecondOrderTensor{3})
     θ, n
 end
 
+# exp/log
+@inline function Base.exp(x::AbstractSymmetricSecondOrderTensor)
+    F = eigen(x)
+    symmetric(F.vectors ⋅ diagm(exp.(F.values)) ⋅ F.vectors')
+end
+@inline function Base.log(x::AbstractSymmetricSecondOrderTensor)
+    F = eigen(x)
+    symmetric(F.vectors ⋅ diagm(log.(F.values)) ⋅ F.vectors')
+end
 
 # ----------------------------------------------#
 # operations calling methods in StaticArrays.jl #
@@ -726,7 +735,6 @@ end
 
 # exp
 @inline Base.exp(x::AbstractSecondOrderTensor) = typeof(x)(exp(SArray(x)))
-@inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = typeof(x)(exp(Symmetric(SArray(x))))
 
 # diag/diagm
 @inline diag(x::Union{AbstractMat, AbstractSymmetricSecondOrderTensor}, ::Val{k} = Val(0)) where {k} = Tensor(diag(SArray(x), Val{k}))
