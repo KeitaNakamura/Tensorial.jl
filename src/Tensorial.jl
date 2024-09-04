@@ -55,6 +55,7 @@ export
     skew,
     ⊗,
     ⊡,
+    ⋮,
     rotmat,
     rotmatx,
     rotmaty,
@@ -101,6 +102,7 @@ include("quaternion.jl")
 
 const ⊗ = otimes
 const ⊡ = contract2
+const ⋮ = contract3
 
 @deprecate contraction contract true
 @deprecate double_contraction contract2 true

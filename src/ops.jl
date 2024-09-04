@@ -180,6 +180,7 @@ julia> a = x ⋅ y
 """
 @inline dot(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(1))
 @inline contract2(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(2))
+@inline contract3(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(3))
 
 """
     norm(::AbstractTensor)

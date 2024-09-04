@@ -59,6 +59,7 @@ end
             for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,3)
                 Z[i,l] += X[i,j,k] * Y[j,k,l]
             end
+            @test (@inferred Tensorial.contract2(x, y))::Tensor{Tuple{3,3}, T} ≈ z
             @test_deprecated double_contraction(x, y)
             @test z ≈ Z
             # triple contraction
@@ -69,6 +70,7 @@ end
             for i in axes(X,1), j in axes(X,2), k in axes(X,3)
                 Z += X[i,j,k] * Y[i,j,k]
             end
+            @test (@inferred Tensorial.contract3(x, y))::T ≈ z
             @test z ≈ Z
             # zero contraction (otimes)
             z = (@inferred contract(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry({3,3}),@Symmetry({3,3,3})}, T}
