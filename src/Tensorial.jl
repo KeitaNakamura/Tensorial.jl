@@ -48,6 +48,9 @@ export
     levicivita,
 # operations
     contract,
+    contract1,
+    contract2,
+    contract3,
     otimes,
     dotdot,
     symmetric,
@@ -55,7 +58,6 @@ export
     skew,
     ⊗,
     ⊡,
-    ⋮,
     rotmat,
     rotmatx,
     rotmaty,
@@ -80,6 +82,7 @@ export
     quaternion,
     angleaxis
 
+const contract1 = dot
 
 include("utils.jl")
 include("Symmetry.jl")
@@ -102,7 +105,6 @@ include("quaternion.jl")
 
 const ⊗ = otimes
 const ⊡ = contract2
-const ⋮ = contract3
 
 @deprecate contraction contract true
 @deprecate double_contraction contract2 true

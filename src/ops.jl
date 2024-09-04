@@ -33,8 +33,8 @@ end
 @inline Base.:-(x::AbstractTensor, y::UniformScaling) = _add_uniform( x, -y.λ)
 @inline Base.:+(x::UniformScaling, y::AbstractTensor) = _add_uniform( y,  x.λ)
 @inline Base.:-(x::UniformScaling, y::AbstractTensor) = _add_uniform(-y,  x.λ)
-@inline dot(x::Union{AbstractVec, AbstractMat, AbstractSquareTensor}, y::UniformScaling) = x * y.λ
-@inline dot(x::UniformScaling, y::Union{AbstractVec, AbstractMat, AbstractSquareTensor}) = x.λ * y
+@inline contract1(x::Union{AbstractVec, AbstractMat, AbstractSquareTensor}, y::UniformScaling) = x * y.λ
+@inline contract1(x::UniformScaling, y::Union{AbstractVec, AbstractMat, AbstractSquareTensor}) = x.λ * y
 @inline contract2(x::AbstractSquareTensor, y::UniformScaling) = tr(x) * y.λ
 @inline contract2(x::UniformScaling, y::AbstractSquareTensor) = x.λ * tr(y)
 
@@ -58,7 +58,7 @@ end
 
 Conduct contraction of `N` inner indices.
 For example, `N=2` contraction for third-order tensors ``A_{ij} = B_{ikl} C_{klj}``
-can be computed in Tensorial.jl as
+can be computed as follows:
 
 ```jldoctest
 julia> B = rand(Tensor{Tuple{3,3,3}});
@@ -178,8 +178,8 @@ julia> a = x ⋅ y
 0.5715585109976284
 ```
 """
-@inline dot(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(1))
-@inline contract2(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(2))
+@inline dot(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(1)) # dot, ⋅
+@inline contract2(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(2)) # ⊡
 @inline contract3(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(3))
 
 """
