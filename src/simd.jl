@@ -8,10 +8,10 @@ const SIMDTypes = Union{Float16, Float32, Float64}
     end
 end
 
-@generated function contraction(x::Tensor{<: Any, T,}, y::Tensor{<: Any, T}, ::Val{N}) where {T <: SIMDTypes, N}
+@generated function contract(x::Tensor{<: Any, T,}, y::Tensor{<: Any, T}, ::Val{N}) where {T <: SIMDTypes, N}
     S1 = Space(x)
     S2 = Space(y)
-    S = contraction(S1, S2, Val(N))
+    S = contract(S1, S2, Val(N))
     S_Inner = Space((tensorsize(S2)[i] for i in 1:N)...)
     S1 = otimes(droplast(S1, Val(N)), S_Inner)
     S2 = otimes(S_Inner, dropfirst(S2, Val(N)))

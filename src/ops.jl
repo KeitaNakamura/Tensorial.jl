@@ -35,8 +35,8 @@ end
 @inline Base.:-(x::UniformScaling, y::AbstractTensor) = _add_uniform(-y,  x.λ)
 @inline dot(x::Union{AbstractVec, AbstractMat, AbstractSquareTensor}, y::UniformScaling) = x * y.λ
 @inline dot(x::UniformScaling, y::Union{AbstractVec, AbstractMat, AbstractSquareTensor}) = x.λ * y
-@inline double_contraction(x::AbstractSquareTensor, y::UniformScaling) = tr(x) * y.λ
-@inline double_contraction(x::UniformScaling, y::AbstractSquareTensor) = x.λ * tr(y)
+@inline contract2(x::AbstractSquareTensor, y::UniformScaling) = tr(x) * y.λ
+@inline contract2(x::UniformScaling, y::AbstractSquareTensor) = x.λ * tr(y)
 
 # error for standard multiplications
 error_multiply() = error("use `⋅` (`\\cdot`) for single contraction and `⊡` (`\\boxdot`) for double contraction instead of `*`")
@@ -54,7 +54,7 @@ function contraction_exprs(x::Type{<: AbstractTensor}, y::Type{<: AbstractTensor
 end
 
 """
-    contraction(::AbstractTensor, ::AbstractTensor, ::Val{N})
+    contract(::AbstractTensor, ::AbstractTensor, ::Val{N})
 
 Conduct contraction of `N` inner indices.
 For example, `N=2` contraction for third-order tensors ``A_{ij} = B_{ikl} C_{klj}``
@@ -65,7 +65,7 @@ julia> B = rand(Tensor{Tuple{3,3,3}});
 
 julia> C = rand(Tensor{Tuple{3,3,3}});
 
-julia> A = contraction(B, C, Val(2))
+julia> A = contract(B, C, Val(2))
 3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  3.70978  2.47156  3.91807
  2.90966  2.30881  3.25965
@@ -74,11 +74,11 @@ julia> A = contraction(B, C, Val(2))
 
 Following symbols are also available for specific contractions:
 
-- `x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>`): `contraction(x, y, Val(0))`
-- `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`): `contraction(x, y, Val(1))`
-- `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>`): `contraction(x, y, Val(2))`
+- `x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>`): `contract(x, y, Val(0))`
+- `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`): `contract(x, y, Val(1))`
+- `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>`): `contract(x, y, Val(2))`
 """
-@generated function contraction(t1::AbstractTensor, t2::AbstractTensor, ::Val{N}) where {N}
+@generated function contract(t1::AbstractTensor, t2::AbstractTensor, ::Val{N}) where {N}
     S1 = Space(t1)
     S2 = Space(t2)
     S1_rhs = S1[ntuple(_->1, Val(tensororder(S1)-N))..., ntuple(_->:, Val(N))...]
@@ -89,7 +89,7 @@ Following symbols are also available for specific contractions:
     K = ncomponents(S_contracted)
     I = ncomponents(S1_new) ÷ K
     J = ncomponents(S2_new) ÷ K
-    TT = tensortype(contraction(S1, S2, Val(N)))
+    TT = tensortype(contract(S1, S2, Val(N)))
     dups = indices_dup(S_contracted)
     quote
         @_inline_meta
@@ -134,7 +134,7 @@ julia> A = x ⊗ y
  0.19547   0.0771855  0.086179
 ```
 """
-@inline otimes(x1::AbstractTensor, x2::AbstractTensor) = contraction(x1, x2, Val(0))
+@inline otimes(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(0))
 @inline otimes(x1::AbstractTensor, x2::AbstractTensor, others...) = otimes(otimes(x1, x2), others...)
 @inline otimes(x::AbstractTensor) = x
 
@@ -143,7 +143,7 @@ julia> A = x ⊗ y
     x ⋅ y
 
 Compute dot product such as ``a = x_i y_i``.
-This is equivalent to [`contraction(::AbstractTensor, ::AbstractTensor, Val(1))`](@ref).
+This is equivalent to [`contract(::AbstractTensor, ::AbstractTensor, Val(1))`](@ref).
 `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`) is a synonym for `dot(x, y)`.
 
 # Examples
@@ -164,8 +164,8 @@ julia> a = x ⋅ y
 0.5715585109976284
 ```
 """
-@inline dot(x1::AbstractTensor, x2::AbstractTensor) = contraction(x1, x2, Val(1))
-@inline double_contraction(x1::AbstractTensor, x2::AbstractTensor) = contraction(x1, x2, Val(2))
+@inline dot(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(1))
+@inline contract2(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(2))
 
 """
     norm(::AbstractTensor)
@@ -184,7 +184,7 @@ julia> norm(x)
 1.8223398556552728
 ```
 """
-@inline norm(x::AbstractTensor) = sqrt(contraction(x, x, Val(ndims(x))))
+@inline norm(x::AbstractTensor) = sqrt(contract(x, x, Val(ndims(x))))
 
 @inline normalize(x::AbstractTensor) = x / norm(x)
 

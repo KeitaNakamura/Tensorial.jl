@@ -42,7 +42,7 @@ end
             x = rand(Tensor{Tuple{3,@Symmetry({3,3})}, T})
             y = rand(Tensor{Tuple{@Symmetry({3,3,3})}, T})
             # single contraction
-            z = (@inferred contraction(x, y, Val(1)))::Tensor{Tuple{3,3,@Symmetry({3,3})}, T}
+            z = (@inferred contract(x, y, Val(1)))::Tensor{Tuple{3,3,@Symmetry({3,3})}, T}
             X = Array(x);
             Y = Array(y);
             Z = zeros(T, 3,3,3,3)
@@ -50,17 +50,19 @@ end
                 Z[i,j,l,m] += X[i,j,k] * Y[k,l,m]
             end
             @test z ≈ Z
+            @test_deprecated contraction(x, y, Val(1))
             # double contraction
-            z = (@inferred contraction(x, y, Val(2)))::Tensor{Tuple{3,3}, T}
+            z = (@inferred contract(x, y, Val(2)))::Tensor{Tuple{3,3}, T}
             X = Array(x);
             Y = Array(y);
             Z = zeros(T, 3,3)
             for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,3)
                 Z[i,l] += X[i,j,k] * Y[j,k,l]
             end
+            @test_deprecated double_contraction(x, y)
             @test z ≈ Z
             # triple contraction
-            z = (@inferred contraction(x, y, Val(3)))::T
+            z = (@inferred contract(x, y, Val(3)))::T
             X = Array(x);
             Y = Array(y);
             Z = zero(T)
@@ -69,7 +71,7 @@ end
             end
             @test z ≈ Z
             # zero contraction (otimes)
-            z = (@inferred contraction(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry({3,3}),@Symmetry({3,3,3})}, T}
+            z = (@inferred contract(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry({3,3}),@Symmetry({3,3,3})}, T}
             X = Array(x);
             Y = Array(y);
             Z = zeros(T, 3,3,3,3,3,3)

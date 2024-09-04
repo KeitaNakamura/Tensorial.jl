@@ -47,7 +47,7 @@ export
 # special tensors
     levicivita,
 # operations
-    contraction,
+    contract,
     otimes,
     dotdot,
     symmetric,
@@ -100,6 +100,9 @@ include("abstractarray.jl")
 include("quaternion.jl")
 
 const ⊗ = otimes
-const ⊡ = double_contraction
+const ⊡ = contract2
+
+@deprecate contraction contract true
+@deprecate double_contraction contract2 true
 
 end # module
