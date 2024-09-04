@@ -138,6 +138,20 @@ julia> A = x ⊗ y
 @inline otimes(x1::AbstractTensor, x2::AbstractTensor, others...) = otimes(otimes(x1, x2), others...)
 @inline otimes(x::AbstractTensor) = x
 
+struct OTimes{n} end
+otimes(n::Int) = OTimes{n}()
+
+@inline Base.:^(x::AbstractVec, ::OTimes{1}) = x
+@generated function Base.:^(x::AbstractVec{dim}, ::OTimes{n}) where {dim, n}
+    indices = Expr(:tuple, [Symbol(i) for i in 1:n]...)
+    expr = Expr(:call, :*, [:(x[$i]) for i in indices.args]...)
+    TT = Tensor{Tuple{Symmetry{Tuple{fill(dim,n)...}}}}
+    quote
+        @_inline_meta
+        @einsum $TT $indices -> $expr
+    end
+end
+
 """
     dot(x::AbstractTensor, y::AbstractTensor)
     x ⋅ y

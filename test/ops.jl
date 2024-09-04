@@ -97,6 +97,10 @@ end
             @test (@inferred normalize(z))::typeof(z) ≈ Array(z) / norm(Array(z))
             @test (@inferred ⊗(x, y, x, y))::Tensor{Tuple{3,3,3,3}, T} ≈ x ⊗ y ⊗ x ⊗ y
             @test (@inferred ⊗(x))::typeof(x) ≈ x
+            @test (@inferred x^⊗(1))::Tensor{Tuple{3}, T} ≈ x
+            @test (@inferred x^⊗(2))::Tensor{Tuple{@Symmetry{3,3}}, T} ≈ x ⊗ x
+            @test (@inferred x^⊗(3))::Tensor{Tuple{@Symmetry{3,3,3}}, T} ≈ x ⊗ x ⊗ x
+            @test (@inferred x^⊗(4))::Tensor{Tuple{@Symmetry{3,3,3,3}}, T} ≈ x ⊗ x ⊗ x ⊗ x
             # nonsquare
             x = rand(Vec{3, T})
             y = rand(Vec{2, T})
