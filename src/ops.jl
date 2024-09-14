@@ -105,6 +105,9 @@ Following symbols are also available for specific contractions:
         $TT{T}(data)
     end
 end
+@inline contract(t::AbstractTensor, a::Number, ::Val{0}) = t * a
+@inline contract(a::Number, t::AbstractTensor, ::Val{0}) = a * t
+@inline contract(a::Number, b::Number, ::Val{0}) = a * b
 
 """
     otimes(x::AbstractTensor, y::AbstractTensor)
@@ -134,13 +137,14 @@ julia> A = x ⊗ y
  0.19547   0.0771855  0.086179
 ```
 """
-@inline otimes(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(0))
-@inline otimes(x1::AbstractTensor, x2::AbstractTensor, others...) = otimes(otimes(x1, x2), others...)
-@inline otimes(x::AbstractTensor) = x
+@inline otimes(x1::Union{AbstractTensor, Number}, x2::Union{AbstractTensor, Number}) = contract(x1, x2, Val(0))
+@inline otimes(x1, x2, others...) = otimes(otimes(x1, x2), others...)
+@inline otimes(x::Union{AbstractTensor, Number}) = x
 
 struct OTimes{n} end
 otimes(n::Int) = OTimes{n}()
 
+@inline Base.:^(x::AbstractVec, ::OTimes{0}) = one(eltype(x))
 @inline Base.:^(x::AbstractVec, ::OTimes{1}) = x
 @generated function Base.:^(x::AbstractVec{dim}, ::OTimes{n}) where {dim, n}
     indices = Expr(:tuple, [Symbol(i) for i in 1:n]...)

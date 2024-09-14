@@ -81,6 +81,9 @@ end
                 Z[i,j,k,l,m,n] = X[i,j,k] * Y[l,m,n]
             end
             @test z ≈ Z
+            @test (@inferred Tensorial.contract(x, 2, Val(0)))::typeof(x) ≈ 2x
+            @test (@inferred Tensorial.contract(3, y, Val(0)))::typeof(y) ≈ 3y
+            @test (@inferred Tensorial.contract(T(2), T(3), Val(0)))::T ≈ 6
             # dimension error
             A = rand(Mat{3,3,T})
             x = rand(Vec{3,T})
@@ -101,6 +104,10 @@ end
             @test (@inferred normalize(z))::typeof(z) ≈ Array(z) / norm(Array(z))
             @test (@inferred ⊗(x, y, x, y))::Tensor{Tuple{3,3,3,3}, T} ≈ x ⊗ y ⊗ x ⊗ y
             @test (@inferred ⊗(x))::typeof(x) ≈ x
+            @test (@inferred 2 ⊗ x)::typeof(x) ≈ 2x
+            @test (@inferred y ⊗ 3)::typeof(y) ≈ 3y
+            @test (@inferred T(2) ⊗ T(3))::T ≈ 6
+            @test (@inferred x^⊗(0))::T == 1
             @test (@inferred x^⊗(1))::Tensor{Tuple{3}, T} ≈ x
             @test (@inferred x^⊗(2))::Tensor{Tuple{@Symmetry{3,3}}, T} ≈ x ⊗ x
             @test (@inferred x^⊗(3))::Tensor{Tuple{@Symmetry{3,3,3}}, T} ≈ x ⊗ x ⊗ x
