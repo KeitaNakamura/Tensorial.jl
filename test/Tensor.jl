@@ -276,6 +276,8 @@ end
     TT = Tensor{Tuple{2, 3, @Symmetry({3, 3})}}
     @test (@inferred size(TT))::Tuple{Int, Int, Int, Int} == (2,3,3,3)
     # macro
-    @test @Tensor({3,3}) == Tensor{Tuple{3,3}}
-    @test @Tensor({@Symmetry({3,3}),2}) == Tensor{Tuple{Symmetry{Tuple{3,3}},2}}
+    @test @Tensor({Tuple{3,3}}) == Tensor{Tuple{3,3},T,2,9} where {T}
+    @test @Tensor({Tuple{3,3},Float64}) == Tensor{Tuple{3,3},Float64,2,9}
+    @test @Tensor({Tuple{@Symmetry({3,3}),2}}) == Tensor{Tuple{Symmetry{Tuple{3,3}},2},T,3,12} where {T}
+    @test @Tensor({Tuple{@Symmetry({3,3}),2},Int}) == Tensor{Tuple{Symmetry{Tuple{3,3}},2},Int,3,12}
 end

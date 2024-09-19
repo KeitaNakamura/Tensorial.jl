@@ -94,7 +94,14 @@ macro Mat(ex)
 end
 macro Tensor(expr)
     if Meta.isexpr(expr, :braces)
-        esc(:(Tensor{Tuple{$(expr.args...)}}))
+        TT = :(Tensor{$(expr.args...)})
+        if length(expr.args) == 1 # without eltype
+            esc(:($TT{T, ndims($TT), Tensorial.ncomponents($TT)} where {T}))
+        elseif length(expr.args) == 2 # with eltype
+            esc(:($TT{ndims($TT), Tensorial.ncomponents($TT)}))
+        else # wrong
+            :(throw(ArgumentError("wrong expression in @Tensor")))
+        end
     elseif Meta.isexpr(expr, :ref)
         newargs = map(expr.args) do ex
             if Meta.isexpr(ex, :call) && ex.args[1] == :(:)
