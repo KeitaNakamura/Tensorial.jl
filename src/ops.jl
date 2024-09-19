@@ -138,7 +138,7 @@ julia> A = x ⊗ y
 ```
 """
 @inline otimes(x1::Union{AbstractTensor, Number}, x2::Union{AbstractTensor, Number}) = contract(x1, x2, Val(0))
-@inline otimes(x1, x2, others...) = otimes(otimes(x1, x2), others...)
+@inline otimes(x1::Union{AbstractTensor, Number}, x2::Union{AbstractTensor, Number}, others...) = otimes(otimes(x1, x2), others...)
 @inline otimes(x::Union{AbstractTensor, Number}) = x
 
 struct OTimes{n} end
