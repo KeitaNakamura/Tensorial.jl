@@ -12,7 +12,7 @@ end
     S = Space(spaces)
     dims = tensorsize(S)
     spinds = map(numbering_components, spaces)
-    sporders = map(tensororder, spaces)
+    sporders = map(space_order, spaces)
     LI = LinearIndices(map(prod, map(tensorsize, spaces)))
     SArray{Tuple{dims...}}(map(CartesianIndices(dims)) do I
         cnt = Ref(1)

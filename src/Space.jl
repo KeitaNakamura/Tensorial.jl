@@ -26,12 +26,15 @@ Base.Tuple(::Space{S}) where {S} = S
 tensorsize(x::Int) = (x,)
 @pure tensorsize(::Space{S}) where {S} = flatten_tuple(map(tensorsize, S))
 # tensororder
-@pure tensororder(::Int) = 1
+@pure tensororder(::Int) = 0
 @pure tensororder(s::Space) = length(tensorsize(s))
 @pure tensoraxes(s::Space) = map(Base.OneTo, tensorsize(s))
 # don't allow to use `size` and `ndims` because their names are confusing.
 Base.size(s::Space) = throw(ArgumentError("use `tensorsize` to get size of a tensor instead of `size`"))
 Base.ndims(s::Space) = throw(ArgumentError("use `tensororder` to get order of a tensor instead of `ndims`"))
+
+space_order(x) = tensororder(x)
+space_order(::Int) = 1
 
 ###############
 # checkbounds #
@@ -124,8 +127,8 @@ _promote_space(x::Tuple{}, y::Tuple{}, promoted::Tuple) = promoted
         # just use `x1`
         _promote_space(Base.tail(x), Base.tail(y), (promoted..., x1))
     else
-        x1_len = tensororder(x1)
-        y1_len = tensororder(y1)
+        x1_len = space_order(x1)
+        y1_len = space_order(y1)
         if x1_len < y1_len
             common = promote_space(Space(x1),
                                    droplast(Space(y1), Val(y1_len - x1_len))) |> Tuple

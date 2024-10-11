@@ -16,7 +16,7 @@ Base.permutedims(x::Vec{dim}) where {dim} = Mat{1,dim}(Tuple(x))
     # numbering each dimension
     num = Int[]
     for (i, space) in enumerate(spaces)
-        append!(num, fill(i, tensororder(space)))
+        append!(num, fill(i, space_order(space)))
     end
     num = num[collect(perm)] # allow to use invalid permutation in `_permutedims`
     # permute!(num, collect(perm))
