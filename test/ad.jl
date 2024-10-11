@@ -87,6 +87,25 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
         @test gradient(v -> sum(v) * gradient(a -> f(a, v), a), v) ≈ gradient(v -> sum(v) * dfda(a, v), v)
         @test gradient(a -> a * gradient(v -> f(a, v), v), a) ≈ gradient(a -> a * dfdv(a, v), a)
     end
+    @testset "n-th derivatives" begin
+        T = Float64
+        x = rand(Vec{2, T})
+        f = norm(x)
+        ∂f = Tensorial.∂(norm, x)
+        ∂²f = Tensorial.∂(x -> Tensorial.∂(norm, x), x)
+        ∂³f = Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(norm, x), x), x)
+        ∂⁴f = Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(norm, x), x), x), x)
+        @test (@inferred Tensorial.∂(norm, x))::@Tensor{Tuple{2}, T} ≈ ∂f
+        @test (@inferred Tensorial.∂²(norm, x))::@Tensor{Tuple{@Symmetry{2,2}}, T} ≈ ∂²f
+        @test (@inferred Tensorial.∂ⁿ{3}(norm, x))::@Tensor{Tuple{@Symmetry{2,2,2}}, T} ≈ ∂³f
+        @test (@inferred Tensorial.∂ⁿ{4}(norm, x))::@Tensor{Tuple{@Symmetry{2,2,2,2}}, T} ≈ ∂⁴f
+        @test (@inferred Tensorial.∂ⁿ{0}(norm, x))::T ≈ f
+        @test all((@inferred Tensorial.∂{:all}(norm, x)) .≈ (f, ∂f))
+        @test all((@inferred Tensorial.∂²{:all}(norm, x)) .≈ (f, ∂f, ∂²f))
+        @test all((@inferred Tensorial.∂ⁿ{3,:all}(norm, x)) .≈ (f, ∂f, ∂²f, ∂³f))
+        @test all((@inferred Tensorial.∂ⁿ{4,:all}(norm, x)) .≈ (f, ∂f, ∂²f, ∂³f, ∂⁴f))
+        @test all((@inferred Tensorial.∂ⁿ{0,:all}(norm, x)) .≈ (f,))
+    end
     if VERSION ≥ v"1.7"
         @testset "Multiple arguments" begin
             for T in (Float32, Float64)
