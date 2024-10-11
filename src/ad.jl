@@ -27,12 +27,16 @@ dual_partials(x::AbstractTensor) = convert_ntuple(eltype(x), Tuple(inv.(indices_
 dual_partials(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_partials(promote_elements(xs...))
 @generated _dual_partials(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}, N}}) where {T, N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_partials(xs[i])))
 
-@inline function dualize(::Tg, x::Number) where {Tg}
+@inline function _dualize(::Tg, x::Number) where {Tg}
     Dual{Tg}(x, one(x))
 end
-@inline function dualize(::Tg, x::AbstractTensor{S, T}) where {Tg, S, T}
+@inline function _dualize(::Tg, x::AbstractTensor{S, T}) where {Tg, S, T}
     Tensor{S}(generate_duals(Tg(), dual_values(x), dual_partials(x)))
 end
+@inline dualize(f, x::NumberOrTensor) = _dualize(Tag(f, typeof(x)), x)
+@inline dualize(f, x::NumberOrTensor, ::Val{0}) = x
+@inline dualize(f, x::NumberOrTensor, ::Val{1}) = dualize(f, x)
+@inline dualize(f, x::NumberOrTensor, ::Val{N}) where {N} = dualize(f, dualize(f, x), Val(N-1))
 
 # for AD insertion
 @inline function create_dual(::Tg, f::Number, dfdx::Number) where {Tg}
@@ -98,6 +102,55 @@ end
     end
 end
 
+struct ∂ⁿ{N, all} end
+const ∂  = ∂ⁿ{1}
+const ∂² = ∂ⁿ{2}
+
+@inline function ∂ⁿ{N}(f, x) where {N}
+    last(∂ⁿ{N, :all}(f, x))
+end
+@inline function ∂ⁿ{N, :all}(f, x) where {N}
+    consider_symmetry(extract_all(f(dualize(f, x, Val(N))), x, Val(N)), x)
+end
+
+@generated function extract_all(v, x::NumberOrTensor, ::Val{N}) where {N}
+    expr = Expr(:tuple)
+    for n in N:-1:0
+        ex = :v
+        for i in 1:n
+            ex = :(extract_value($ex))
+        end
+        for i in 1:(N-n)
+            ex = :(extract_gradient($ex, x))
+        end
+        push!(expr.args, ex)
+    end
+    quote
+        @_inline_meta
+        $expr
+    end
+end
+
+@inline consider_symmetry(v::Tuple, x) = v
+@generated function consider_symmetry(v::Tuple{Vararg{Any, M}}, x::Vec) where {M}
+    N = M - 1
+    N < 2 && return :v
+    exps = map(2:N) do i
+        TT = v.parameters[i+1]
+        tup = Tuple(Space(TT))
+        s = Space(tup[1:end-i]..., Symmetry(tup[end-i+1:end]))
+        exps = map(indices_unique(s)) do j
+            getindex_expr(TT, :(v[$(i+1)]), j)
+        end
+        TT_new = tensortype(s)
+        :($TT_new(tuple($(exps...))))
+    end
+    quote
+        @_inline_meta
+        @inbounds (v[1], v[2], $(exps...))
+    end
+end
+
 """
     gradient(f, x)
     gradient(f, x, :all)
@@ -123,17 +176,8 @@ julia> ∇f, f = gradient(tr, x, :all)
 ([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0], 1.1733382401532275)
 ```
 """
-function gradient(f, x::V) where {V <: NumberOrTensor}
-    dx = dualize(Tag(f, V), x)
-    v = f(dx)
-    extract_gradient(v, x)
-end
-
-function gradient(f, x::V, ::Symbol) where {V <: NumberOrTensor}
-    dx = dualize(Tag(f, V), x)
-    v = f(dx)
-    extract_gradient(v, x), extract_value(v)
-end
+@inline gradient(f, x::NumberOrTensor) = ∂(f, x)
+@inline gradient(f, x::NumberOrTensor, ::Symbol) = reverse(∂{:all}(f, x))
 
 """
     hessian(f, x)
@@ -160,15 +204,8 @@ julia> ∇∇f, ∇f, f = hessian(norm, x, :all)
 ([1.1360324375454411 -0.5821964220304534 -0.23178236037013888; -0.5821964220304533 0.5010791569244991 -0.39039709608344814; -0.23178236037013886 -0.39039709608344814 1.3262640626479867], [0.4829957515506539, 0.8135223859352438, 0.3238771859304809], 0.6749059962060727)
 ```
 """
-function hessian(f, x::NumberOrTensor)
-    ∇f = v -> gradient(f, v)
-    gradient(∇f, x)
-end
-
-function hessian(f, x::NumberOrTensor, ::Symbol)
-    ∇f = v -> gradient(f, v)
-    gradient(∇f, x), gradient(f, x, :all)...
-end
+@inline hessian(f, x::NumberOrTensor) = last(extract_all(f(dualize(f, x, Val(2))), x, Val(2)))
+@inline hessian(f, x::NumberOrTensor, ::Symbol) = reverse(extract_all(f(dualize(f, x, Val(2))), x, Val(2)))
 
 if VERSION ≥ v"1.7"
     ################################
