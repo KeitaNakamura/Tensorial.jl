@@ -121,13 +121,16 @@ Base.reverse(x::AbstractTensor; dims = :) = Tensor(reverse(SArray(x); dims = dim
     end
 end
 
-@generated function resize(x::AbstractTensor{<: Any, <: Any, N}, I::Vararg{Val, N}) where {N}
-    dims = map(i->only(i.parameters)::Int, I)
+@generated function resize(x::AbstractTensor, I::Val{dims}) where {dims}
+    @assert dims isa Tuple{Vararg{Int}}
     inds = map(n->StaticIndex(1:n), dims)
+    newspace = _getindex(Space(x), inds...)
     colons = [Colon() for _ in 1:ndims(x)]
     quote
-        newspace = _getindex(Space(x), $(inds...))
-        _getindex(newspace, x, $(colons...))
+        _getindex($newspace, x, $(colons...))
     end
 end
-resizedim(x::Tensor, ::Val{dim}) where {dim} = resize(x, ntuple(i -> Val(dim), Val(ndims(x)))...)
+@inline resize(x::AbstractTensor, i::Int, j::Int...) = resize(x, Val((i,j...)))
+@inline resize(x::AbstractTensor, I::Tuple{Vararg{Int}}) = resize(x, Val(I))
+@inline resizedim(x::Tensor, ::Val{dim}) where {dim} = resize(x, ntuple(i -> dim, Val(ndims(x))))
+@inline resizedim(x::Tensor, dim::Int) = resizedim(x, Val(dim))

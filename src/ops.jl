@@ -108,6 +108,7 @@ end
 @inline contract(t::AbstractTensor, a::Number, ::Val{0}) = t * a
 @inline contract(a::Number, t::AbstractTensor, ::Val{0}) = a * t
 @inline contract(a::Number, b::Number, ::Val{0}) = a * b
+@inline contract(a, b, nth) = contract(a, b, Val(nth))
 
 """
     otimes(x::AbstractTensor, y::AbstractTensor)
