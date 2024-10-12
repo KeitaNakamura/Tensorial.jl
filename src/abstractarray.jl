@@ -110,12 +110,7 @@ end
 # Misc #
 ########
 
-if VERSION ≥ v"1.6"
-    # reverse
-    Base.reverse(x::AbstractTensor; dims = :) = Tensor(reverse(SArray(x); dims = dims))
-else
-    Base.reverse(x::AbstractTensor) = Tensor(reverse(SArray(x)))
-end
+Base.reverse(x::AbstractTensor; dims = :) = Tensor(reverse(SArray(x); dims = dims))
 
 @generated function Base.vec(x::AbstractTensor)
     N = length(x)
