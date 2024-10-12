@@ -19,7 +19,7 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
         end
     end
     @testset "Real -> Tensor" begin
-        for RetType in (Tensor{Tuple{2,3}}, Tensor{Tuple{3, @Symmetry({3,3})}})
+        for RetType in (Tensor{Tuple{2,3}}, Tensor{Tuple{3, @Symmetry{3,3}}})
             for T in (Float32, Float64)
                 @eval begin
                     x = rand($T)
@@ -68,7 +68,7 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
             @test (@inferred gradient(identity, z))::FourthOrderTensor{dim, T} == one(FourthOrderTensor{dim, T})
             @eval begin
                 @test (@inferred gradient(x -> one(SecondOrderTensor{$dim, Int}), $x))::FourthOrderTensor{$dim, Int} == zero(FourthOrderTensor{$dim, Int})
-                @test (@inferred gradient(x -> one(SecondOrderTensor{$dim, Int}), $y))::Tensor{Tuple{$dim,$dim,@Symmetry({$dim,$dim})}, Int} == zero(FourthOrderTensor{$dim, Int})
+                @test (@inferred gradient(x -> one(SecondOrderTensor{$dim, Int}), $y))::Tensor{Tuple{$dim,$dim,@Symmetry{$dim,$dim}}, Int} == zero(FourthOrderTensor{$dim, Int})
                 @test (@inferred gradient(x -> one(SquareMatrix{$dim, Int}), $z))::FourthOrderTensor{$dim, Int} == zero(FourthOrderTensor{$dim, Int})
             end
         end
@@ -95,10 +95,10 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
         ∂²f = Tensorial.∂(x -> Tensorial.∂(norm, x), x)
         ∂³f = Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(norm, x), x), x)
         ∂⁴f = Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(norm, x), x), x), x)
-        @test (@inferred Tensorial.∂(norm, x))::@Tensor{Tuple{2}, T} ≈ ∂f
-        @test (@inferred Tensorial.∂²(norm, x))::@Tensor{Tuple{@Symmetry{2,2}}, T} ≈ ∂²f
-        @test (@inferred Tensorial.∂ⁿ{3}(norm, x))::@Tensor{Tuple{@Symmetry{2,2,2}}, T} ≈ ∂³f
-        @test (@inferred Tensorial.∂ⁿ{4}(norm, x))::@Tensor{Tuple{@Symmetry{2,2,2,2}}, T} ≈ ∂⁴f
+        @test (@inferred Tensorial.∂(norm, x))::Tensor{Tuple{2}, T} ≈ ∂f
+        @test (@inferred Tensorial.∂²(norm, x))::Tensor{Tuple{@Symmetry{2,2}}, T} ≈ ∂²f
+        @test (@inferred Tensorial.∂ⁿ{3}(norm, x))::Tensor{Tuple{@Symmetry{2,2,2}}, T} ≈ ∂³f
+        @test (@inferred Tensorial.∂ⁿ{4}(norm, x))::Tensor{Tuple{@Symmetry{2,2,2,2}}, T} ≈ ∂⁴f
         @test (@inferred Tensorial.∂ⁿ{0}(norm, x))::T ≈ f
         @test all((@inferred Tensorial.∂{:all}(norm, x)) .≈ (f, ∂f))
         @test all((@inferred Tensorial.∂²{:all}(norm, x)) .≈ (f, ∂f, ∂²f))

@@ -172,15 +172,15 @@
 end
 
 @testset "Symmetric tensors" begin
-    x = rand(Tensor{Tuple{2, @Symmetry({2,2}), 3}})
+    x = rand(Tensor{Tuple{2, @Symmetry{2,2}, 3}})
     @test Tensorial.ncomponents(x) == 18
     for i in axes(x, 1), l in axes(x, 4)
         for j in axes(x, 2), k in axes(x, 3)
             @test x[i,j,k,l] == x[i,k,j,l]
         end
     end
-    x = rand(Tensor{Tuple{2, @Symmetry({3,3,3})}})
-    @test Tensorial.ncomponents(x) == 2 * Tensorial.ncomponents(@Symmetry({3,3,3})())
+    x = rand(Tensor{Tuple{2, @Symmetry{3,3,3}}})
+    @test Tensorial.ncomponents(x) == 2 * Tensorial.ncomponents(@Symmetry{3,3,3}())
     for i in axes(x, 1)
         for j in axes(x, 2), k in axes(x, 3), l in axes(x, 4)
             @test x[i,j,k,l] == x[i,k,j,l] == x[i,j,l,k] == x[i,l,k,j] == x[i,k,l,j] == x[i,l,j,k]
@@ -188,7 +188,7 @@ end
     end
     # totally symmetric third-order tensor
     # https://arxiv.org/pdf/2009.10752.pdf
-    x = rand(Tensor{Tuple{@Symmetry({3,3,3})}})
+    x = rand(Tensor{Tuple{@Symmetry{3,3,3}}})
     A = zeros(3,3,3)
     for I in CartesianIndices(x)
         i, j, k = Tuple(I)
@@ -198,7 +198,7 @@ end
 end
 
 @testset "Indices" begin
-    x = rand(Tensor{Tuple{2, @Symmetry({2,2}), 3, @Symmetry({2,2})}})
+    x = rand(Tensor{Tuple{2, @Symmetry{2,2}, 3, @Symmetry{2,2}}})
     n = Tensorial.ncomponents(x)
     @test (@inferred Tensorial.tupleindices_tensor(x))::SArray{Tuple{size(x)...}, Int} |> unique == 1:n
     inds = (@inferred Tensorial.tensorindices_tuple(x))::SVector{n, Int}
@@ -213,7 +213,7 @@ end
 @testset "Conversion" begin
     @testset "Tensor -> Tensor" begin
         A = Tensor{Tuple{3,3}}(1:9...)
-        S = Tensor{Tuple{@Symmetry({3,3})}}(1:6...)
+        S = Tensor{Tuple{@Symmetry{3,3}}}(1:6...)
         v = Vec(1:3...)
         for T in (Float32, Float64)
             # convert eltype
@@ -222,16 +222,16 @@ end
             @test (@inferred convert(SecondOrderTensor{3, T}, A))::Tensor{Tuple{3,3}, T} |> Tuple == Adata
             @test (@inferred convert(Mat{3, 3, T}, A))::Tensor{Tuple{3,3}, T} |> Tuple == Adata
             Sdata = map(T, (1:6...,))
-            @test (@inferred convert(Tensor{Tuple{@Symmetry({3,3})}, T}, S))::Tensor{Tuple{@Symmetry({3,3})}, T} |> Tuple == Sdata
-            @test (@inferred convert(SymmetricSecondOrderTensor{3, T}, S))::Tensor{Tuple{@Symmetry({3,3})}, T} |> Tuple == Sdata
+            @test (@inferred convert(Tensor{Tuple{@Symmetry{3,3}}, T}, S))::Tensor{Tuple{@Symmetry{3,3}}, T} |> Tuple == Sdata
+            @test (@inferred convert(SymmetricSecondOrderTensor{3, T}, S))::Tensor{Tuple{@Symmetry{3,3}}, T} |> Tuple == Sdata
             vdata = map(T, (1:3...,))
             @test (@inferred convert(Vec{3, T}, v))::Vec{3, T} |> Tuple == vdata
             # convert symmetric tensor to tensor
             @test (@inferred convert(Tensor{Tuple{3, 3}, T}, S))::Tensor{Tuple{3, 3}, T} == Array(S)
             @test (@inferred convert(Mat{3, 3, T}, S))::Tensor{Tuple{3, 3}, T} == Array(S)
             # convert tensor to symmetric tensor
-            @test (@inferred convert(Tensor{Tuple{@Symmetry({3, 3})}, T}, A+A')) == Array(A+A')
-            @test_throws InexactError convert(Tensor{Tuple{@Symmetry({3, 3})}, T}, A)
+            @test (@inferred convert(Tensor{Tuple{@Symmetry{3, 3}}, T}, A+A')) == Array(A+A')
+            @test_throws InexactError convert(Tensor{Tuple{@Symmetry{3, 3}}, T}, A)
         end
     end
     @testset "AbstractArray -> Tensor" begin
@@ -242,7 +242,7 @@ end
             @test (@inferred convert(Tensor{Tuple{2,2}, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
             @test (@inferred convert(SecondOrderTensor{2, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
             @test (@inferred convert(Mat{2, 2, T}, A))::Tensor{Tuple{2,2}, T} |> Tuple == Adata
-            @test_throws InexactError convert(Tensor{Tuple{@Symmetry({2,2})}, T}, A)
+            @test_throws InexactError convert(Tensor{Tuple{@Symmetry{2,2}}, T}, A)
             @test_throws InexactError convert(SymmetricSecondOrderTensor{2, T}, A)
             vdata = map(T, (1,2))
             @test (@inferred convert(Vec{2, T}, v))::Vec{2, T} |> Tuple == vdata
@@ -273,11 +273,11 @@ end
     # size
     TT = Tensor{Tuple{2, 3}}
     @test (@inferred size(TT))::Tuple{Int, Int} == (2,3)
-    TT = Tensor{Tuple{2, 3, @Symmetry({3, 3})}}
+    TT = Tensor{Tuple{2, 3, @Symmetry{3, 3}}}
     @test (@inferred size(TT))::Tuple{Int, Int, Int, Int} == (2,3,3,3)
     # macro
     @test @Tensor({Tuple{3,3}}) == Tensor{Tuple{3,3},T,2,9} where {T}
     @test @Tensor({Tuple{3,3},Float64}) == Tensor{Tuple{3,3},Float64,2,9}
-    @test @Tensor({Tuple{@Symmetry({3,3}),2}}) == Tensor{Tuple{Symmetry{Tuple{3,3}},2},T,3,12} where {T}
-    @test @Tensor({Tuple{@Symmetry({3,3}),2},Int}) == Tensor{Tuple{Symmetry{Tuple{3,3}},2},Int,3,12}
+    @test @Tensor({Tuple{@Symmetry{3,3},2}}) == Tensor{Tuple{Symmetry{Tuple{3,3}},2},T,3,12} where {T}
+    @test @Tensor({Tuple{@Symmetry{3,3},2},Int}) == Tensor{Tuple{Symmetry{Tuple{3,3}},2},Int,3,12}
 end

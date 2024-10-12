@@ -1,11 +1,11 @@
 @testset "Basic operations" begin
     for T in (Float32, Float64)
-        x = rand(Tensor{Tuple{2,          3,3, 2,@Symmetry({2,2})}, T})
-        y = rand(Tensor{Tuple{2,@Symmetry({3,3}),@Symmetry({2,2,2})}, T})
+        x = rand(Tensor{Tuple{2,          3,3, 2,@Symmetry{2,2}}, T})
+        y = rand(Tensor{Tuple{2,@Symmetry{3,3},@Symmetry{2,2,2}}, T})
         a = 2
         @test size(x) == size(y)
-        @test (@inferred x + y)::Tensor{Tuple{2,3,3,2,@Symmetry({2,2})}, T} == Array(x) + Array(y)
-        @test (@inferred x - y)::Tensor{Tuple{2,3,3,2,@Symmetry({2,2})}, T} == Array(x) - Array(y)
+        @test (@inferred x + y)::Tensor{Tuple{2,3,3,2,@Symmetry{2,2}}, T} == Array(x) + Array(y)
+        @test (@inferred x - y)::Tensor{Tuple{2,3,3,2,@Symmetry{2,2}}, T} == Array(x) - Array(y)
         @test (@inferred a * x)::typeof(x) == a * Array(x)
         @test (@inferred a * y)::typeof(y) == a * Array(y)
         @test (@inferred x * a)::typeof(x) == a * Array(x)
@@ -39,10 +39,10 @@ end
 @testset "Tensor operations" begin
     @testset "contraction" begin
         for T in (Float32, Float64)
-            x = rand(Tensor{Tuple{3,@Symmetry({3,3})}, T})
-            y = rand(Tensor{Tuple{@Symmetry({3,3,3})}, T})
+            x = rand(Tensor{Tuple{3,@Symmetry{3,3}}, T})
+            y = rand(Tensor{Tuple{@Symmetry{3,3,3}}, T})
             # single contraction
-            z = (@inferred contract(x, y, Val(1)))::Tensor{Tuple{3,3,@Symmetry({3,3})}, T}
+            z = (@inferred contract(x, y, Val(1)))::Tensor{Tuple{3,3,@Symmetry{3,3}}, T}
             X = Array(x);
             Y = Array(y);
             Z = zeros(T, 3,3,3,3)
@@ -73,7 +73,7 @@ end
             @test (@inferred Tensorial.contract3(x, y))::T ≈ z
             @test z ≈ Z
             # zero contraction (otimes)
-            z = (@inferred contract(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry({3,3}),@Symmetry({3,3,3})}, T}
+            z = (@inferred contract(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry{3,3},@Symmetry{3,3,3}}, T}
             X = Array(x);
             Y = Array(y);
             Z = zeros(T, 3,3,3,3,3,3)
@@ -368,7 +368,7 @@ end
 
 @testset "UniformScaling" begin
     for T in (Float32, Float64)
-        for SquareTensorType in (Tensor{Tuple{3, 3}, T}, Tensor{Tuple{@Symmetry({3, 3})}, T})
+        for SquareTensorType in (Tensor{Tuple{3, 3}, T}, Tensor{Tuple{@Symmetry{3, 3}}, T})
             x = rand(SquareTensorType)
             @test (@inferred x + I)::SquareTensorType == x + one(x)
             @test (@inferred x - I)::SquareTensorType == x - one(x)

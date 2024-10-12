@@ -25,7 +25,7 @@
     @test_throws Exception S[3]
 
     # macro
-    @test @Symmetry({3,3}) == Symmetry{Tuple{3,3}}
+    @test @Symmetry{3,3} == Symmetry{Tuple{3,3}}
 
     # errors
     @test_throws Exception Symmetry(Tuple{3,Int})

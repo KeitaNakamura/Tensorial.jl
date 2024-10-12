@@ -19,8 +19,8 @@ end
 # aliases
 const SecondOrderTensor{dim, T, L} = Tensor{NTuple{2, dim}, T, 2, L}
 const FourthOrderTensor{dim, T, L} = Tensor{NTuple{4, dim}, T, 4, L}
-const SymmetricSecondOrderTensor{dim, T, L} = Tensor{Tuple{@Symmetry({dim, dim})}, T, 2, L}
-const SymmetricFourthOrderTensor{dim, T, L} = Tensor{NTuple{2, @Symmetry({dim, dim})}, T, 4, L}
+const SymmetricSecondOrderTensor{dim, T, L} = Tensor{Tuple{@Symmetry{dim, dim}}, T, 2, L}
+const SymmetricFourthOrderTensor{dim, T, L} = Tensor{NTuple{2, @Symmetry{dim, dim}}, T, 4, L}
 const Mat{m, n, T, L} = Tensor{Tuple{m, n}, T, 2, L}
 const Vec{dim, T} = Tensor{Tuple{dim}, T, 1, dim}
 
@@ -143,7 +143,7 @@ _one(::Type{Tensor{S}}) where {S} = __one(Tensor{S, Float64})
 _one(::Type{Tensor{S, T}}) where {S, T} = __one(Tensor{S, T})
 Base.one(::Type{TT}) where {TT <: Tensor} = _one(basetype(TT))
 Base.one(x::Tensor) = one(typeof(x))
-@inline function __one(TT::Type{<: Union{Tensor{Tuple{dim,dim}, T}, Tensor{Tuple{@Symmetry({dim,dim})}, T}}}) where {dim, T}
+@inline function __one(TT::Type{<: Union{Tensor{Tuple{dim,dim}, T}, Tensor{Tuple{@Symmetry{dim,dim}}, T}}}) where {dim, T}
     o = one(T)
     z = zero(T)
     TT((i,j) -> i == j ? o : z)
@@ -153,7 +153,7 @@ end
     z = zero(T)
     TT((i,j,k,l) -> i == k && j == l ? o : z)
 end
-@inline function __one(TT::Type{Tensor{NTuple{2,@Symmetry({dim,dim})}, T}}) where {dim, T}
+@inline function __one(TT::Type{Tensor{NTuple{2,@Symmetry{dim,dim}}, T}}) where {dim, T}
     o = one(T)
     z = zero(T)
     δ(i,j) = i == j ? o : z

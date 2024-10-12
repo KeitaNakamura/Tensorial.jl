@@ -3,8 +3,8 @@ abstract type AbstractTensor{S <: Tuple, T, N} <: AbstractArray{T, N} end
 # aliases (too long name?)
 const AbstractSecondOrderTensor{dim, T} = AbstractTensor{NTuple{2, dim}, T, 2}
 const AbstractFourthOrderTensor{dim, T} = AbstractTensor{NTuple{4, dim}, T, 4}
-const AbstractSymmetricSecondOrderTensor{dim, T} = AbstractTensor{Tuple{@Symmetry({dim, dim})}, T, 2}
-const AbstractSymmetricFourthOrderTensor{dim, T} = AbstractTensor{NTuple{2, @Symmetry({dim, dim})}, T, 4}
+const AbstractSymmetricSecondOrderTensor{dim, T} = AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}
+const AbstractSymmetricFourthOrderTensor{dim, T} = AbstractTensor{NTuple{2, @Symmetry{dim, dim}}, T, 4}
 const AbstractVec{dim, T} = AbstractTensor{Tuple{dim}, T, 1}
 const AbstractMat{m, n, T} = AbstractTensor{Tuple{m, n}, T, 2}
 
@@ -16,7 +16,7 @@ const AbstractVecOrMatLike{T} = Union{AbstractVec{<: Any, T}, AbstractMatLike{T}
 
 # special name (not exported)
 const AbstractSquareTensor{dim, T} = Union{AbstractTensor{Tuple{dim, dim}, T, 2},
-                                           AbstractTensor{Tuple{@Symmetry({dim, dim})}, T, 2}}
+                                           AbstractTensor{Tuple{@Symmetry{dim, dim}}, T, 2}}
 
 
 

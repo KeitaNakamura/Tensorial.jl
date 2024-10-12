@@ -31,11 +31,11 @@
         @test @Tensor(A[n:2,[1,2]]) === SymmetricSecondOrderTensor{2}(1,2,4)
         @test @Tensor(A[n:2,[n,2]]) === @Mat [1 2; 2 4]
         # complex version
-        A = rand(Tensor{Tuple{3,3,@Symmetry({3,3,3})}})
+        A = rand(Tensor{Tuple{3,3,@Symmetry{3,3,3}}})
         @test (@Tensor(A[1,2,1:2,2:3,3]))::Tensor{Tuple{2,2}} == Array(A)[1,2,1:2,2:3,3]
-        @test (@Tensor(A[1,2:3,2:3,2:3,3]))::Tensor{Tuple{2,@Symmetry({2,2})}} == Array(A)[1,2:3,2:3,2:3,3]
-        @test (@Tensor(A[1,2:3,2:3,2,2:3]))::Tensor{Tuple{2,@Symmetry({2,2})}} == Array(A)[1,2:3,2:3,2,2:3]
-        @test (@Tensor(A[1,2:3,2,2:3,2:3]))::Tensor{Tuple{2,@Symmetry({2,2})}} == Array(A)[1,2:3,2,2:3,2:3]
+        @test (@Tensor(A[1,2:3,2:3,2:3,3]))::Tensor{Tuple{2,@Symmetry{2,2}}} == Array(A)[1,2:3,2:3,2:3,3]
+        @test (@Tensor(A[1,2:3,2:3,2,2:3]))::Tensor{Tuple{2,@Symmetry{2,2}}} == Array(A)[1,2:3,2:3,2,2:3]
+        @test (@Tensor(A[1,2:3,2,2:3,2:3]))::Tensor{Tuple{2,@Symmetry{2,2}}} == Array(A)[1,2:3,2,2:3,2:3]
     end
     @testset "vcat/hcat" begin
         @test @inferred(vcat(Vec(1,2,3))) === Vec(1,2,3)

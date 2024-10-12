@@ -179,7 +179,7 @@ function _inv_with_blocks(x::Mat{dim, dim}) where {dim}
                Z, W) ⋅ xᵀ
 end
 
-@inline function _inv_with_blocks(x::Tensor{Tuple{@Symmetry({dim, dim})}}) where {dim}
+@inline function _inv_with_blocks(x::Tensor{Tuple{@Symmetry{dim, dim}}}) where {dim}
     # `InexactError` occurs without `symmetric`
     typeof(x)(symmetric(_inv_with_blocks(convert(Mat{dim, dim}, x)), :U))
 end

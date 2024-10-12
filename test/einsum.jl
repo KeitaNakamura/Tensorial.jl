@@ -58,7 +58,7 @@ end
         check_value_and_type((@einsum (i,j) -> S1[i,k] * S2[j,k] + S1[j,k] * S2[i,k]), S1 ⋅ S2' + S2 ⋅ S1', (@tensor t[i,j] := Array(S1)[i,k] * Array(S2)[j,k] + Array(S1)[j,k] * Array(S2)[i,k]))
         check_value_and_type((@einsum (i,j) -> S1[i,k] * (S2[j,k] + S1[k,j] * S2[i,i])), S1 ⋅ (S2' + S1 * tr(S2)), (@tensor t[i,j] := Array(S1)[i,k] * (Array(S2)[j,k] + Array(S1)[k,j] * Array(S2)[i,i])))
 
-        S3 = rand(Tensor{Tuple{@Symmetry({3,3,3})}})
+        S3 = rand(Tensor{Tuple{@Symmetry{3,3,3}}})
         v1 = rand(Vec{3})
         check_value_and_type((@einsum (i,j) -> S3[j,k,i] * v1[k]), permutedims(S3, Val((3,1,2))) ⋅ v1, (@tensor t[i,j] := Array(S3)[j,k,i] * Array(v1)[k]))
         check_value_and_type((@einsum (j) -> v1[i] * S3[j,k,i] * v1[k]), (S3 ⋅ v1) ⋅ v1, (@tensor t[j] := Array(v1)[i] * Array(S3)[j,k,i] * Array(v1)[k]))
