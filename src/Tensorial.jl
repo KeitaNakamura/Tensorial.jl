@@ -63,6 +63,8 @@ export
     rotmaty,
     rotmatz,
     rotate,
+# misc
+    resize,
 # continuum mechanics
     vol,
     dev,
