@@ -3,6 +3,8 @@ using BenchmarkTools
 using InteractiveUtils # for `versioninfo`
 using Markdown
 
+using Tensorial: Space
+
 const run_array = true
 
 const suite = BenchmarkGroup()
