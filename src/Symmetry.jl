@@ -5,8 +5,8 @@ struct Symmetry{S <: Tuple}
     end
 end
 @generated Symmetry(::Type{S}) where {S} = Symmetry{S}()
-@pure Symmetry(dims::NTuple{N, Int}) where {N} = Symmetry{Tuple{dims...}}()
-@pure Symmetry(dims::Vararg{Int, N}) where {N} = Symmetry{Tuple{dims...}}()
+Symmetry(dims::NTuple{N, Int}) where {N} = Symmetry{Tuple{dims...}}()
+Symmetry(dims::Vararg{Int, N}) where {N} = Symmetry{Tuple{dims...}}()
 
 @generated function check_symmetry_parameters(::Type{S}) where {S <: Tuple}
     if !all(x -> isa(x, Int), S.parameters)
@@ -17,11 +17,11 @@ end
     end
 end
 
-@pure tensorsize(::Symmetry{S}) where {S} = tuple(S.parameters...)
-@pure tensororder(s::Symmetry) = length(tensorsize(s))
-@pure ncomponents(::Symmetry{NTuple{order, dim}}) where {order, dim} = binomial(dim + order - 1, order)
+tensorsize(::Symmetry{S}) where {S} = tuple(S.parameters...)
+tensororder(s::Symmetry) = length(tensorsize(s))
+ncomponents(::Symmetry{NTuple{order, dim}}) where {order, dim} = binomial(dim + order - 1, order)
 
-@pure Base.getindex(s::Symmetry, i::Int) = tensorsize(s)[i]
+Base.getindex(s::Symmetry, i::Int) = tensorsize(s)[i]
 
 macro Symmetry(ex::Expr)
     @assert ex.head == :braces

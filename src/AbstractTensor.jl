@@ -23,17 +23,17 @@ const AbstractSquareTensor{dim, T} = Union{AbstractTensor{Tuple{dim, dim}, T, 2}
 # for AbstractArray interface
 Base.IndexStyle(::Type{<: AbstractTensor}) = IndexLinear()
 
-@pure Base.size(::Type{TT}) where {TT <: AbstractTensor} = tensorsize(Space(TT))
+Base.size(::Type{TT}) where {TT <: AbstractTensor} = tensorsize(Space(TT))
 @inline function Base.size(TT::Type{<: AbstractTensor}, d::Int)
     S = size(TT)
     d > length(S) ? 1 : S[d]
 end
 @inline Base.size(x::AbstractTensor) = tensorsize(Space(x))
-@pure Base.length(::Type{TT}) where {TT <: AbstractTensor} = prod(size(TT))
+Base.length(::Type{TT}) where {TT <: AbstractTensor} = prod(size(TT))
 
-@pure Base.ndims(::Type{TT}) where {TT <: AbstractTensor} = length(size(TT))
+Base.ndims(::Type{TT}) where {TT <: AbstractTensor} = length(size(TT))
 
-@pure Base.axes(::Type{TT}) where {TT <: AbstractTensor} = map(Base.OneTo, size(TT))
+Base.axes(::Type{TT}) where {TT <: AbstractTensor} = map(Base.OneTo, size(TT))
 function Base.axes(TT::Type{<: AbstractTensor}, d::Int)
     A = axes(TT)
     d > length(A) ? Base.OneTo(1) : A[d]
@@ -53,7 +53,7 @@ Space(::Type{TT}) where {S, TT <: AbstractTensor{S}} = Space(S)
 Space(::AbstractTensor{S}) where {S} = Space(S)
 
 ncomponents(x::AbstractTensor) = ncomponents(typeof(x))
-@pure ncomponents(::Type{TT}) where {TT <: AbstractTensor} = ncomponents(Space(TT))
+ncomponents(::Type{TT}) where {TT <: AbstractTensor} = ncomponents(Space(TT))
 
 @generated function getindex_expr(x::Type{<: AbstractTensor}, ex::Union{Symbol, Expr}, i...)
     if any(x -> x <: Union{Symbol, Expr}, i)

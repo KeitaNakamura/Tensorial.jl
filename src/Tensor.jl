@@ -185,10 +185,10 @@ julia> ϵ = levicivita()
   0  0  0
 ```
 """
-@pure function levicivita(::Val{dim} = Val(3)) where {dim}
+function levicivita(::Val{dim} = Val(3)) where {dim}
     Tensor{NTuple{dim, dim}, Int}(sgn)
 end
-@pure function sgn(x::Int...)
+function sgn(x::Int...)
     N = length(x)
     even = true
     @inbounds for i in 1:N, j in i+1:N
@@ -205,8 +205,8 @@ end
 
 # helpers
 Base.Tuple(x::Tensor) = x.data
-@pure basetype(::Type{<: Tensor{S}}) where {S} = Tensor{S}
-@pure basetype(::Type{<: Tensor{S, T}}) where {S, T} = Tensor{S, T}
+basetype(::Type{<: Tensor{S}}) where {S} = Tensor{S}
+basetype(::Type{<: Tensor{S, T}}) where {S, T} = Tensor{S, T}
 
 # getindex
 @inline function Base.getindex(x::Tensor, i::Int)
