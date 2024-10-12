@@ -127,15 +127,27 @@
             v = rand(Vec{4,T})
             x = rand(Mat{3,4,T})
             # resize
-            @test (Tensorial.resize(v, Val(2)))::Vec{2,T} == Array(v)[1:2]
-            @test (Tensorial.resize(v, Val(6)))::Vec{6,T} == [Array(v); zeros(2)]
-            @test (Tensorial.resize(x, Val(2), Val(3)))::Mat{2,3,T} == Array(x)[1:2,1:3]
-            @test (Tensorial.resize(x, Val(4), Val(6)))::Mat{4,6,T} == [Array(x) zeros(3,2); zeros(4)' zeros(2)']
+            @test (Tensorial.resize(v, Val((2,))))::Vec{2,T} == Array(v)[1:2]
+            @test (Tensorial.resize(v, Val((6,))))::Vec{6,T} == [Array(v); zeros(2)]
+            @test (Tensorial.resize(x, Val((2,3))))::Mat{2,3,T} == Array(x)[1:2,1:3]
+            @test (Tensorial.resize(x, Val((4,6))))::Mat{4,6,T} == [Array(x) zeros(3,2); zeros(4)' zeros(2)']
+            @eval begin
+                @test (Tensorial.resize($v, 2))::Vec{2,$T} == Array($v)[1:2]
+                @test (Tensorial.resize($v, 6))::Vec{6,$T} == [Array($v); zeros(2)]
+                @test (Tensorial.resize($x, (2,3)))::Mat{2,3,$T} == Array($x)[1:2,1:3]
+                @test (Tensorial.resize($x, (4,6)))::Mat{4,6,$T} == [Array($x) zeros(3,2); zeros(4)' zeros(2)']
+            end
             # resizedim
             @test (Tensorial.resizedim(v, Val(2)))::Vec{2,T} == Array(v)[1:2]
             @test (Tensorial.resizedim(v, Val(6)))::Vec{6,T} == [Array(v); zeros(2)]
             @test (Tensorial.resizedim(x, Val(2)))::Mat{2,2,T} == Array(x)[1:2,1:2]
             @test (Tensorial.resizedim(x, Val(6)))::Mat{6,6,T} == [Array(x) zeros(3,2); zeros(3,4) zeros(3,2)]
+            @eval begin
+                @test (Tensorial.resizedim($v, 2))::Vec{2,$T} == Array($v)[1:2]
+                @test (Tensorial.resizedim($v, 6))::Vec{6,$T} == [Array($v); zeros(2)]
+                @test (Tensorial.resizedim($x, 2))::Mat{2,2,$T} == Array($x)[1:2,1:2]
+                @test (Tensorial.resizedim($x, 6))::Mat{6,6,$T} == [Array($x) zeros(3,2); zeros(3,4) zeros(3,2)]
+            end
         end
     end
 end
