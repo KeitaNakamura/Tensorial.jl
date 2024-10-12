@@ -35,9 +35,9 @@ _indexing(parent_size::Int, ::Type{StaticIndex{x}}, ex) where {x} = collect(x)
     inds_dim = map(_indexing, tensorsize(Space(x)), indices, [:(indices[$i]) for i in 1:length(indices)]) # indices on each dimension
     inds_all = collect(Iterators.product(inds_dim...)) # product of indices to get all indices
     if prod(tensorsize(newspace)) == length(inds_all)
-        exps = map(i -> getindex_expr(x, :x, inds_all[i]...), indices_unique(newspace))
+        exps = map(i -> getindex_expr(x, :x, inds_all[i]...), tensorindices_tuple(newspace))
     else # this is for `resize` function
-        exps = map(indices_unique(newspace)) do i
+        exps = map(tensorindices_tuple(newspace)) do i
             I = CartesianIndices(tensorsize(newspace))[i]
             if checkbounds(Bool, inds_all, I)
                 getindex_expr(x, :x, inds_all[I]...)

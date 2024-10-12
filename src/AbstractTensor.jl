@@ -42,7 +42,7 @@ end
 # indices
 Base.LinearIndices(::Type{TT}) where {TT <: AbstractTensor} = LinearIndices(size(TT))
 Base.CartesianIndices(::Type{TT}) where {TT <: AbstractTensor} = CartesianIndices(size(TT))
-for func in (:indices_all, :indices_unique, :indices_dup)
+for func in (:tupleindices_tensor, :tensorindices_tuple, :nduplicates_tuple)
     @eval begin
         $func(::Type{TT}) where {S, TT <: AbstractTensor{S}} = $func(Space(S))
         $func(x::AbstractTensor) = $func(typeof(x))
@@ -55,16 +55,16 @@ Space(::AbstractTensor{S}) where {S} = Space(S)
 ncomponents(x::AbstractTensor) = ncomponents(typeof(x))
 ncomponents(::Type{TT}) where {TT <: AbstractTensor} = ncomponents(Space(TT))
 
-@generated function getindex_expr(x::Type{<: AbstractTensor}, ex::Union{Symbol, Expr}, i...)
+@generated function getindex_expr(::Type{T}, ex::Union{Symbol, Expr}, i...) where {T <: AbstractTensor}
     if any(x -> x <: Union{Symbol, Expr}, i)
         quote
             :($ex[$(i...)])
         end
     else
         # static getindex
+        inds = tupleindices_tensor(T)
         quote
-            inds = indices_all(x)
-            :(Tuple($ex)[$(inds[i...])])
+            :(Tuple($ex)[$($inds[i...])])
         end
     end
 end

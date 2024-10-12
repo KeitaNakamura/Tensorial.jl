@@ -47,7 +47,7 @@ end
 @generated function (::Type{TT})(f::Function) where {TT <: Tensor}
     S = Space(TT)
     tocartesian = CartesianIndices(tensorsize(S))
-    exps = [:(f($(Tuple(tocartesian[i])...))) for i in indices_unique(S)]
+    exps = [:(f($(Tuple(tocartesian[i])...))) for i in tensorindices_tuple(S)]
     quote
         @_inline_meta
         TT($(exps...))
@@ -57,10 +57,10 @@ end
 @generated function (::Type{TT})(A::AbstractArray) where {TT <: Tensor}
     S = Space(tensorsize(Space(TT)))
     if IndexStyle(A) isa IndexLinear
-        exps = [:(A[$i]) for i in indices_unique(S)]
+        exps = [:(A[$i]) for i in tensorindices_tuple(S)]
     else # IndexStyle(A) isa IndexCartesian
         tocartesian = CartesianIndices(tensorsize(S))
-        exps = [:(A[$(tocartesian[i])]) for i in indices_unique(S)]
+        exps = [:(A[$(tocartesian[i])]) for i in tensorindices_tuple(S)]
     end
     quote
         @_inline_meta
@@ -211,7 +211,7 @@ basetype(::Type{<: Tensor{S, T}}) where {S, T} = Tensor{S, T}
 # getindex
 @inline function Base.getindex(x::Tensor, i::Int)
     @boundscheck checkbounds(x, i)
-    @inbounds Tuple(x)[indices_all(x)[i]]
+    @inbounds Tuple(x)[tupleindices_tensor(x)[i]]
 end
 
 # convert
@@ -220,7 +220,7 @@ end
 @generated function Base.convert(::Type{TT}, x::AbstractTensor) where {TT <: Tensor}
     Sy = Space(TT)
     S = promote_space(Sy, Space(x))
-    exps = [getindex_expr(x, :x, i) for i in indices_unique(TT)]
+    exps = [getindex_expr(x, :x, i) for i in tensorindices_tuple(TT)]
     quote
         @_inline_meta
         @inbounds y = $TT(tuple($(exps...)))

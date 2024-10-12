@@ -23,7 +23,7 @@ dual_values(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_values(promote_elements(x
 
 # generate partials
 dual_partials(x::Number) = (one(x),)
-dual_partials(x::AbstractTensor) = convert_ntuple(eltype(x), Tuple(inv.(indices_dup(x))))
+dual_partials(x::AbstractTensor) = convert_ntuple(eltype(x), Tuple(inv.(nduplicates_tuple(x))))
 dual_partials(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_partials(promote_elements(xs...))
 @generated _dual_partials(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}, N}}) where {T, N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_partials(xs[i])))
 
@@ -139,7 +139,7 @@ end
         TT = v.parameters[i+1]
         tup = Tuple(Space(TT))
         s = Space(tup[1:end-i]..., Symmetry(tup[end-i+1:end]))
-        exps = map(indices_unique(s)) do j
+        exps = map(tensorindices_tuple(s)) do j
             getindex_expr(TT, :(v[$(i+1)]), j)
         end
         TT_new = tensortype(s)

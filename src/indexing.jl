@@ -26,7 +26,7 @@ end
     end)
 end
 
-@generated function indices_all(::Space{spaces}) where {spaces}
+@generated function tupleindices_tensor(::Space{spaces}) where {spaces}
     # make `inds` sequence
     inds = numbering_components(Space(spaces))
     dict = Dict{Int, Int}()
@@ -35,12 +35,12 @@ end
     end
 end
 
-@generated function indices_unique(::Space{spaces}) where {spaces}
+@generated function tensorindices_tuple(::Space{spaces}) where {spaces}
     inds = unique(numbering_components(Space(spaces)))
     SVector{length(inds)}(inds)
 end
 
-@generated function indices_dup(::Space{spaces}) where {spaces}
+@generated function nduplicates_tuple(::Space{spaces}) where {spaces}
     dups = Dict{Int, Int}()
     for i in numbering_components(Space(spaces))
         get!(dups, i, 0)

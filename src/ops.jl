@@ -1,7 +1,7 @@
 # simd version is defined in simd.jl
 @generated function _map(f, xs::Vararg{AbstractTensor, N}) where {N}
     S = promote_space(map(Space, xs)...)
-    exps = map(indices_unique(S)) do i
+    exps = map(tensorindices_tuple(S)) do i
         vals = [:(xs[$j][$i]) for j in 1:N]
         :(f($(vals...)))
     end
@@ -81,8 +81,8 @@ Following symbols are also available for specific contractions:
 @generated function contract(t1::AbstractTensor, t2::AbstractTensor, ::Val{N}) where {N}
     S1 = Space(t1)
     S2 = Space(t2)
-    S1_rhs = S1[ntuple(_->1, Val(tensororder(S1)-N))..., ntuple(_->:, Val(N))...]
-    S2_lhs = S2[ntuple(_->:, Val(N))..., ntuple(_->1, Val(tensororder(S2)-N))...]
+    S1_rhs = S1[fill(1, tensororder(S1)-N)..., fill(:, N)...]
+    S2_lhs = S2[fill(:, N)..., fill(1, tensororder(S2)-N)...]
     S_contracted = promote_space(S1_rhs, S2_lhs)
     S1_new = otimes(droplast(S1, Val(N)), S_contracted)
     S2_new = otimes(S_contracted, dropfirst(S2, Val(N)))
@@ -90,7 +90,7 @@ Following symbols are also available for specific contractions:
     I = ncomponents(S1_new) ÷ K
     J = ncomponents(S2_new) ÷ K
     TT = tensortype(contract(S1, S2, Val(N)))
-    dups = indices_dup(S_contracted)
+    dups = nduplicates_tuple(S_contracted)
     quote
         @_inline_meta
         t1_new = convert($(tensortype(S1_new)), t1)
@@ -272,11 +272,11 @@ end
 for (uplo, filter) in ((:U, (inds,i,j) -> i ≤ j ? inds[i,j] : inds[j,i]),
                        (:L, (inds,i,j) -> i ≥ j ? inds[i,j] : inds[j,i]))
     @eval @generated function $(Symbol(:symmetric, uplo))(x::AbstractSecondOrderTensor{dim}) where {dim}
-        exps = [:(Tuple(x)[$($filter(indices_all(x), Tuple(I)...))]) for I in CartesianIndices(x)]
+        exps = [:(Tuple(x)[$($filter(tupleindices_tensor(x), Tuple(I)...))]) for I in CartesianIndices(x)]
         TT = SymmetricSecondOrderTensor{dim}
         quote
             @_inline_meta
-            @inbounds $TT($(exps[indices_unique(TT)]...))
+            @inbounds $TT($(exps[tensorindices_tuple(TT)]...))
         end
     end
 end
@@ -461,7 +461,7 @@ end
     quote
         @_inline_meta
         tensors = (x, y)
-        @inbounds SymmetricSecondOrderTensor{dim}($(exps[indices_unique(x)]...))
+        @inbounds SymmetricSecondOrderTensor{dim}($(exps[tensorindices_tuple(x)]...))
     end
 end
 
@@ -728,7 +728,7 @@ julia> R ⋅ A ⋅ R'
         @_inline_meta
         ARᵀ = @einsum A[i,j] * R[k,j]
         tensors = (R, ARᵀ)
-        @inbounds $TT($(exps[indices_unique(TT)]...))
+        @inbounds $TT($(exps[tensorindices_tuple(TT)]...))
     end
 end
 

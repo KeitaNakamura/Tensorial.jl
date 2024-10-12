@@ -281,7 +281,7 @@ end
                                         collect(Type{<: AbstractTensor}, tensors.parameters),
                                         Vector{Symbol}[collect(p.parameters[1]) for p in tensorinds.parameters])
     TT = TT1 <: AbstractTensor ? TT1 : TT2
-    tupleinds = TT <: Real ? Colon() : indices_unique(TT)
+    tupleinds = TT <: Real ? Colon() : tensorindices_tuple(TT)
     quote
         @_inline_meta
         $TT($(exps[tupleinds]...))
