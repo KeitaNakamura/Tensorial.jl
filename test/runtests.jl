@@ -6,10 +6,6 @@ using StaticArrays: SArray, SVector, SOneTo, SUnitRange
 
 import Combinatorics # for levicivita
 
-if VERSION < v"1.4"
-    using Tensorial: only
-end
-
 include("Symmetry.jl")
 include("Space.jl")
 include("AbstractTensor.jl")
