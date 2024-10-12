@@ -19,10 +19,9 @@ import LinearAlgebra: dot, norm, normalize, tr, adjoint, det, cross, eigen, eigv
 import Statistics: mean
 
 export
-# Symmetry/Space
+# Symmetry
     Symmetry,
     @Symmetry,
-    Space,
 # AbstractTensor
     AbstractTensor,
     AbstractSecondOrderTensor,

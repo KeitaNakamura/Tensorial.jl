@@ -1,3 +1,5 @@
+using Tensorial: Space
+
 @testset "Space" begin
     # basic
     @test (@inferred Tensorial.tensorsize(Space(Symmetry(3,3),3))) == (3,3,3)
