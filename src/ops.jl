@@ -257,14 +257,7 @@ julia> norm(x)
 ```
 """
 @inline norm(x::AbstractTensor) = sqrt(contract(x, x, Val(ndims(x))))
-
 @inline normalize(x::AbstractTensor) = x / norm(x)
-
-# v_k * S_ikjl * u_l
-@inline function dotdot(v1::Vec{dim}, S::SymmetricFourthOrderTensor{dim}, v2::Vec{dim}) where {dim}
-    S′ = SymmetricFourthOrderTensor{dim}((i,j,k,l) -> @inbounds S[j,i,l,k])
-    v1 ⋄ S′ ⋄ v2
-end
 
 """
     tr(::AbstractSecondOrderTensor)

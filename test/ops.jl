@@ -136,15 +136,6 @@ end
             @test (@inferred ⊗(x, y, x, y))::Tensor{Tuple{3,2,3,2}, T} ≈ x ⊗ y ⊗ x ⊗ y
         end
     end
-    @testset "dotdot" begin
-        for T in (Float32, Float64)
-            x = rand(Vec{3, T})
-            y = rand(Vec{3, T})
-            S = rand(SymmetricFourthOrderTensor{3, T})
-            A = FourthOrderTensor{3, T}((i,j,k,l) -> S[i,k,j,l])
-            @test (@inferred dotdot(x, S, y))::Tensor{Tuple{3,3}, T} ≈ A ⊡ (x ⊗ y)
-        end
-    end
     @testset "tr" begin
         for T in (Float32, Float64)
             x = rand(SecondOrderTensor{3, T})

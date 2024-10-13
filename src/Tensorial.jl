@@ -51,7 +51,6 @@ export
     contract2,
     contract3,
     otimes,
-    dotdot,
     symmetric,
     minorsymmetric,
     skew,
