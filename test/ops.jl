@@ -30,9 +30,16 @@
         @test (@inferred a * x)::Vec{2, T} == a * Array(x)
         @test (@inferred x * a)::Vec{2, T} == Array(x) * a
         @test (@inferred x / a)::Vec{2, T} == Array(x) / a
-        # bad operations
-        @test_throws Exception x * y
-        @test_throws Exception y * x
+        # multiplication
+        x = rand(Vec{2,T})
+        y = rand(Mat{2,2,T})
+        z = Vec(1,2)
+        @test (@inferred x' * y)::Transpose{T, Vec{2,T}} ≈ Array(x)' * Array(y)
+        @test (@inferred y * x)::Vec{2,T} ≈ Array(y) * Array(x)
+        @test (@inferred y' * x)::Vec{2,T} ≈ Array(y)' * Array(x)
+        @test (@inferred x * x')::Mat{2,2,T} ≈ Array(x) * Array(x)'
+        @test (@inferred x'x)::T ≈ Array(x)'Array(x)
+        @test (@inferred x'z)::T ≈ Array(x)'Array(z)
     end
 end
 
@@ -390,13 +397,12 @@ end
             @test (@inferred I ⋅ v)::Vec{3, T} == one(x) ⋅ v
             @test (@inferred I ⊡ x)::T == one(x) ⊡ x
             @test (@inferred x ⊡ I)::T == x ⊡ one(x)
-            # wrong input
-            @test_throws Exception x * I
-            @test_throws Exception y * I
-            @test_throws Exception v * I
-            @test_throws Exception I * x
-            @test_throws Exception I * y
-            @test_throws Exception I * v
+            # multiplication
+            @test (@inferred x * I)::typeof(x) == x
+            @test (@inferred y * I)::typeof(y) == y
+            @test (@inferred I * x)::typeof(x) == x
+            @test (@inferred I * y)::typeof(y) == y
+            @test (@inferred I * v)::typeof(v) == v
         end
     end
 end

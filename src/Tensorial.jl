@@ -104,8 +104,8 @@ include("abstractarray.jl")
 
 include("quaternion.jl")
 
-const ⊗ = otimes
 const ⊡ = contract2
+const ⊗ = otimes
 
 @deprecate contraction contract true
 @deprecate double_contraction contract2 true

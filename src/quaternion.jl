@@ -176,7 +176,7 @@ julia> rotate(v, quaternion(π/4, Vec(0,0,1)))
 @inline rotate(v::Vec, q::Quaternion) = (q * v / q).vector
 
 @inline Base.conj(q::Quaternion) = Quaternion(q.scalar, -q.vector)
-@inline Base.abs2(q::Quaternion) = (v = Vec(q); dot(v, v))
+@inline Base.abs2(q::Quaternion) = (v = Vec(q); contract1(v, v))
 @inline Base.abs(q::Quaternion) = sqrt(abs2(q))
 @inline norm(q::Quaternion) = abs(q)
 @inline inv(q::Quaternion) = conj(q) / abs2(q)

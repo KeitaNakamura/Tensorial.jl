@@ -38,11 +38,11 @@ end
 @inline contract2(x::AbstractSquareTensor, y::UniformScaling) = tr(x) * y.λ
 @inline contract2(x::UniformScaling, y::AbstractSquareTensor) = x.λ * tr(y)
 
-# error for standard multiplications
-error_multiply() = error("use `⋅` (`\\cdot`) for single contraction and `⊡` (`\\boxdot`) for double contraction instead of `*`")
-Base.:*(::AbstractTensor, ::AbstractTensor) = error_multiply()
-Base.:*(::AbstractTensor, ::UniformScaling) = error_multiply()
-Base.:*(::UniformScaling, ::AbstractTensor) = error_multiply()
+# multiplication
+@inline Base.:*(x::AbstractVecOrMatLike, y::AbstractVecOrMatLike) = Tensor(SArray(x) * SArray(y))
+@inline Base.:*(x::LinearAlgebra.Transpose{T, <: AbstractVec{<: Any, T}}, y::AbstractVec{<: Any, U}) where {T <: Real, U <: Real} = parent(x) ⋅ y
+@inline Base.:*(x::AbstractVecOrMatLike, I::UniformScaling) = x * I.λ
+@inline Base.:*(I::UniformScaling, x::AbstractVecOrMatLike) = I.λ * x
 
 """
     contract(x, y, ::Val{N})
@@ -65,9 +65,9 @@ julia> A = contract(B, C, Val(2))
 
 Following symbols are also available for specific contractions:
 
-- `x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>`): `contract(x, y, Val(0))`
-- `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`): `contract(x, y, Val(1))`
-- `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>`): `contract(x, y, Val(2))`
+- `x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>` ): `contract(x, y, Val(0))`
+- `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`   ): `contract(x, y, Val(1))`
+- `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>` ): `contract(x, y, Val(2))`
 """
 @generated function contract(t1::AbstractTensor, t2::AbstractTensor, ::Val{N}) where {N}
     S1 = Space(t1)
@@ -212,12 +212,10 @@ otimes(n::Int) = OTimes{n}()
 end
 
 """
-    dot(x::AbstractTensor, y::AbstractTensor)
-    x ⋅ y
+    contract1(x::AbstractTensor, y::AbstractTensor)
 
-Compute dot product such as ``a = x_i y_i``.
+Compute single contraction such as ``a = x_i y_i``.
 This is equivalent to [`contract(::AbstractTensor, ::AbstractTensor, Val(1))`](@ref).
-`x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`) is a synonym for `dot(x, y)`.
 
 # Examples
 ```jldoctest
@@ -237,7 +235,7 @@ julia> a = x ⋅ y
 0.5715585109976284
 ```
 """
-@inline dot(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(1)) # dot, ⋅
+@inline contract1(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(1))
 @inline contract2(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(2)) # ⊡
 @inline contract3(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(3))
 
@@ -265,7 +263,7 @@ julia> norm(x)
 # v_k * S_ikjl * u_l
 @inline function dotdot(v1::Vec{dim}, S::SymmetricFourthOrderTensor{dim}, v2::Vec{dim}) where {dim}
     S′ = SymmetricFourthOrderTensor{dim}((i,j,k,l) -> @inbounds S[j,i,l,k])
-    v1 ⋅ S′ ⋅ v2
+    v1 ⋄ S′ ⋄ v2
 end
 
 """
@@ -418,7 +416,6 @@ end
 @inline transpose(x::AbstractTensor{Tuple{@Symmetry{dim, dim}}}) where {dim} = x
 @inline transpose(x::AbstractTensor{Tuple{m, n}}) where {m, n} = Tensor{Tuple{n, m}}((i,j) -> @inbounds x[j,i])
 @inline adjoint(x::AbstractTensor) = transpose(x)
-@inline adjoint(::AbstractVec) = throw(ArgumentError("adjoint for `AbstractVec` is not allowed"))
 
 # det
 @generated function extract_vecs(x::AbstractSquareTensor{dim}) where {dim}
@@ -509,7 +506,7 @@ end
     y
 end
 ## helper functions
-@inline _powdot(x::AbstractSecondOrderTensor, y::AbstractSecondOrderTensor) = dot(x, y)
+@inline _powdot(x::AbstractSecondOrderTensor, y::AbstractSecondOrderTensor) = contract1(x, y)
 @inline function _powdot(x::AbstractSymmetricSecondOrderTensor{dim}, y::AbstractSymmetricSecondOrderTensor{dim}) where {dim}
     contract(SymmetricSecondOrderTensor{dim}, x, y, Val(2), Val(1))
 end
@@ -693,7 +690,7 @@ function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {d
     # https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d/2672702#2672702
     a = pair.first
     b = pair.second
-    dot(a, a) ≈ dot(b, b) || throw(ArgumentError("the norms of two vectors must be the same"))
+    contract1(a, a) ≈ contract1(b, b) || throw(ArgumentError("the norms of two vectors must be the same"))
     a ==  b && return  one(Mat{dim, dim, T})
     a == -b && return -one(Mat{dim, dim, T})
     c = a + b

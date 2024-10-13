@@ -1,7 +1,7 @@
 using Tensorial
 using Test, Random
 
-using LinearAlgebra: Symmetric, Eigen
+using LinearAlgebra: Symmetric, Eigen, Transpose
 using StaticArrays: SArray, SVector, SOneTo, SUnitRange
 using TensorOperations: @tensor
 
