@@ -444,15 +444,11 @@ end
 end
 
 """
-    cross(x::Vec{3}, y::Vec{3}) -> Vec{3}
-    cross(x::Vec{2}, y::Vec{2}) -> Vec{3}
-    cross(x::Vec{1}, y::Vec{1}) -> Vec{3}
+    cross(x::Vec, y::Vec)
     x × y
 
 Compute the cross product between two vectors.
-The vectors are expanded to 3D frist for dimensions 1 and 2.
-The infix operator `×` (written `\\times`) can also be used.
-`x × y` (where `×` can be typed by `\\times<tab>`) is a synonym for `cross(x, y)`.
+The infix operation `x × y` (where `×` can be typed by `\\times<tab>`) is a synonym for `cross(x, y)`.
 
 # Examples
 ```jldoctest
@@ -475,15 +471,13 @@ julia> x × y
  -0.37588028973385323
 ```
 """
-@inline cross(x::Vec{1, T1}, y::Vec{1, T2}) where {T1, T2} = zero(Vec{3, promote_type(T1, T2)})
-@inline function cross(x::Vec{2, T1}, y::Vec{2, T2}) where {T1, T2}
-    z = zero(promote_type(T1, T2))
-    @inbounds Vec(z, z, x[1]*y[2] - x[2]*y[1])
-end
 @inline function cross(x::Vec{3}, y::Vec{3})
     @inbounds Vec(x[2]*y[3] - x[3]*y[2],
                   x[3]*y[1] - x[1]*y[3],
                   x[1]*y[2] - x[2]*y[1])
+end
+@inline function cross(x::Vec{2}, y::Vec{2})
+    @inbounds x[1]*y[2] - x[2]*y[1]
 end
 
 # power

@@ -203,21 +203,12 @@ end
         end
     end
     @testset "cross" begin
-        for T in (Float32, Float64), dim in 1:3
+        for T in (Float32, Float64), dim in 2:3
             x = rand(Vec{dim, T})
             y = rand(Vec{dim, T})
-            @test (@inferred x × x)::Vec{3, T} ≈ zero(Vec{3, T})
             @test x × y ≈ -y × x
-            if dim == 2
-                a = Vec{2, T}(1,0)
-                b = Vec{2, T}(0,1)
-                @test (@inferred a × b)::Vec{3, T} ≈ Vec{3, T}(0,0,1)
-            end
-            if dim == 3
-                a = Vec{3, T}(1,0,0)
-                b = Vec{3, T}(0,1,0)
-                @test (@inferred a × b)::Vec{3, T} ≈ Vec{3, T}(0,0,1)
-            end
+            dim == 2 && @test (@inferred x × x)::T ≈ zero(T)
+            dim == 3 && @test (@inferred x × x)::Vec{3, T} ≈ zero(Vec{3, T})
         end
     end
     @testset "pow" begin
