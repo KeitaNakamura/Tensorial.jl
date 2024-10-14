@@ -132,5 +132,3 @@ end
 end
 @inline resize(x::AbstractTensor, i::Int, j::Int...) = resize(x, Val((i,j...)))
 @inline resize(x::AbstractTensor, I::Tuple{Vararg{Int}}) = resize(x, Val(I))
-@inline resizedim(x::Tensor, ::Val{dim}) where {dim} = resize(x, ntuple(i -> dim, Val(ndims(x))))
-@inline resizedim(x::Tensor, dim::Int) = resizedim(x, Val(dim))
