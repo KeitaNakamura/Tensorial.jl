@@ -1,39 +1,32 @@
 """
-    @einsum (i,j...) -> expr
-    @einsum expr
+    @einsum [TensorType] (i,j...) -> expr
+    @einsum [TensorType] expr
 
-Conducts tensor computation based on [Einstein summation convention](https://en.wikipedia.org/wiki/Einstein_notation).
-The arguments of the anonymous function are regard as **free indices**.
-If arguments are not given, they are guessed based on the order that indices appears from left to right.
+Performs tensor computations using the [Einstein summation convention](https://en.wikipedia.org/wiki/Einstein_notation).
+The arguments of the anonymous function are treated as **free indices**.
+If no arguments are provided, they are inferred based on the order
+in which the indices appear from left to right. Since `@einsum` cannot
+fully infer tensor symmetries, it is possible to annotate the returned
+tensor type (though this is not checked for correctness).
+This can help eliminate the computation of the symmetric part, improving performance.
 
 # Examples
 ```jldoctest einsum
-julia> A = rand(Mat{3,3})
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 0.325977  0.894245  0.953125
- 0.549051  0.353112  0.795547
- 0.218587  0.394255  0.49425
+julia> A = rand(Mat{3,3});
 
-julia> B = rand(Mat{3,3})
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 0.748415  0.00744801  0.682533
- 0.578232  0.199377    0.956741
- 0.727935  0.439243    0.647855
+julia> B = rand(Mat{3,3});
 
-julia> @einsum (i,j) -> A[i,k] * B[k,j]
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 1.45486   0.599373  1.69554
- 1.19421   0.42393   1.22798
- 0.751346  0.297329  0.846595
+julia> (@einsum (i,j) -> A[j,k] * B[k,i]) ≈ (A ⋅ B)'
+true
 
-julia> @einsum A[i,k] * B[k,j] # same as above
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 1.45486   0.599373  1.69554
- 1.19421   0.42393   1.22798
- 0.751346  0.297329  0.846595
+julia> (@einsum A[i,k] * B[k,j]) ≈ A ⋅ B
+true
 
-julia> @einsum A[i,j] * B[i,j]
-2.7026716125808266
+julia> (@einsum A[i,j] * A[i,j]) ≈ A ⊡ A
+true
+
+julia> (@einsum SymmetricSecondOrderTensor{3} A[k,i] * A[k,j]) ≈ A' ⋅ A
+true
 ```
 """
 macro einsum(expr)
