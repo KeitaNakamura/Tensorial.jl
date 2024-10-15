@@ -70,6 +70,13 @@ end
         check_value_and_type((@einsum -a[μ]*a[v] + b[μ]*b[v]), -a ⊗ a + b ⊗ b, (@tensor t[μ,v] := -Array(a)[μ] * Array(a)[v] + Array(b)[μ] * Array(b)[v]))
         check_value_and_type((@einsum b[μ]*b[v] + -a[μ]*a[v]), b ⊗ b + -a ⊗ a, (@tensor t[μ,v] := Array(b)[μ] * Array(b)[v] + -Array(a)[μ] * Array(a)[v]))
     end
+    @testset "type annotation" begin
+        A = rand(SecondOrderTensor{4})
+        B = rand(Tensor{Tuple{4,@Symmetry{4,4}}})
+        ans = @einsum A[σp,σ]*A[μp,μ]*A[νp,ν]*B[σp,μp,νp]
+        @test (@einsum Tensor{Tuple{4,@Symmetry{4,4}}, Float64} A[σp,σ]*A[μp,μ]*A[νp,ν]*B[σp,μp,νp])::Tensor{Tuple{4,@Symmetry{4,4}}, Float64} ≈ ans
+        @test (@einsum Tensor{Tuple{4,@Symmetry{4,4}}, Float32} A[σp,σ]*A[μp,μ]*A[νp,ν]*B[σp,μp,νp])::Tensor{Tuple{4,@Symmetry{4,4}}, Float32} ≈ ans
+    end
     @testset "errors" begin
         S1 = rand(SymmetricSecondOrderTensor{3})
         v = rand(Vec{2})
