@@ -88,6 +88,13 @@ end
             A = rand(Mat{3,3,T})
             x = rand(Vec{3,T})
             @test_throws Exception A ⊡ x
+            # over given dimensions
+            A = rand(Mat{3,3,T})
+            B = rand(Mat{3,3,T})
+            C = rand(SymmetricFourthOrderTensor{3,T})
+            @test (@inferred contract(A,B,Val(1),Val(2)))::Mat{3,3,T} ≈ A' ⋅ B'
+            @test (@inferred contract(A,C,Val((2,1)),Val((2,4))))::Mat{3,3,T} ≈ (@tensor t[i,j] := Array(A)[l,k] * Array(C)[i,k,j,l])
+            @test (@inferred contract(A,C,Val((2,1)),Val((2,1))))::SymmetricSecondOrderTensor{3,T} ≈ (@tensor t[i,j] := Array(A)[l,k] * Array(C)[l,k,i,j])
         end
     end
     @testset "otimes/dot/norm/normalize" begin

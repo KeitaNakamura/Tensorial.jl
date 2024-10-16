@@ -54,7 +54,7 @@ function contraction_exprs(x::Type{<: AbstractTensor}, y::Type{<: AbstractTensor
 end
 
 """
-    contract(::AbstractTensor, ::AbstractTensor, ::Val{N})
+    contract(x, y, ::Val{N})
 
 Conduct contraction of `N` inner indices.
 For example, `N=2` contraction for third-order tensors ``A_{ij} = B_{ikl} C_{klj}``
@@ -109,6 +109,44 @@ end
 @inline contract(a::Number, t::AbstractTensor, ::Val{0}) = a * t
 @inline contract(a::Number, b::Number, ::Val{0}) = a * b
 @inline contract(a, b, nth) = contract(a, b, Val(nth))
+
+"""
+    contract(x, y, Val(xdims), Val(ydims))
+
+Perform contraction over the given dimensions.
+
+```jldoctest
+julia> A = rand(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.325977  0.894245  0.953125
+ 0.549051  0.353112  0.795547
+ 0.218587  0.394255  0.49425
+
+julia> B = rand(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.748415  0.00744801  0.682533
+ 0.578232  0.199377    0.956741
+ 0.727935  0.439243    0.647855
+
+julia> contract(A, B, Val(1), Val(2)) ≈ @einsum A[k,i] * B[j,k]
+true
+
+julia> contract(A, B, Val((1,2)), Val((2,1))) ≈ @einsum A[i,j] * B[j,i]
+true
+```
+"""
+@generated function contract(x::AbstractTensor, y::AbstractTensor, ::Val{xdims}, ::Val{ydims}) where {xdims, ydims}
+    @assert (xdims isa Union{Int, Tuple{Vararg{Int}}}) && (ydims isa Union{Int, Tuple{Vararg{Int}}})
+    xdims = xdims isa Int ? [xdims] : collect(xdims)
+    ydims = ydims isa Int ? [ydims] : collect(ydims)
+    @assert length(xdims) == length(ydims)
+    xperm = [setdiff(1:ndims(x), xdims); xdims]
+    yperm = [ydims; setdiff(1:ndims(y), ydims)]
+    quote
+        @_inline_meta
+        contract(permutedims(x, $(ValTuple(xperm...))), permutedims(y, $(ValTuple(yperm...))), $(Val(length(xdims))))
+    end
+end
 
 """
     otimes(x::AbstractTensor, y::AbstractTensor)
