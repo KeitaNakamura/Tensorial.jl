@@ -146,7 +146,7 @@ end
     @assert length(xdims) == length(ydims)
     function create_indices(t, dims)
         indices = collect(1:ndims(t))
-        indices[dims] = 100 .+ (1:length(dims))
+        indices[dims] = (ndims(x)+ndims(y)) .+ (1:length(dims))
         Tuple(indices)
     end
     xindices = create_indices(x, xdims)
