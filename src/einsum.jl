@@ -76,7 +76,7 @@ function find_perm((inds, freeinds)::Pair)::Vector{Int}
 end
 
 function find_freeindices(allinds::Vector)
-    freeinds = []
+    freeinds = eltype(allinds)[]
     for index in unique(allinds)
         x = findall(==(index), allinds)
         length(x) > 2 && error("@einsum: index $index appears more than twice")
@@ -126,7 +126,7 @@ end
 # ref case
 function einsum_instantiate_tensor(einex::EinsumExpr)
     if isscalarexpr(einex) # handle `A[i,i]`
-        ex = :($einsum_contraction(Any, Val(()), ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
+        ex = :($contract_einsum(Any, ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
         return EinsumExpr(ex, einex.freeinds, einex.allinds)
     else
         return einex
@@ -175,63 +175,55 @@ function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr, TT = :
     else
         freeinds = find_freeindices([lhs.freeinds; rhs.freeinds])
         allinds = [lhs.allinds; rhs.allinds]
-        ex = :($einsum_contraction($TT, $(ValTuple(freeinds...)), ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
+        ex = :($contract_einsum($TT, ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
         return EinsumExpr(ex, freeinds, allinds)
     end
 end
 
-# for dummy indices
-@inline function simdsum(x, ys...)
-    @inbounds @simd for y in ys
-        x += y
-    end
-    x
-end
-
-function einsum_contraction_expr(free_indices::Vector, tensors::Vector, tensor_indices::Vector{<: AbstractVector})
-    @assert length(tensors) == length(tensor_indices)
-
-    all_indices = mapreduce(collect, vcat, tensor_indices)
+# this returns expressions for each index
+function contract_einsum_expr(tensortypes::NTuple{N}, names::NTuple{N}, tensor_indices::NTuple{N, Vector}) where {N}
+    all_indices = reduce(vcat, tensor_indices)
+    free_indices = find_freeindices(all_indices)
     dummy_indices = setdiff(all_indices, free_indices)
-    all_indices = [free_indices; dummy_indices]
+    all_indices = [dummy_indices; free_indices]
 
     # check dimensions
     dummy_axes = Base.OneTo{Int}[]
     for dummy_index in dummy_indices
-        axs = mapreduce(vcat, zip(tensors, tensor_indices)) do (tensor, inds) # (A, [:i,:j])
+        axs = mapreduce(vcat, zip(tensortypes, tensor_indices)) do (tensor, inds) # (A, [:i,:j])
             map(i -> axes(tensor, i), findall(==(dummy_index), inds))
         end
-        length(axs) < 2 && error("@einsum: wrong free indices given")
-        length(axs) > 2 && error("@einsum: index $dummy_index appears more than twice")
+        length(axs) < 2 && error("contract_einsum_expr: wrong free indices given")
+        length(axs) > 2 && error("contract_einsum_expr: index $dummy_index appears more than twice")
         ax = unique(axs)
         length(ax) == 1 && push!(dummy_axes, only(ax))
-        length(ax)  > 1 && error("@einsum: dimension mismatch at index $dummy_index")
+        length(ax)  > 1 && error("contract_einsum_expr: dimension mismatch at index $dummy_index")
     end
 
     # create indexmaps from each tensor to `all_indices`
     indexmaps = Vector{Int}[]
-    for (tensor, inds) in zip(tensors, tensor_indices) # (A, [:i,:j])
-        ndims(tensor) == length(inds) || error("@einsum: the number of indices does not match the order of tensor #$i")
+    for (tensor, inds) in zip(tensortypes, tensor_indices) # (A, [:i,:j])
+        ndims(tensor) == length(inds) || error("contract_einsum_expr: the number of indices does not match the order of tensor")
         indices = map(index -> only(findall(==(index), all_indices)), inds)
         push!(indexmaps, indices)
     end
 
-    T = promote_type(map(eltype, tensors)...)
+    T = promote_type(map(eltype, tensortypes)...)
     if isempty(free_indices)
         TT = T
         free_axes = ()
     else
         perm = map(index -> only(findall(==(index), reduce(vcat, tensor_indices))), free_indices)
-        TT = tensortype(_permutedims(otimes(map(Space, tensors)...), Val(tuple(perm...)))){T}
+        TT = tensortype(_permutedims(otimes(map(Space, tensortypes)...), Val(tuple(perm...)))){T}
         free_axes = axes(TT)
     end
 
     sumexps = map(CartesianIndices(free_axes)) do free_cartesian_index
         xs = map(CartesianIndices(Tuple(dummy_axes))) do dummy_cartesian_index
-            cartesian_index = Tuple(CartesianIndex(free_cartesian_index, dummy_cartesian_index))
-            exps = map(enumerate(tensors)) do (i, tensor)
+            cartesian_index = Tuple(CartesianIndex(dummy_cartesian_index, free_cartesian_index))
+            exps = map(enumerate(tensortypes)) do (i, tensor)
                 indices = cartesian_index[indexmaps[i]]
-                getindex_expr(tensor, :(tensors[$i]), indices...)
+                getindex_expr(tensor, names[i], indices...)
             end
             Expr(:call, :*, exps...)
         end
@@ -241,14 +233,22 @@ function einsum_contraction_expr(free_indices::Vector, tensors::Vector, tensor_i
     TT, sumexps
 end
 
-@generated function einsum_contraction(::Type{TT1}, ::Val{freeinds}, tensors::Tuple{Vararg{AbstractTensor, N}}, tensorinds::Tuple{Vararg{Val, N}}) where {TT1, freeinds, N}
-    TT2, exps = einsum_contraction_expr(collect(freeinds),
-                                        collect(Type{<: AbstractTensor}, tensors.parameters),
-                                        Vector{Symbol}[collect(p.parameters[1]) for p in tensorinds.parameters])
+@inline function simdsum(x, ys...)
+    @inbounds @simd for y in ys
+        x += y
+    end
+    x
+end
+
+@generated function contract_einsum(::Type{TT1}, tensors::Tuple{Vararg{AbstractTensor, N}}, indices::Tuple{Vararg{Val, N}}) where {TT1, N}
+    tensortypes = Tuple(tensors.parameters)
+    names = ntuple(i -> :(tensors[$i]), Val(N))
+    tensor_indices = Tuple(map(p -> collect(only(p.parameters)), indices.parameters))
+    TT2, exps = contract_einsum_expr(tensortypes, names, tensor_indices)
     TT = TT1 <: AbstractTensor ? TT1 : TT2
-    tupleinds = TT <: Real ? Colon() : tensorindices_tuple(TT)
+    ex = TT <: Real ? only(exps) : Expr(:tuple, exps[tensorindices_tuple(TT)]...)
     quote
         @_inline_meta
-        $TT($(exps[tupleinds]...))
+        @inbounds $TT($ex)
     end
 end
