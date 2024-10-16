@@ -67,22 +67,18 @@ function anonymous_args_body(func::Expr)
     end
 end
 
-function find_perm((inds, freeinds)::Pair)::Vector{Int}
-    map(freeinds) do index
-        I = findall(==(index), inds)
-        @assert I !== nothing
-        only(I)
-    end
+function find_perm((src, dest)::Pair{<: Vector, <: Vector})::Vector{Int}
+    map(index -> only(findall(==(index), src)), dest)
 end
 
-function find_freeindices(allinds::Vector)
-    freeinds = eltype(allinds)[]
-    for index in unique(allinds)
-        x = findall(==(index), allinds)
-        length(x) > 2 && error("@einsum: index $index appears more than twice")
-        length(x) == 1 && push!(freeinds, index)
+function find_freeindices(indices::Vector)
+    freeindices = eltype(indices)[]
+    for index in unique(indices)
+        x = findall(==(index), indices)
+        length(x)  > 2 && error("@einsum: index $index appears more than twice")
+        length(x) == 1 && push!(freeindices, index)
     end
-    freeinds
+    freeindices
 end
 
 struct EinsumExpr
