@@ -44,15 +44,6 @@ Base.:*(::AbstractTensor, ::AbstractTensor) = error_multiply()
 Base.:*(::AbstractTensor, ::UniformScaling) = error_multiply()
 Base.:*(::UniformScaling, ::AbstractTensor) = error_multiply()
 
-function contraction_exprs(x::Type{<: AbstractTensor}, y::Type{<: AbstractTensor}, N::Int)
-    nx = ndims(x)
-    ny = ndims(y)
-    ij_x = UnitRange(1, nx)
-    ij_y = UnitRange(nx + 1 - N, nx + ny - N)
-    freeinds = find_freeindices([ij_x; ij_y])
-    einsum_contraction_expr(freeinds, [x, y], [ij_x, ij_y])
-end
-
 """
     contract(x, y, ::Val{N})
 
@@ -136,16 +127,41 @@ true
 ```
 """
 @generated function contract(x::AbstractTensor, y::AbstractTensor, ::Val{xdims}, ::Val{ydims}) where {xdims, ydims}
-    @assert (xdims isa Union{Int, Tuple{Vararg{Int}}}) && (ydims isa Union{Int, Tuple{Vararg{Int}}})
-    xdims = xdims isa Int ? [xdims] : collect(xdims)
-    ydims = ydims isa Int ? [ydims] : collect(ydims)
+    xdims = check_contract_dims(xdims)
+    ydims = check_contract_dims(ydims)
     @assert length(xdims) == length(ydims)
     xperm = [setdiff(1:ndims(x), xdims); xdims]
     yperm = [ydims; setdiff(1:ndims(y), ydims)]
     quote
         @_inline_meta
-        contract(permutedims(x, $(ValTuple(xperm...))), permutedims(y, $(ValTuple(yperm...))), $(Val(length(xdims))))
+        contract(permutedims(x, $(ValTuple(xperm...))),
+                 permutedims(y, $(ValTuple(yperm...))),
+                 $(Val(length(xdims))))
     end
+end
+
+@generated function contract(::Type{TT}, x::AbstractTensor, y::AbstractTensor, ::Val{xdims}, ::Val{ydims}) where {TT, xdims, ydims}
+    xdims = check_contract_dims(xdims)
+    ydims = check_contract_dims(ydims)
+    @assert length(xdims) == length(ydims)
+    function create_indices(t, dims)
+        indices = collect(1:ndims(t))
+        indices[dims] = 100 .+ (1:length(dims))
+        Tuple(indices)
+    end
+    xindices = create_indices(x, xdims)
+    yindices = create_indices(y, ydims)
+    quote
+        @_inline_meta
+        contract_einsum(TT, (x,y), ($(Val(xindices)),$(Val(yindices))))
+    end
+end
+
+function check_contract_dims(dims)
+    @assert dims isa Union{Int, Tuple{Vararg{Int}}}
+    dims = dims isa Int ? [dims] : collect(dims)
+    @assert allunique(dims)
+    dims
 end
 
 """
@@ -494,13 +510,8 @@ end
 end
 ## helper functions
 @inline _powdot(x::AbstractSecondOrderTensor, y::AbstractSecondOrderTensor) = dot(x, y)
-@generated function _powdot(x::AbstractSymmetricSecondOrderTensor{dim}, y::AbstractSymmetricSecondOrderTensor{dim}) where {dim}
-    _, exps = contraction_exprs(x, y, 1)
-    quote
-        @_inline_meta
-        tensors = (x, y)
-        @inbounds SymmetricSecondOrderTensor{dim}($(exps[tensorindices_tuple(x)]...))
-    end
+@inline function _powdot(x::AbstractSymmetricSecondOrderTensor{dim}, y::AbstractSymmetricSecondOrderTensor{dim}) where {dim}
+    contract(SymmetricSecondOrderTensor{dim}, x, y, Val(2), Val(1))
 end
 
 # rotate
@@ -758,16 +769,10 @@ julia> R ⋅ A ⋅ R'
 """
 @inline rotate(v::Vec, R::SecondOrderTensor) = R ⋅ v
 @inline rotate(v::Vec{2}, R::SecondOrderTensor{3}) = rotate(vcat(v,0), R) # extend to 3d vector, then rotate it
-@inline rotate(A::SecondOrderTensor, R::SecondOrderTensor) = @einsum R[i,j] * A[j,k] * R[l,k]
-@generated function rotate(A::SymmetricSecondOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim}
-    _, exps = contraction_exprs(SecondOrderTensor{dim}, SecondOrderTensor{dim}, 1)
-    TT = SymmetricSecondOrderTensor{dim}
-    quote
-        @_inline_meta
-        ARᵀ = @einsum A[i,j] * R[k,j]
-        tensors = (R, ARᵀ)
-        @inbounds $TT($(exps[tensorindices_tuple(TT)]...))
-    end
+@inline rotate(A::SecondOrderTensor, R::SecondOrderTensor) = R ⋅ A ⋅ R'
+@inline function rotate(A::SymmetricSecondOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim}
+    ARᵀ = contract(A, R, Val(2), Val(2))
+    contract(SymmetricSecondOrderTensor{dim}, R, ARᵀ, Val(2), Val(1))
 end
 
 function angleaxis(R::SecondOrderTensor{3})
