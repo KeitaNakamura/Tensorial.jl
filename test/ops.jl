@@ -223,9 +223,8 @@ end
         end
     end
     @testset "pow" begin
-        for T in (Float32, Float64), dim in 1:3
-            x = rand(SecondOrderTensor{dim, T})
-            y = rand(SymmetricSecondOrderTensor{dim, T})
+        for T in (Float32, Float64), dim in 1:3, TensorType in (SecondOrderTensor{dim, T}, SymmetricSecondOrderTensor{dim, T})
+            x = rand(TensorType)
             fm3, fm2, fm1, f0, fp1, fp2, fp3 = x -> x^-3, x -> x^-2, x -> x^-1, x -> x^0, x -> x^1, x -> x^2, x -> x^3
             @test (@inferred fm3(x))::typeof(x) ≈ inv(x) ⋅ inv(x) ⋅ inv(x)
             @test (@inferred fm2(x))::typeof(x) ≈ inv(x) ⋅ inv(x)
