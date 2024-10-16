@@ -3,6 +3,7 @@ using Test, Random
 
 using LinearAlgebra: Symmetric, Eigen
 using StaticArrays: SArray, SVector, SOneTo, SUnitRange
+using TensorOperations: @tensor
 
 import Combinatorics # for levicivita
 

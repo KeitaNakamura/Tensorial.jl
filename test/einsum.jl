@@ -1,5 +1,3 @@
-using TensorOperations: @tensor
-
 function check_value_and_type(x, y, z)
     @test x ≈ y ≈ z
     @test typeof(x) == typeof(y)
