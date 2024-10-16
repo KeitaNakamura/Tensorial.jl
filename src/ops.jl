@@ -144,13 +144,16 @@ end
     xdims = check_contract_dims(xdims)
     ydims = check_contract_dims(ydims)
     @assert length(xdims) == length(ydims)
-    function create_indices(t, dims)
+    I = [length(xdims), ndims(x)-length(xdims), ndims(y)-length(ydims)]
+    dummy_indices, x_free_indices, y_free_indices = UnitRange.(cumsum(I) - I .+ 1, cumsum(I))
+    function create_indices(t, dims, free_indices)
         indices = collect(1:ndims(t))
-        indices[dims] = (ndims(x)+ndims(y)) .+ (1:length(dims))
+        indices[dims] = dummy_indices
+        indices[setdiff(1:ndims(t), dims)] .= free_indices
         Tuple(indices)
     end
-    xindices = create_indices(x, xdims)
-    yindices = create_indices(y, ydims)
+    xindices = create_indices(x, xdims, x_free_indices)
+    yindices = create_indices(y, ydims, y_free_indices)
     quote
         @_inline_meta
         contract_einsum(TT, (x,y), ($(Val(xindices)),$(Val(yindices))))
@@ -196,19 +199,26 @@ julia> A = x ⊗ y
 @inline otimes(x1::Union{AbstractTensor, Number}, x2::Union{AbstractTensor, Number}, others...) = otimes(otimes(x1, x2), others...)
 @inline otimes(x::Union{AbstractTensor, Number}) = x
 
-struct OTimes{n} end
-otimes(n::Int) = OTimes{n}()
+struct OTimes{N} end
+otimes(N::Int) = OTimes{N}()
 
 @inline Base.:^(x::AbstractVec, ::OTimes{0}) = one(eltype(x))
 @inline Base.:^(x::AbstractVec, ::OTimes{1}) = x
-@generated function Base.:^(x::AbstractVec{dim}, ::OTimes{n}) where {dim, n}
-    indices = Expr(:tuple, [Symbol(i) for i in 1:n]...)
-    expr = Expr(:call, :*, [:(x[$i]) for i in indices.args]...)
-    TT = Tensor{Tuple{Symmetry{Tuple{fill(dim,n)...}}}}
+@generated function Base.:^(x::AbstractVec{dim}, ::OTimes{N}) where {dim, N}
+    ex = :x
+    for i in 1:N-1
+        ex = :(_pow_otimes($ex, x))
+    end
     quote
         @_inline_meta
-        @einsum $TT $indices -> $expr
+        $ex
     end
+end
+@inline function _pow_otimes(x::Tensor{Tuple{Symmetry{NTuple{N, dim}}}}, y::Vec{dim}) where {N, dim}
+    contract(Tensor{Tuple{Symmetry{NTuple{N+1,dim}}}}, x, y, Val(()), Val(()))
+end
+@inline function _pow_otimes(x::Vec{dim}, y::Vec{dim}) where {dim}
+    contract(Tensor{Tuple{@Symmetry{dim,dim}}}, x, y, Val(()), Val(()))
 end
 
 """
