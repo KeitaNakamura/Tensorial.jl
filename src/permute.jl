@@ -59,24 +59,15 @@ end
     _permutedims(x, perm)
 end
 
-# AbstractTensor
-
-@generated function ispermuted(::Val{N}, ::Val{perm}) where {N, perm}
-    res = permute!(collect(1:N), collect(perm))
+@generated function Base.permutedims(x::AbstractTensor, ::Val{perm}) where {perm}
+    permute!(collect(1:ndims(x)), collect(perm)) == 1:ndims(x) && return :x
+    TT = tensortype(permutedims(Space(x), Val(perm))){eltype(x)}
+    exps = map(CartesianIndices(TT)) do I
+        index = getindex.(Ref(Tuple(I)), sortperm(collect(perm)))
+        getindex_expr(x, :x, index...)
+    end
     quote
         @_inline_meta
-        check_permute_parameters(Val(N), Val(perm))
-        $(res == 1:N)
-    end
-end
-
-@generated _revperm(::Val{perm}) where {perm} = :(@_inline_meta; tuple($(sortperm(collect(perm))...)))
-
-@inline function Base.permutedims(x::AbstractTensor, perm::Val)
-    ispermuted(Val(ndims(x)), perm) && return x
-    S = permutedims(Space(x), perm)
-    tensortype(S)() do ij...
-        @_inline_meta
-        @inbounds x[getindex.(Ref(ij), _revperm(perm))...]
+        @inbounds $TT(tuple($(exps[tensorindices_tuple(TT)]...)))
     end
 end
