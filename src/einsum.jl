@@ -169,10 +169,17 @@ function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr, TT = :
         ex = Expr(:call, :*, lhs.ex, rhs.ex)
         return EinsumExpr(ex, [lhs.freeinds; rhs.freeinds], [lhs.allinds; rhs.allinds])
     else
-        freeinds = find_freeindices([lhs.freeinds; rhs.freeinds])
-        allinds = [lhs.allinds; rhs.allinds]
-        ex = :($contract_einsum($TT, ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
-        return EinsumExpr(ex, freeinds, allinds)
+        all_indices = [lhs.freeinds; rhs.freeinds]
+        free_indices = find_freeindices(all_indices)
+        if TT == :Any && allunique(lhs.freeinds) && allunique(rhs.freeinds) # use faster computation if possible
+            dummy_indices = setdiff(all_indices, free_indices)
+            lhs_dims = map(dummy_index -> only(findall(==(dummy_index), lhs.freeinds)), dummy_indices)
+            rhs_dims = map(dummy_index -> only(findall(==(dummy_index), rhs.freeinds)), dummy_indices)
+            ex = :($contract($(lhs.ex), $(rhs.ex), $(ValTuple(lhs_dims...)), $(ValTuple(rhs_dims...))))
+        else
+            ex = :($contract_einsum($TT, ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
+        end
+        return EinsumExpr(ex, free_indices, [lhs.allinds; rhs.allinds])
     end
 end
 
