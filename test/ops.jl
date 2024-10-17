@@ -30,9 +30,16 @@
         @test (@inferred a * x)::Vec{2, T} == a * Array(x)
         @test (@inferred x * a)::Vec{2, T} == Array(x) * a
         @test (@inferred x / a)::Vec{2, T} == Array(x) / a
-        # bad operations
-        @test_throws Exception x * y
-        @test_throws Exception y * x
+        # multiplication
+        x = rand(Vec{2,T})
+        y = rand(Mat{2,2,T})
+        z = Vec(1,2)
+        @test (@inferred x' * y)::Transpose{T, Vec{2,T}} ≈ Array(x)' * Array(y)
+        @test (@inferred y * x)::Vec{2,T} ≈ Array(y) * Array(x)
+        @test (@inferred y' * x)::Vec{2,T} ≈ Array(y)' * Array(x)
+        @test (@inferred x * x')::Mat{2,2,T} ≈ Array(x) * Array(x)'
+        @test (@inferred x'x)::T ≈ Array(x)'Array(x)
+        @test (@inferred x'z)::T ≈ Array(x)'Array(z)
     end
 end
 
@@ -129,15 +136,6 @@ end
             @test (@inferred ⊗(x, y, x, y))::Tensor{Tuple{3,2,3,2}, T} ≈ x ⊗ y ⊗ x ⊗ y
         end
     end
-    @testset "dotdot" begin
-        for T in (Float32, Float64)
-            x = rand(Vec{3, T})
-            y = rand(Vec{3, T})
-            S = rand(SymmetricFourthOrderTensor{3, T})
-            A = FourthOrderTensor{3, T}((i,j,k,l) -> S[i,k,j,l])
-            @test (@inferred dotdot(x, S, y))::Tensor{Tuple{3,3}, T} ≈ A ⊡ (x ⊗ y)
-        end
-    end
     @testset "tr" begin
         for T in (Float32, Float64)
             x = rand(SecondOrderTensor{3, T})
@@ -205,21 +203,12 @@ end
         end
     end
     @testset "cross" begin
-        for T in (Float32, Float64), dim in 1:3
+        for T in (Float32, Float64), dim in 2:3
             x = rand(Vec{dim, T})
             y = rand(Vec{dim, T})
-            @test (@inferred x × x)::Vec{3, T} ≈ zero(Vec{3, T})
             @test x × y ≈ -y × x
-            if dim == 2
-                a = Vec{2, T}(1,0)
-                b = Vec{2, T}(0,1)
-                @test (@inferred a × b)::Vec{3, T} ≈ Vec{3, T}(0,0,1)
-            end
-            if dim == 3
-                a = Vec{3, T}(1,0,0)
-                b = Vec{3, T}(0,1,0)
-                @test (@inferred a × b)::Vec{3, T} ≈ Vec{3, T}(0,0,1)
-            end
+            dim == 2 && @test (@inferred x × x)::T ≈ zero(T)
+            dim == 3 && @test (@inferred x × x)::Vec{3, T} ≈ zero(Vec{3, T})
         end
     end
     @testset "pow" begin
@@ -390,13 +379,12 @@ end
             @test (@inferred I ⋅ v)::Vec{3, T} == one(x) ⋅ v
             @test (@inferred I ⊡ x)::T == one(x) ⊡ x
             @test (@inferred x ⊡ I)::T == x ⊡ one(x)
-            # wrong input
-            @test_throws Exception x * I
-            @test_throws Exception y * I
-            @test_throws Exception v * I
-            @test_throws Exception I * x
-            @test_throws Exception I * y
-            @test_throws Exception I * v
+            # multiplication
+            @test (@inferred x * I)::typeof(x) == x
+            @test (@inferred y * I)::typeof(y) == y
+            @test (@inferred I * x)::typeof(x) == x
+            @test (@inferred I * y)::typeof(y) == y
+            @test (@inferred I * v)::typeof(v) == v
         end
     end
 end

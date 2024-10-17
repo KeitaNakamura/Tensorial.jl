@@ -11,6 +11,7 @@ const AbstractMat{m, n, T} = AbstractTensor{Tuple{m, n}, T, 2}
 const AbstractMatLike{T} = Union{
     AbstractMat{<: Any, <: Any, T},
     AbstractSymmetricSecondOrderTensor{<: Any, T},
+    Transpose{T, <: AbstractVec{<: Any, T}},
 }
 const AbstractVecOrMatLike{T} = Union{AbstractVec{<: Any, T}, AbstractMatLike{T}}
 
@@ -76,4 +77,7 @@ end
         @_inline_meta
         @inbounds SArray{Tuple{$(size(x)...)}}($(exps...))
     end
+end
+function StaticArrays.SArray(x::Transpose{<: T, <: AbstractVec{dim, T}}) where {dim, T}
+    transpose(SArray(parent(x)))
 end

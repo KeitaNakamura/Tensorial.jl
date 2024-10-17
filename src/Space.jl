@@ -108,7 +108,7 @@ end
 otimes(x::Space) = x
 otimes(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
 otimes(x::Space, y::Space, z::Space...) = otimes(otimes(x, y), z...)
-dot(x::Space, y::Space) = contract(x, y, Val(1))
+contract1(x::Space, y::Space) = contract(x, y, Val(1))
 contract2(x::Space, y::Space) = contract(x, y, Val(2))
 
 # promote_space

@@ -72,6 +72,9 @@ end
 @inline function Tensor(A::StaticArray{S, T}) where {S, T}
     Tensor{S, T}(Tuple(A))
 end
+@inline function Tensor(A::LinearAlgebra.Transpose{<: Any, <: StaticArray})
+    transpose(Tensor(parent(A)))
+end
 
 ## for aliases
 @inline function Tensor{S, T, N}(data::Tuple{Vararg{Any, L}}) where {S, T, N, L}

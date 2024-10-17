@@ -39,15 +39,19 @@
     end
     @testset "vcat/hcat" begin
         @test @inferred(vcat(Vec(1,2,3))) === Vec(1,2,3)
+        @test @inferred(vcat(Vec(1,2,3)')) === Vec(1,2,3)'
         @test @inferred(vcat(Mat{1,3}(1,2,3))) === Mat{1,3}(1,2,3)
         @test @inferred(hcat(Vec(1,2,3))) === Mat{3,1}(1,2,3)
+        @test @inferred(hcat(Vec(1,2,3)')) === Vec(1,2,3)'
         @test @inferred(hcat(Mat{3,1}(1,2,3))) === Mat{3,1}(1,2,3)
 
         @test @inferred(vcat(Vec(1,2,3), Vec(4,5,6))) === Vec(1,2,3,4,5,6)
         @test @inferred(vcat(Vec(1,2,3), Mat{3,1}(4,5,6))) === Mat{6,1}(1,2,3,4,5,6)
         @test @inferred(vcat(Mat{1,3}(1,2,3), Mat{1,3}(4,5,6))) === @Mat [1 2 3; 4 5 6]
-        @test @inferred(vcat(symmetric(Mat{2,2}(1,2,2,3), :U), Mat{1,2}(4,5))) === @Mat [1 2; 2 3; 4 5]
+        @test @inferred(vcat(Mat{1,3}(1,2,3), Vec(4,5,6)')) === @Mat [1 2 3; 4 5 6]
+        @test @inferred(vcat(symmetric(Mat{2,2}(1,2,2,3), :U), Vec(4,5)')) === @Mat [1 2; 2 3; 4 5]
         @test @inferred(hcat(Vec(1,2,3), Vec(4,5,6))) === Mat{3,2}(1,2,3,4,5,6)
+        @test @inferred(hcat(Vec(1,2,3)', Vec(4,5,6)')) === Mat{1,6}(1,2,3,4,5,6)
         @test @inferred(hcat(Vec(1,2,3), Mat{3,2}(4,5,6,7,8,9))) === Mat{3,3}(1,2,3,4,5,6,7,8,9)
         @test @inferred(hcat(Mat{3,1}(1,2,3), Mat{3,2}(4,5,6,7,8,9))) === Mat{3,3}(1,2,3,4,5,6,7,8,9)
         @test @inferred(hcat(symmetric(Mat{2,2}(1,2,2,3), :U), Vec(4,5))) === @Mat [1 2 4; 2 3 5]
@@ -85,7 +89,7 @@
         for T in (Float32, Float64)
             x11 = rand(Mat{2,2,T})
             x12 = rand(Vec{2,T})
-            x21 = rand(Mat{1,2,T})
+            x21 = rand(Vec{2,T})'
             x22 = rand(T)
             @test (@inferred f_2_2(x11, x12, x21, x22))::Mat{3,3,T} == f_2_2(Array.((x11, x12, x21))..., x22)
             x11 = rand(SymmetricSecondOrderTensor{3,T})
@@ -95,11 +99,11 @@
             x23 = rand(Mat{2,3,T})
             @test (@inferred f_2_3(x11, x12, x21, x22, x23))::Mat{5,6,T} == f_2_3(Array.((x11, x12, x21, x22, x23))...)
             x11 = rand(T)
-            x12 = rand(Mat{1,3,T})
+            x12 = rand(Vec{3,T})'
             x21 = rand(Vec{3,T})
             x22_11 = rand(SymmetricSecondOrderTensor{2,T})
             x22_12 = rand(Vec{2,T})
-            x22_21 = rand(Mat{1,2,T})
+            x22_21 = rand(Vec{2,T})'
             x22_22 = rand(T)
             @test (@inferred f_2_2_recurse(x11,x12,x21,x22,x22_11,x22_12,x22_21,x22_22))::Mat{4,4,T} == f_2_2_recurse(x11,Array.((x12,x21,x22,x22_11,x22_12,x22_21))...,x22_22)
         end
