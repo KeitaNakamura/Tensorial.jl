@@ -1,4 +1,4 @@
-# Tensorial
+# Tensorial.jl
 
 ## Introduction
 
