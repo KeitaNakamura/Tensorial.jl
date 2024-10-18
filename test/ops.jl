@@ -126,7 +126,7 @@ end
             @test (@inferred x^⊗(2))::Tensor{Tuple{@Symmetry{3,3}}, T} ≈ x ⊗ x
             @test (@inferred x^⊗(3))::Tensor{Tuple{@Symmetry{3,3,3}}, T} ≈ x ⊗ x ⊗ x
             @test (@inferred x^⊗(4))::Tensor{Tuple{@Symmetry{3,3,3,3}}, T} ≈ x ⊗ x ⊗ x ⊗ x
-            @test (@inferred z^⊗(3))::Tensor{NTuple{9,3}, T} ≈ x ⊗ x ⊗ x
+            @test (@inferred z^⊗(3))::Tensor{NTuple{6,3}, T} ≈ z ⊗ z ⊗ z
             # nonsquare
             x = rand(Vec{3, T})
             y = rand(Vec{2, T})
