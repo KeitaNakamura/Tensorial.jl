@@ -2,7 +2,6 @@
 
 *Statically sized tensors and related operations for Julia*
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://KeitaNakamura.github.io/Tensorial.jl/stable)
 [![CI](https://github.com/KeitaNakamura/Tensorial.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/KeitaNakamura/Tensorial.jl/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/KeitaNakamura/Tensorial.jl/branch/main/graph/badge.svg?token=V58DXDI1R5)](https://codecov.io/gh/KeitaNakamura/Tensorial.jl)
 
@@ -12,6 +11,10 @@ In addition to the basic operations for `AbstractArray`, the package also offers
 * Contraction, tensor product (`⊗`), and a flexible `@einsum` macro for Einstein summation convention
 * A `@Symmetry` macro to define the tensor symmetries, which eliminates unnecessary calculations
 * Automatic differentiation through `gradient` and `hessian` functions
+
+## Documentation
+
+[![Stable](https://img.shields.io/badge/docs-latest%20release-blue.svg)](https://KeitaNakamura.github.io/Tensorial.jl/stable)
 
 ## Speed
 
@@ -66,12 +69,6 @@ Platform Info:
   LIBM: libopenlibm
   LLVM: libLLVM-15.0.7 (ORCJIT, apple-m1)
 
-```
-
-## Installation
-
-```julia
-pkg> add Tensorial
 ```
 
 ## Cheat Sheet
