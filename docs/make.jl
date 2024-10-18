@@ -22,18 +22,16 @@ makedocs(;
         "Manual" => [
             "Tensor Type.md",
             "Constructors.md",
-            "Tensor Operations.md",
-            "Continuum Mechanics.md",
+            "Operations.md",
             "Voigt form.md",
-            "Tensor Inversion.md",
             "Broadcast.md",
             "Automatic differentiation.md",
-            "Einstein summation.md",
             "Quaternion.md",
         ],
         "Benchmarks.md",
     ],
     doctest = true, # :fix
+    warnonly = [:missing_docs],
 )
 
 deploydocs(

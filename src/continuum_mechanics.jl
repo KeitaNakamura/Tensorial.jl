@@ -1,8 +1,7 @@
 """
-    mean(::AbstractSecondOrderTensor{3})
-    mean(::AbstractSymmetricSecondOrderTensor{3})
+    mean(A)
 
-Compute the mean value of diagonal entries of a square tensor.
+Compute the mean value of diagonal entries of a square tensor `A`.
 
 # Examples
 ```jldoctest
@@ -20,10 +19,9 @@ julia> mean(x)
 @inline mean(x::Vec{3}) = sum(Tuple(x)) / 3
 
 """
-    vol(::AbstractSecondOrderTensor{3})
-    vol(::AbstractSymmetricSecondOrderTensor{3})
+    vol(A)
 
-Compute the volumetric part of a square tensor.
+Compute the volumetric part of a square tensor `A`.
 This is only available in 3D.
 
 # Examples

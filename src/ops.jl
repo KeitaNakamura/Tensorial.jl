@@ -51,6 +51,7 @@ Conduct contraction of `N` inner indices.
 For example, `N=2` contraction for third-order tensors ``A_{ij} = B_{ikl} C_{klj}``
 can be computed as follows:
 
+# Examples
 ```jldoctest
 julia> B = rand(Tensor{Tuple{3,3,3}});
 
@@ -63,11 +64,11 @@ julia> A = contract(B, C, Val(2))
  1.78391  1.38714  2.2079
 ```
 
-Following symbols are also available for specific contractions:
+The following infix operators are also available for specific contractions:
 
-- `x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>` ): `contract(x, y, Val(0))`
-- `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>`   ): `contract(x, y, Val(1))`
+- `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>` ): `contract(x, y, Val(1))`
 - `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>` ): `contract(x, y, Val(2))`
+- `x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>` ): `contract(x, y, Val(0))`
 """
 @generated function contract(t1::AbstractTensor, t2::AbstractTensor, ::Val{N}) where {N}
     S1 = Space(t1)
@@ -106,6 +107,7 @@ end
 
 Perform contraction over the given dimensions.
 
+# Examples
 ```jldoctest
 julia> A = rand(Mat{3,3})
 3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
@@ -167,6 +169,10 @@ function check_contract_dims(dims)
     dims
 end
 
+@inline contract1(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(1))
+@inline contract2(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(2))
+@inline contract3(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(3))
+
 """
     otimes(x::AbstractTensor, y::AbstractTensor)
     x ⊗ y
@@ -204,6 +210,40 @@ otimes(N::Int) = OTimes{N}()
 
 @inline Base.:^(x::AbstractVec, ::OTimes{0}) = one(eltype(x))
 @inline Base.:^(x::AbstractVec, ::OTimes{1}) = x
+
+"""
+    x^⊗(n)
+
+`n`-fold tensor product of a tensor `x`.
+
+# Examples
+```jldoctest
+julia> x = rand(Vec{2})
+2-element Vec{2, Float64}:
+ 0.32597672886359486
+ 0.5490511363155669
+
+julia> x^⊗(3)
+2×2×2 Tensor{Tuple{Symmetry{Tuple{2, 2, 2}}}, Float64, 3, 4}:
+[:, :, 1] =
+ 0.0346386  0.0583426
+ 0.0583426  0.098268
+
+[:, :, 2] =
+ 0.0583426  0.098268
+ 0.098268   0.165515
+```
+"""
+@generated function Base.:^(x::AbstractTensor, ::OTimes{N}) where {N}
+    ex = :x
+    for i in 1:N-1
+        ex = :(otimes($ex, x))
+    end
+    quote
+        @_inline_meta
+        $ex
+    end
+end
 @generated function Base.:^(x::AbstractVec{dim}, ::OTimes{N}) where {dim, N}
     ex = :x
     for i in 1:N-1
@@ -220,34 +260,6 @@ end
 @inline function _pow_otimes(x::Vec{dim}, y::Vec{dim}) where {dim}
     contract(Tensor{Tuple{@Symmetry{dim,dim}}}, x, y, Val(()), Val(()))
 end
-
-"""
-    contract1(x::AbstractTensor, y::AbstractTensor)
-
-Compute single contraction such as ``a = x_i y_i``.
-This is equivalent to [`contract(::AbstractTensor, ::AbstractTensor, Val(1))`](@ref).
-
-# Examples
-```jldoctest
-julia> x = rand(Vec{3})
-3-element Vec{3, Float64}:
- 0.32597672886359486
- 0.5490511363155669
- 0.21858665481883066
-
-julia> y = rand(Vec{3})
-3-element Vec{3, Float64}:
- 0.8942454282009883
- 0.35311164439921205
- 0.39425536741585077
-
-julia> a = x ⋅ y
-0.5715585109976284
-```
-"""
-@inline contract1(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(1))
-@inline contract2(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(2)) # ⊡
-@inline contract3(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(3))
 
 """
     norm(::AbstractTensor)
@@ -267,27 +279,38 @@ julia> norm(x)
 ```
 """
 @inline norm(x::AbstractTensor) = sqrt(contract(x, x, Val(ndims(x))))
+
+"""
+    normalize(x)
+
+Compute `x / norm(x)`.
+"""
 @inline normalize(x::AbstractTensor) = x / norm(x)
 
 """
-    tr(::AbstractSecondOrderTensor)
-    tr(::AbstractSymmetricSecondOrderTensor)
+    tr(A)
 
-Compute the trace of a square tensor.
+Compute the trace of a square tensor `A`.
 
 # Examples
 ```jldoctest
-julia> x = rand(Mat{3,3})
+julia> A = rand(Mat{3,3})
 3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.325977  0.894245  0.953125
  0.549051  0.353112  0.795547
  0.218587  0.394255  0.49425
 
-julia> tr(x)
+julia> tr(A)
 1.1733382401532275
 ```
 """
-@inline tr(x::AbstractSquareTensor) = @einsum x[i,i]
+@generated function tr(x::AbstractSquareTensor{dim}) where {dim}
+    exps = [getindex_expr(x,:x,i,i) for i in 1:dim]
+    quote
+        @_inline_meta
+        @inbounds +($(exps...))
+    end
+end
 
 """
     symmetric(::AbstractSecondOrderTensor)
@@ -373,10 +396,21 @@ end
 @inline minorsymmetric(x::AbstractSymmetricFourthOrderTensor) = x
 
 """
-    skew(::AbstractSecondOrderTensor)
-    skew(::AbstractSymmetricSecondOrderTensor)
+    skew(A)
 
 Compute skew-symmetric (anti-symmetric) part of a second order tensor.
+
+# Examples
+```jldoctest
+julia> x = rand(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.325977  0.894245  0.953125
+ 0.549051  0.353112  0.795547
+ 0.218587  0.394255  0.49425
+
+julia> symmetric(x) + skew(x) ≈ x
+true
+```
 """
 @inline skew(x::AbstractSecondOrderTensor) = (x - x') / 2
 @inline skew(x::AbstractSymmetricSecondOrderTensor{dim, T}) where {dim, T} = zero(SecondOrderTensor{dim, T})
@@ -727,38 +761,33 @@ function rotmat(θ::Number, n::Vec{3})
 end
 
 """
-    rotate(x::Vec, R::SecondOrderTensor)
-    rotate(x::SecondOrderTensor, R::SecondOrderTensor)
-    rotate(x::SymmetricSecondOrderTensor, R::SecondOrderTensor)
+    rotate(x, R::SecondOrderTensor)
 
-Rotate `x` by rotation matrix `R`.
-This function can hold the symmetry of `SymmetricSecondOrderTensor`.
+Rotate `x` using the rotation matrix `R`.
+This function preserves the symmetry of the matrix.
 
 # Examples
 ```jldoctest
-julia> A = rand(SymmetricSecondOrderTensor{3})
-3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
- 0.325977  0.549051  0.218587
- 0.549051  0.894245  0.353112
- 0.218587  0.353112  0.394255
-
 julia> R = rotmatz(π/4)
 3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.707107  -0.707107  0.0
  0.707107   0.707107  0.0
  0.0        0.0       1.0
 
-julia> rotate(A, R)
-3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
-  0.0610599  -0.284134  -0.0951235
- -0.284134    1.15916    0.404252
- -0.0951235   0.404252   0.394255
+julia> rotate(Vec(1,0,0), R)
+3-element Vec{3, Float64}:
+ 0.7071067811865476
+ 0.7071067811865475
+ 0.0
 
-julia> R ⋅ A ⋅ R'
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
-  0.0610599  -0.284134  -0.0951235
- -0.284134    1.15916    0.404252
- -0.0951235   0.404252   0.394255
+julia> A = rand(SymmetricSecondOrderTensor{3})
+3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
+ 0.325977  0.549051  0.218587
+ 0.549051  0.894245  0.353112
+ 0.218587  0.353112  0.394255
+
+julia> rotate(A, R) ≈ R ⋅ A ⋅ R'
+true
 ```
 """
 @inline rotate(v::Vec, R::SecondOrderTensor) = R ⋅ v

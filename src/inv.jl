@@ -72,12 +72,11 @@ end
 end
 
 """
-    inv(::AbstractSecondOrderTensor)
-    inv(::AbstractSymmetricSecondOrderTensor)
-    inv(::AbstractFourthOrderTensor)
-    inv(::AbstractSymmetricFourthOrderTensor)
+    inv(A)
 
-Compute the inverse of a tensor.
+Compute the inverse of a tensor `A`.
+`A` can be of the following types: `SecondOrderTensor`, `SymmetricSecondOrderTensor`,
+`FourthOrderTensor`, or `SymmetricFourthOrderTensor`.
 
 # Examples
 ```jldoctest
