@@ -1,65 +1,27 @@
-```@meta
-DocTestSetup = :(using Tensorial)
-```
-
 # Broadcast
 
-In Tensorial.jl, subtypes of `AbstractTensor` basically behave like scalars rather than `Array`.
-For example, broadcasting operations on tensors and arrays of tensors will be performed as
+In Tensorial.jl, `Tensor` behaves like a scalar rather than an `Array` when performing broadcasting, as follows:
 
-```jldoctest
-julia> x = Vec(1,2,3)
-3-element Vec{3, Int64}:
- 1
- 2
- 3
-
-julia> V = [Vec{3}(i:i+2) for i in 1:4]
-4-element Vector{Vec{3, Int64}}:
- [1, 2, 3]
- [2, 3, 4]
- [3, 4, 5]
- [4, 5, 6]
-
-julia> x .+ V
-4-element Vector{Vec{3, Int64}}:
- [2, 4, 6]
- [3, 5, 7]
- [4, 6, 8]
- [5, 7, 9]
-
-julia> V .= zero(x)
-4-element Vector{Vec{3, Int64}}:
- [0, 0, 0]
- [0, 0, 0]
- [0, 0, 0]
- [0, 0, 0]
+```@setup broadcast1
+using Tensorial
 ```
 
-On the other hand, broadcasting itself or with scalars and tuples behave the same as built-in `Array` as
+```@repl broadcast1
+x = Vec(1,2,3)
+V = [Vec{3}(i:i+2) for i in 1:4]
+x .+ V
+V .= zero(x)
+```
 
-```jldoctest
-julia> x = Vec(1,2,3)
-3-element Vec{3, Int64}:
- 1
- 2
- 3
+Conversely, broadcasting a `Tensor` itself or with scalars and tuples behaves the same as built-in `Array`, as shown below:
 
-julia> sqrt.(x)
-3-element Vec{3, Float64}:
- 1.0
- 1.4142135623730951
- 1.7320508075688772
+```@setup broadcast2
+using Tensorial
+```
 
-julia> x .+ 2
-3-element Vec{3, Int64}:
- 3
- 4
- 5
-
-julia> x .+ (2,3,4)
-3-element Vec{3, Int64}:
- 3
- 5
- 7
+```@repl broadcast2
+x = Vec(1,2,3)
+sqrt.(x)
+x .+ 2
+x .+ (2,3,4)
 ```
