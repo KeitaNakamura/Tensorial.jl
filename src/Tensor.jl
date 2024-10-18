@@ -88,13 +88,37 @@ end
 @inline Vec{dim}(data::Tuple) where {dim} = (T = promote_ntuple_eltype(data); Vec{dim, T}(data))
 @inline Vec(x::AbstractVec) = vec(x)
 
-# macros
+"""
+    @Vec [a, b, c, d]
+    @Vec [i for i in 1:2]
+    @Vec ones(2)
+
+A convenient macro to construct `Vec`.
+"""
 macro Vec(ex)
     esc(:(Tensor(Tensorial.@SVector $ex)))
 end
+
+"""
+    @Mat [a b c d]
+    @Mat [[a, b];[c, d]]
+    @Mat [i+j for i in 1:2, j in 1:2]
+    @Mat ones(2, 2)
+
+A convenient macro to construct `Mat`.
+"""
 macro Mat(ex)
     esc(:(Tensor(Tensorial.@SMatrix $ex)))
 end
+
+"""
+    @Tensor [a b; c d]
+    @Tensor [[a, b];[c, d]]
+    @Tensor [i+j for i in 1:2, j in 1:2]
+    @Tensor ones(2, 2, 2)
+
+A convenient macro to construct `Tensor` with arbitrary dimension.
+"""
 macro Tensor(expr)
     if Meta.isexpr(expr, :braces)
         TT = :(Tensor{$(expr.args...)})
@@ -162,6 +186,49 @@ end
     δ(i,j) = i == j ? o : z
     TT((i,j,k,l) -> (δ(i,k)*δ(j,l) + δ(i,l)*δ(j,k))/2)
 end
+
+"""
+    zero(TensorType)
+
+Construct a zero tensor.
+
+```jldoctest
+julia> zero(Vec{2})
+2-element Vec{2, Float64}:
+ 0.0
+ 0.0
+
+julia> zero(Mat{2,3})
+2×3 Mat{2, 3, Float64, 6}:
+ 0.0  0.0  0.0
+ 0.0  0.0  0.0
+```
+"""
+zero
+
+"""
+    one(TensorType)
+
+Construct an identity tensor.
+The supported `TensorType`s are as follows:
+
+* `SecondOrderTensor{dim}`
+* `SymmetricSecondOrderTensor{dim}`
+* `FourthOrderTensor{dim}`
+* `SymmetricFourthOrderTensor{dim}`
+
+```jldoctest
+julia> δ = one(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 1.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  1.0
+
+julia> one(SymmetricFourthOrderTensor{3}) ≈ @einsum (i,j,k,l) -> (δ[i,k]*δ[j,l] + δ[i,l]*δ[j,k]) / 2
+true
+```
+"""
+one
 
 """
     levicivita(::Val{N} = Val(3))
