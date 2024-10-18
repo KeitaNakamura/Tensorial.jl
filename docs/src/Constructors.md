@@ -2,7 +2,7 @@
 DocTestSetup = :(using Tensorial)
 ```
 
-# Constructors
+# Constructing tensors
 
 ## From an `AbstractArray`
 
