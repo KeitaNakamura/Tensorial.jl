@@ -22,17 +22,17 @@ In addition to the basic operations for `AbstractArray`, the package also offers
 ```julia
 julia> using Tensorial
 
-julia> x = Vec{3}(rand(3)); # constructor similar to SArray.jl
+julia> x = Vec{3}(rand(3)); # constructor similar to SArray
 
 julia> A = @Mat rand(3,3); # @Vec, @Mat and @Tensor, analogous to @SVector, @SMatrix and @SArray
 
-julia> A ⋅ x ≈ A * x   # single contraction (⋅)
+julia> A ⋅ x ≈ A * x # single contraction (⋅)
 true
 
 julia> A ⊡ A ≈ tr(A'A) # double contraction (⊡)
 true
 
-julia> x ⊗ x ≈ x * x'  # tensor product (⊗)
+julia> x ⊗ x ≈ x * x' # tensor product (⊗)
 true
 
 julia> (@einsum x[i] * A[j,i] * x[j]) ≈ x ⋅ A' ⋅ x # Einstein summation (@einsum)
