@@ -16,6 +16,44 @@ In addition to the basic operations for `AbstractArray`, the package also offers
 
 [![Stable](https://img.shields.io/badge/docs-latest%20release-blue.svg)](https://KeitaNakamura.github.io/Tensorial.jl/stable)
 
+## Quick start
+
+```julia
+julia> using Tensorial
+
+julia> x = Vec{3}(rand(3)); # constructor similar to SArray.jl
+
+julia> A = @Mat rand(3,3); # @Vec, @Mat and @Tensor, analogous to @SVector, @SMatrix and @SArray
+
+julia> A ⋅ x ≈ A * x   # single contraction (⋅)
+true
+
+julia> A ⊡ A ≈ tr(A'A) # double contraction (⊡)
+true
+
+julia> x ⊗ x ≈ x * x'  # tensor product (⊗)
+true
+
+julia> (@einsum x[i] * A[j,i] * x[j]) ≈ x ⋅ A' ⋅ x # Einstein summation (@einsum)
+true
+
+julia> S = rand(Tensor{Tuple{@Symmetry{3,3}}}); # specify symmetry S₍ᵢⱼ₎
+
+julia> SS = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # SS₍ᵢⱼ₎₍ₖₗ₎
+
+julia> inv(SS) ⊡ S ≈ @einsum inv(SS)[i,j,k,l] * S[k,l] # it just works
+true
+
+julia> δ = one(Mat{3,3}) # identity tensor
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 1.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  1.0
+
+julia> gradient(identity, S) ≈ one(SS) # ∂Sᵢⱼ/∂Sₖₗ = (δᵢₖδⱼₗ + δᵢₗδⱼₖ) / 2
+true
+```
+
 ## Speed
 
 ```julia
@@ -69,79 +107,6 @@ Platform Info:
   LIBM: libopenlibm
   LLVM: libLLVM-15.0.7 (ORCJIT, apple-m1)
 
-```
-
-## Cheat Sheet
-
-```julia
-# tensor aliases
-rand(Vec{3})                        # vector
-rand(Mat{2,3})                      # matrix
-rand(SecondOrderTensor{3})          # 3x3 second-order tensor (this is the same as the Mat{3,3})
-rand(SymmetricSecondOrderTensor{3}) # 3x3 symmetric second-order tensor (3x3 symmetric matrix)
-rand(FourthOrderTensor{3})          # 3x3x3x3 fourth-order tensor
-rand(SymmetricFourthOrderTensor{3}) # 3x3x3x3 symmetric fourth-order tensor
-
-# identity tensors
-one(SecondOrderTensor{3,3})        # second-order identity tensor
-one(SymmetricSecondOrderTensor{3}) # symmetric second-order identity tensor
-one(FourthOrderTensor{3})          # fourth-order identity tensor
-one(SymmetricFourthOrderTensor{3}) # symmetric fourth-order identity tensor (symmetrizing tensor)
-
-# zero tensors
-zero(Mat{2,3}) == zeros(2,3)
-zero(SymmetricSecondOrderTensor{3}) == zeros(3,3)
-
-# random tensors
-rand(Mat{2,3})
-randn(Mat{2,3})
-
-# macros (same interface as StaticArrays.jl)
-@Vec [1,2,3]
-@Vec rand(4)
-@Mat [1 2
-      3 4]
-@Mat rand(4,4)
-@Tensor rand(2,2,2)
-
-# statically sized getindex by `@Tensor`
-x = @Mat [1 2
-          3 4
-          5 6]
-@Tensor(x[2:3, :])   === @Mat [3 4
-                               5 6]
-@Tensor(x[[1,3], :]) === @Mat [1 2
-                               5 6]
-
-# contraction and tensor product
-x = rand(Mat{2,2})
-y = rand(SymmetricSecondOrderTensor{2})
-x ⊗ y isa Tensor{Tuple{2,2,@Symmetry{2,2}}} # tensor product
-x ⋅ y isa Tensor{Tuple{2,2}}                # single contraction (x_ij * y_jk)
-x ⊡ y isa Real                              # double contraction (x_ij * y_ij)
-
-# det/inv for 2nd-order tensor
-A = rand(SecondOrderTensor{3})          # equal to one(Tensor{Tuple{3,3}})
-S = rand(SymmetricSecondOrderTensor{3}) # equal to one(Tensor{Tuple{@Symmetry{3,3}}})
-det(A); det(S)
-inv(A) ⋅ A ≈ one(A)
-inv(S) ⋅ S ≈ one(S)
-
-# inv for 4th-order tensor
-AA = rand(FourthOrderTensor{3})          # equal to one(Tensor{Tuple{3,3,3,3}})
-SS = rand(SymmetricFourthOrderTensor{3}) # equal to one(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}})
-inv(AA) ⊡ AA ≈ one(AA)
-inv(SS) ⊡ SS ≈ one(SS)
-
-# Einstein summation convention
-A = rand(Mat{3,3})
-B = rand(Mat{3,3})
-(@einsum (i,j) -> A[i,k] * B[k,j]) == A ⋅ B
-(@einsum A[i,j] * B[i,j]) == A ⊡ B
-
-# Automatic differentiation
-gradient(tr, rand(Mat{3,3})) == one(Mat{3,3}) # Tensor -> Real
-gradient(identity, rand(SymmetricSecondOrderTensor{3})) == one(SymmetricFourthOrderTensor{3}) # Tensor -> Tensor
 ```
 
 ## Other tensor packages

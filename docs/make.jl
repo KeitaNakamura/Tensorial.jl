@@ -16,9 +16,7 @@ makedocs(;
     sitename = "Tensorial.jl",
     pages=[
         "Home" => "index.md",
-        "Getting Started" => [
-            "Cheat Sheet.md",
-        ],
+        "Quick start.md",
         "Manual" => [
             "Tensor Type.md",
             "Constructors.md",
