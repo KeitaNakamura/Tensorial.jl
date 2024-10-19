@@ -11,8 +11,8 @@ using Tensorial
 ```
 
 ```@repl construct-from-abstractarray
-Vec{2}([1 2])
-Vec{2,Float64}([1 2])
+Vec{2}([1,2])
+Vec{2,Float64}([1,2])
 Mat{2,2}([1 2; 3 4])
 Mat{2,2,Float64}([1 2; 3 4])
 SymmetricSecondOrderTensor{2}([1 2; 3 4]) # InexactError
