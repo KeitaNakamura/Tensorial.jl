@@ -148,15 +148,16 @@ end
 function einsum_instantiate_contraction(TT, exprs::Vector{EinsumExpr})
     freeinds = find_freeindices(mapreduce(x->x.freeinds, vcat, exprs))
 
-    dummies_list = findall(exprs) do einex # tensors having only dummy indices
-        isscalarexpr(einex) || !any(in(freeinds), einex.freeinds)
-    end
-
-    # compute dummy indices first
-    if !isempty(dummies_list)
-        dummies = exprs[dummies_list]
-        deleteat!(exprs, dummies_list)
-        exprs = [dummies; exprs]
+    if length(exprs) > 2
+        dummies_list = findall(exprs) do einex # tensors having only dummy indices
+            isscalarexpr(einex) || !any(in(freeinds), einex.freeinds)
+        end
+        # compute dummy indices first, improving performance (#191)
+        if !isempty(dummies_list)
+            dummies = exprs[dummies_list]
+            deleteat!(exprs, dummies_list)
+            exprs = [dummies; exprs]
+        end
     end
 
     # lastly apply `TT`
