@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/KeitaNakamura/Tensorial.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/KeitaNakamura/Tensorial.jl/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/KeitaNakamura/Tensorial.jl/branch/main/graph/badge.svg?token=V58DXDI1R5)](https://codecov.io/gh/KeitaNakamura/Tensorial.jl)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13955151.svg)](https://doi.org/10.5281/zenodo.13955151)
 
 Tensorial.jl provides statically sized `Tensor` which is compatible with the `AbstractArray`, similar to the `SArray` in [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl).
 In addition to the basic operations for `AbstractArray`, the package also offers a *tensorial* interface and several powerful features:
