@@ -57,11 +57,14 @@ true
 
 ## Other tensor packages
 
-- [Einsum.jl](https://github.com/ahwillia/Einsum.jl)
-- [TensorOprations.jl](https://github.com/Jutho/TensorOperations.jl)
-- [Tensors.jl](https://github.com/KristofferC/Tensors.jl)
+* [Einsum.jl](https://github.com/ahwillia/Einsum.jl)
+* [TensorOprations.jl](https://github.com/Jutho/TensorOperations.jl)
+* [Tensors.jl](https://github.com/Ferrite-FEM/Tensors.jl)
+* [Tullio.jl](https://github.com/mcabbott/Tullio.jl)
 
 ## Inspiration
 
-- [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl)
-- [Tensors.jl](https://github.com/KristofferC/Tensors.jl)
+Some functionalities are inspired from the following packages:
+
+* [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl)
+* [Tensors.jl](https://github.com/Ferrite-FEM/Tensors.jl)
