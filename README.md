@@ -75,7 +75,7 @@ If you find Tensorial.jl useful in your work, I kindly request that you cite it 
 
 ```bibtex
 @software{NakamuraTensorial2024,
-    title = {Tensorial.jl: a Julia package for tensor operations},
+    title = {Tensorial.jl: a {J}ulia package for tensor operations},
    author = {Nakamura, Keita},
       doi = {10.5281/zenodo.13955151},
      year = {2024},
