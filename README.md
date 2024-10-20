@@ -4,7 +4,6 @@
 
 [![CI](https://github.com/KeitaNakamura/Tensorial.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/KeitaNakamura/Tensorial.jl/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/KeitaNakamura/Tensorial.jl/branch/main/graph/badge.svg?token=V58DXDI1R5)](https://codecov.io/gh/KeitaNakamura/Tensorial.jl)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13955151.svg)](https://doi.org/10.5281/zenodo.13955151)
 
 Tensorial.jl provides statically sized `Tensor` which is compatible with the `AbstractArray`, similar to the `SArray` in [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl).
 In addition to the basic operations for `AbstractArray`, the package also offers a *tensorial* interface and several powerful features:
@@ -69,3 +68,18 @@ Some functionalities are inspired from the following packages:
 
 * [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl)
 * [Tensors.jl](https://github.com/Ferrite-FEM/Tensors.jl)
+
+## Citation
+
+If you find Tensorial.jl useful in your work, I kindly request that you cite it as below:
+
+```bibtex
+@software{NakamuraTensorial2024,
+    title = {Tensorial.jl: a Julia package for tensor operations},
+   author = {Nakamura, Keita},
+      doi = {10.5281/zenodo.13955151},
+     year = {2024},
+      url = {https://github.com/KeitaNakamura/Tensorial.jl}
+  licence = {MIT},
+}
+```
