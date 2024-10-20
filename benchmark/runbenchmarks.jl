@@ -41,7 +41,7 @@ let path = "../docs/src/Benchmarks.md"
         end
         function printrow(op, tt, ta, ts)
             pretty = (t) -> BenchmarkTools.prettytime(BenchmarkTools.time(minimum(t)))
-            speedup = (ta, tt) -> round(10*BenchmarkTools.time(minimum(ta))/BenchmarkTools.time(minimum(tt)))/10
+            speedup = (ta, tt) -> round(BenchmarkTools.time(minimum(ta))/BenchmarkTools.time(minimum(tt)); sigdigits=2)
             println(file, "| `$(op)` | $(pretty(tt)) | $(pretty(ta)) | ×$(speedup(ta, tt)) | $(pretty(ts)) | ×$(speedup(ts, tt))")
         end
 
