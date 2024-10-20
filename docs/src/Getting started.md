@@ -54,7 +54,7 @@ struct MyGoodType{T, dim, L, TT <: Tensor} # all good
 end
 ```
 
-!!! tips
+!!! tip
     The type parameters `N` and `L` can be checked using the `@Tensor` macro as follows:
     ```@repl tensors-in-struct
     @Tensor{Tuple{@Symmetry{3,3,3}}}

@@ -1,6 +1,6 @@
 # Automatic differentiation
 
-!!! warn
+!!! warning
     The user must provide the appropriate tensor symmetry information;
     otherwise, automatic differentiation may return unexpected values.
     In the following example, even with identical tensor values,
