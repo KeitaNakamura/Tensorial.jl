@@ -75,8 +75,6 @@ end
     inv(A)
 
 Compute the inverse of a tensor `A`.
-`A` can be of the following types: `SecondOrderTensor`, `SymmetricSecondOrderTensor`,
-`FourthOrderTensor`, or `SymmetricFourthOrderTensor`.
 
 # Examples
 ```jldoctest
@@ -109,6 +107,23 @@ end
     # `InexactError` occurs without `symmetric`
     sa = inv(SMatrix{dim, dim}(x))
     typeof(x)(symmetric(Tensor(sa), :U))
+end
+
+@generated function _inv(x::AbstractTensor)
+    iseven(ndims(x)) || return :(throw(ArgumentError("no inverse exists for $x")))
+    spaces = Tuple(Space(x))
+    N = length(spaces) ÷ 2
+    lhs = Space(spaces[1:N])
+    rhs = Space(spaces[N+1:end])
+    lhs === rhs || return :(throw(ArgumentError("no inverse exists for $x")))
+    coef(v) = NTuple{length(v)^2,eltype(x)}(v*v')
+    C = coef(sqrt.(nduplicates_tuple(lhs)))
+    L = Int(sqrt(ncomponents(x)))
+    quote
+        @_inline_meta
+        M = SMatrix{$L,$L}(Tuple(x) .* $C)
+        typeof(x)(Tuple(inv(M)) ./ $C)
+    end
 end
 
 @generated function toblocks(x::Mat{dim, dim}) where {dim}
@@ -183,7 +198,7 @@ end
     typeof(x)(symmetric(_inv_with_blocks(convert(Mat{dim, dim}, x)), :U))
 end
 
-@inline inv(x::AbstractSquareTensor) = _inv(x)
+@inline inv(x::AbstractTensor) = _inv(x)
 
 # fast inv for dim ≤ 10
 @inline fastinv(x::AbstractSquareTensor{1, Float64}) = _inv(x)
@@ -197,29 +212,6 @@ end
 @inline fastinv(x::AbstractSquareTensor{9, Float64}) = _inv_with_blocks(x)
 @inline fastinv(x::AbstractSquareTensor{10, Float64}) = _inv_with_blocks(x)
 @inline fastinv(x::AbstractSquareTensor{<: Any, Float64}) = _inv(x)
-
-# don't use `voigt` or `mandel` for fast computations
-@generated function inv(x::FourthOrderTensor{dim}) where {dim}
-    L = dim * dim
-    quote
-        @_inline_meta
-        M = Mat{$L, $L}(Tuple(x))
-        FourthOrderTensor{dim}(Tuple(inv(M)))
-    end
-end
-
-@generated function inv(x::SymmetricFourthOrderTensor{dim, T}) where {dim, T}
-    S = Space(Symmetry(dim, dim))
-    L = ncomponents(S)
-    c = Vec{L, T}([i == j ? 1 : √2 for j in 1:dim for i in j:dim])
-    coef = c ⊗ c
-    quote
-        @_inline_meta
-        M = _map(*, Mat{$L, $L}(Tuple(x)), $coef)
-        M⁻¹ = inv(M)
-        SymmetricFourthOrderTensor{dim}(Tuple(_map(/, M⁻¹, $coef)))
-    end
-end
 
 @inline function _solve(A::AbstractSquareTensor, b::AbstractVec)
     SA = SArray(A)
