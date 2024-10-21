@@ -170,21 +170,19 @@ _one(::Type{Tensor{S}}) where {S} = __one(Tensor{S, Float64})
 _one(::Type{Tensor{S, T}}) where {S, T} = __one(Tensor{S, T})
 Base.one(::Type{TT}) where {TT <: Tensor} = _one(basetype(TT))
 Base.one(x::Tensor) = one(typeof(x))
-@inline function __one(TT::Type{<: Union{Tensor{Tuple{dim,dim}, T}, Tensor{Tuple{@Symmetry{dim,dim}}, T}}}) where {dim, T}
-    o = one(T)
-    z = zero(T)
-    TT((i,j) -> i == j ? o : z)
-end
-@inline function __one(TT::Type{Tensor{NTuple{4,dim}, T}}) where {dim, T}
-    o = one(T)
-    z = zero(T)
-    TT((i,j,k,l) -> i == k && j == l ? o : z)
-end
-@inline function __one(TT::Type{Tensor{NTuple{2,@Symmetry{dim,dim}}, T}}) where {dim, T}
-    o = one(T)
-    z = zero(T)
-    δ(i,j) = i == j ? o : z
-    TT((i,j,k,l) -> (δ(i,k)*δ(j,l) + δ(i,l)*δ(j,k))/2)
+@generated function __one(::Type{TT}) where {TT <: Tensor}
+    iseven(ndims(TT)) || return :(throw(ArgumentError("no identity tensor exists for $TT")))
+    N = ndims(TT) ÷ 2
+    lhs = _permutedims(Space(TT), Val(ntuple(i->i,   Val(N))))
+    rhs = _permutedims(Space(TT), Val(ntuple(i->i+N, Val(N))))
+    lhs === rhs || return :(throw(ArgumentError("no identity tensor exists for $TT")))
+    v = nduplicates_tuple(lhs)
+    C = diagm(inv.(Vec{length(v), eltype(TT)}(v)))
+    if ndims(TT) == 2
+        TT(Tuple(C[tensorindices_tuple(TT)]))
+    else
+        TT(Tuple(C))
+    end
 end
 
 """
@@ -210,12 +208,6 @@ zero
     one(TensorType)
 
 Construct an identity tensor.
-The supported `TensorType`s are as follows:
-
-* `SecondOrderTensor{dim}`
-* `SymmetricSecondOrderTensor{dim}`
-* `FourthOrderTensor{dim}`
-* `SymmetricFourthOrderTensor{dim}`
 
 ```jldoctest
 julia> δ = one(Mat{3,3})
@@ -224,7 +216,9 @@ julia> δ = one(Mat{3,3})
  0.0  1.0  0.0
  0.0  0.0  1.0
 
-julia> one(SymmetricFourthOrderTensor{3}) ≈ @einsum (i,j,k,l) -> (δ[i,k]*δ[j,l] + δ[i,l]*δ[j,k]) / 2
+julia> I = one(SymmetricFourthOrderTensor{3});
+
+julia> inv(I) ≈ I
 true
 ```
 """

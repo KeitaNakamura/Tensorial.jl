@@ -53,10 +53,8 @@
                              (rand(Tensor{NTuple{2, @Symmetry{2,2,2,2}}, T}), Val(4)),
                              (rand(Tensor{Tuple{@Symmetry{2,2},@Symmetry{2,2}, @Symmetry{2,2},@Symmetry{2,2}}, T}), Val(4)))
                 A⁻¹ = (@inferred inv(A))::typeof(A)
-                I = contract(A, A⁻¹, val)
                 @test inv(A⁻¹) ≈ A
-                @test contract(A⁻¹, A, val) ≈ I
-                @test contract(A, I, val) ≈ contract(I, A, val) ≈ A
+                @test contract(A, A⁻¹, val) ≈ contract(A⁻¹, A, val) ≈ one(A)
             end
         end
     end
