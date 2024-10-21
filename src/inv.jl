@@ -1,6 +1,5 @@
 """
-    adj(::AbstractSecondOrderTensor)
-    adj(::AbstractSymmetricSecondOrderTensor)
+    adj(A)
 
 Compute the adjugate matrix.
 
@@ -78,19 +77,18 @@ Compute the inverse of a tensor `A`.
 
 # Examples
 ```jldoctest
-julia> x = rand(SecondOrderTensor{3})
+julia> x = rand(Mat{3,3})
 3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
  0.325977  0.894245  0.953125
  0.549051  0.353112  0.795547
  0.218587  0.394255  0.49425
 
-julia> inv(x)
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- -587.685  -279.668   1583.46
- -411.743  -199.494   1115.12
-  588.35    282.819  -1587.79
+julia> inv(x) ⋅ x ≈ one(x)
+true
 
-julia> x ⋅ inv(x) ≈ one(I)
+julia> A = rand(SymmetricFourthOrderTensor{3});
+
+julia> A ⊡ inv(A) ≈ one(A)
 true
 ```
 """
