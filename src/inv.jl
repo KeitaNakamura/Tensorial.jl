@@ -110,12 +110,12 @@ end
 end
 
 @generated function _inv(x::AbstractTensor)
-    iseven(ndims(x)) || return :(throw(ArgumentError("no inverse exists for $x")))
+    iseven(ndims(x)) || return :(throw(ArgumentError("no inverse exists for $(typeof(x))")))
     spaces = Tuple(Space(x))
     N = length(spaces) ÷ 2
     lhs = Space(spaces[1:N])
     rhs = Space(spaces[N+1:end])
-    lhs === rhs || return :(throw(ArgumentError("no inverse exists for $x")))
+    lhs === rhs || return :(throw(ArgumentError("no inverse exists for $(typeof(x))")))
     coef(v) = NTuple{length(v)^2,eltype(x)}(v*v')
     C = coef(sqrt.(nduplicates_tuple(lhs)))
     L = Int(sqrt(ncomponents(x)))
