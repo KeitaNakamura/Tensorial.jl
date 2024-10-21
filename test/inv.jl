@@ -44,6 +44,22 @@
             end
         end
     end
+    @testset "Inversion of higher-order tensors" begin
+        for T in (Float32, Float64)
+            Random.seed!(1234)
+            for (A, val) in ((rand(Tensor{NTuple{2, @Symmetry{2,2,2}}, T}), Val(3)),
+                             (rand(Tensor{Tuple{2,@Symmetry{2,2}, 2,@Symmetry{2,2}}, T}), Val(3)),
+                             (rand(Tensor{Tuple{@Symmetry{2,2},2, @Symmetry{2,2},2}, T}), Val(3)),
+                             (rand(Tensor{NTuple{2, @Symmetry{2,2,2,2}}, T}), Val(4)),
+                             (rand(Tensor{Tuple{@Symmetry{2,2},@Symmetry{2,2}, @Symmetry{2,2},@Symmetry{2,2}}, T}), Val(4)))
+                A⁻¹ = (@inferred inv(A))::typeof(A)
+                I = contract(A, A⁻¹, val)
+                @test inv(A⁻¹) ≈ A
+                @test contract(A⁻¹, A, val) ≈ I
+                @test contract(A, I, val) ≈ contract(I, A, val) ≈ A
+            end
+        end
+    end
 end
 
 @testset "Solving linear system" begin
