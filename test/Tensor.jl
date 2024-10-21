@@ -151,6 +151,22 @@
                 @test (IIs ⊡ A)::SymmetricSecondOrderTensor{dim} ≈ (A+A')/2
                 @test (IIs ⊡ As)::SymmetricSecondOrderTensor{dim} ≈ As
             end
+            # higher order tensor
+            for T in (Float32, Float64)
+                for (TT, val) in ((Tensor{NTuple{2, @Symmetry{2,2,2}}}, Val(3)),
+                                  (Tensor{Tuple{2,@Symmetry{2,2}, 2,@Symmetry{2,2}}}, Val(3)),
+                                  (Tensor{Tuple{@Symmetry{2,2},2, @Symmetry{2,2},2}}, Val(3)),
+                                  (Tensor{NTuple{2, @Symmetry{2,2,2,2}}}, Val(4)),
+                                  (Tensor{Tuple{@Symmetry{2,2},@Symmetry{2,2}, @Symmetry{2,2},@Symmetry{2,2}}}, Val(4)))
+                    @test eltype(one(TT)) == eltype(one(TT{Float64}))
+                    @test eltype(one(TT{T})) == T
+                    I = one(TT{T})
+                    A = rand(TT{T})
+                    @test contract(A, I, val) ≈ contract(I, A, val) ≈ A
+                    @test contract(I, I, val) ≈ contract(I, contract(I, I, val), val) ≈ I
+                    @test inv(I) ≈ I
+                end
+            end
         end
         @testset "UniformScaling" begin
             for T in (Float32, Float64)
