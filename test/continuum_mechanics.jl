@@ -1,11 +1,8 @@
 @testset "Continuum mechanics" begin
-    @testset "mean/vol/dev" begin
+    @testset "vol/dev" begin
         for T in (Float32, Float64)
             x = rand(SecondOrderTensor{3, T})
             y = rand(SymmetricSecondOrderTensor{3, T})
-            # mean
-            @test (@inferred mean(x))::T ≈ tr(Array(x)) / 3
-            @test (@inferred mean(y))::T ≈ tr(Array(y)) / 3
             # vol/dev for 2nd-order tensors
             @test (@inferred vol(x))::typeof(x) + (@inferred dev(x))::typeof(x) ≈ x
             @test (@inferred vol(y))::typeof(y) + (@inferred dev(y))::typeof(y) ≈ y

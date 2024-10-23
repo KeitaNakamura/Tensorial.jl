@@ -1,24 +1,4 @@
 """
-    mean(A)
-
-Compute the mean value of diagonal entries of a square tensor `A`.
-
-# Examples
-```jldoctest
-julia> x = rand(Mat{3,3})
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 0.325977  0.894245  0.953125
- 0.549051  0.353112  0.795547
- 0.218587  0.394255  0.49425
-
-julia> mean(x)
-0.3911127467177425
-```
-"""
-@inline mean(x::AbstractSquareTensor{3}) = tr(x) / 3
-@inline mean(x::Vec{3}) = sum(Tuple(x)) / 3
-
-"""
     vol(A)
 
 Compute the volumetric part of a square tensor `A`.
@@ -43,7 +23,7 @@ true
 ```
 """
 @inline function vol(x::AbstractSquareTensor{3})
-    v = mean(x)
+    v = tr(x) / 3
     z = zero(v)
     typeof(x)((i,j) -> ifelse(i == j, v, z))
 end
@@ -72,7 +52,7 @@ julia> vol(x) + dev(x) ≈ x
 true
 ```
 """
-@inline vol(x::AbstractVec{3}) = mean(x) * ones(x)
+@inline vol(x::AbstractVec{3}) = sum(x)/3 * ones(x)
 
 """
     vol(::Type{FourthOrderTensor{3}})
