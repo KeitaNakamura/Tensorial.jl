@@ -23,10 +23,15 @@ end
 @inline Base.:-(x::AbstractTensor) = _map(-, x)
 
 # with AbstractArray
-@generated Base.:+(x::AbstractTensor, y::AbstractArray) = :(@_inline_meta; x + convert($(tensortype(Space(size(x)))), y))
-@generated Base.:+(x::AbstractArray, y::AbstractTensor) = :(@_inline_meta; convert($(tensortype(Space(size(y)))), x) + y)
-@generated Base.:-(x::AbstractTensor, y::AbstractArray) = :(@_inline_meta; x - convert($(tensortype(Space(size(x)))), y))
-@generated Base.:-(x::AbstractArray, y::AbstractTensor) = :(@_inline_meta; convert($(tensortype(Space(size(y)))), x) - y)
+@inline Base.:+(x::AbstractTensor, y::AbstractArray) = Tensor(SArray(x) + y)
+@inline Base.:+(x::AbstractArray, y::AbstractTensor) = Tensor(x + SArray(y))
+@inline Base.:-(x::AbstractTensor, y::AbstractArray) = Tensor(SArray(x) - y)
+@inline Base.:-(x::AbstractArray, y::AbstractTensor) = Tensor(x - SArray(y))
+# with StaticArray
+@inline Base.:+(x::AbstractTensor, y::StaticArray) = Tensor(SArray(x) + y)
+@inline Base.:+(x::StaticArray, y::AbstractTensor) = Tensor(x + SArray(y))
+@inline Base.:-(x::AbstractTensor, y::StaticArray) = Tensor(SArray(x) - y)
+@inline Base.:-(x::StaticArray, y::AbstractTensor) = Tensor(x - SArray(y))
 
 @inline _add_uniform(x::AbstractSquareTensor, λ::Number) = x + λ * one(x)
 @inline Base.:+(x::AbstractTensor, y::UniformScaling) = _add_uniform( x,  y.λ)

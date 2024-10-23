@@ -21,6 +21,11 @@
         @test (@inferred Array(x) + y)::Tensor{Tuple{size(y)...}, T} == Array(x) + Array(y)
         @test (@inferred x - Array(y))::Tensor{Tuple{size(x)...}, T} == Array(x) - Array(y)
         @test (@inferred Array(x) - y)::Tensor{Tuple{size(y)...}, T} == Array(x) - Array(y)
+        # with StaticArray
+        @test (@inferred x + SArray(y))::Tensor{Tuple{size(x)...}, T} == SArray(x) + SArray(y)
+        @test (@inferred SArray(x) + y)::Tensor{Tuple{size(y)...}, T} == SArray(x) + SArray(y)
+        @test (@inferred x - SArray(y))::Tensor{Tuple{size(x)...}, T} == SArray(x) - SArray(y)
+        @test (@inferred SArray(x) - y)::Tensor{Tuple{size(y)...}, T} == SArray(x) - SArray(y)
         # check eltype promotion
         x = Vec(1, 0)
         y = Vec(T(1), 0)
