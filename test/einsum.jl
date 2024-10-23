@@ -44,7 +44,7 @@ end
         check_value_and_type((@einsum S1[i,j] * S2[i,j]), S1 ⊡ S2, only(@tensor t[] := Array(S1)[i,j] * Array(S2)[i,j]))
         check_value_and_type((@einsum S1[i,j] * S2[j,i]), S1 ⊡ S2', only(@tensor t[] := Array(S1)[i,j] * Array(S2)[j,i]))
         check_value_and_type((@einsum S1[i,i]), tr(S1), only(@tensor t[] := Array(S1)[i,i]))
-        check_value_and_type((@einsum S1[i,i]/3), mean(S1), only(@tensor t[] := Array(S1)[i,i]/3))
+        check_value_and_type((@einsum S1[i,i]/3), tr(S1)/3, only(@tensor t[] := Array(S1)[i,i]/3))
         check_value_and_type((@einsum S1[i,i]/S2[j,j]), tr(S1)/tr(S2), tr(Array(S1))/tr(Array(S2))) # not allowed in TensorOperations
     end
     @testset "mixed" begin

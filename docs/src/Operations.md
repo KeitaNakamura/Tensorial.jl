@@ -46,7 +46,6 @@ rotate
 ```@docs
 vol(::Tensorial.AbstractSquareTensor{3})
 dev(::Tensorial.AbstractSquareTensor{3})
-mean(::Tensorial.AbstractSquareTensor{3})
 vonmises
 stress_invariants
 deviatoric_stress_invariants

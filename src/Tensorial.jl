@@ -3,9 +3,9 @@ module Tensorial
 using Base: @_inline_meta, @_propagate_inbounds_meta
 using Base.Cartesian: @ntuple, @nexprs
 
-using LinearAlgebra, Statistics
-# re-exports from LinearAlgebra and Statistics
-export ⋅, ×, dot, tr, det, norm, normalize, mean, I, cross, eigen, eigvals, eigvecs
+using LinearAlgebra
+# re-exports from LinearAlgebra
+export ⋅, ×, dot, tr, det, norm, normalize, I, cross, eigen, eigvals, eigvecs
 
 using StaticArrays
 import StaticArrays: qr, lu, svd, diag, diagm # defined in LinearAlgebra, but call methods in StaticArrays
@@ -16,7 +16,6 @@ using ForwardDiff: Dual, Tag, value, partials
 
 import Base: transpose, inv
 import LinearAlgebra: dot, norm, normalize, tr, adjoint, det, cross, eigen, eigvals, eigvecs
-import Statistics: mean
 
 export
 # Symmetry
