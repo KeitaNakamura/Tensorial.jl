@@ -3,6 +3,9 @@ module Tensorial
 using Base: @_inline_meta, @_propagate_inbounds_meta
 using Base.Cartesian: @ntuple, @nexprs
 
+using TensorCore
+export ⊙, ⊗, ⊡, hadamard, tensor, boxdot
+
 using LinearAlgebra
 # re-exports from LinearAlgebra
 export ⋅, ×, dot, tr, det, norm, normalize, I, cross, eigen, eigvals, eigvecs
@@ -15,6 +18,7 @@ export SArray, qr, lu, svd, diag, diagm
 using ForwardDiff: Dual, Tag, value, partials
 
 import Base: transpose, inv
+import TensorCore: hadamard, tensor, boxdot
 import LinearAlgebra: dot, norm, normalize, tr, adjoint, det, cross, eigen, eigvals, eigvecs
 
 export
@@ -48,13 +52,10 @@ export
     contract,
     contract1,
     contract2,
-    contract3,
-    otimes,
     symmetric,
     minorsymmetric,
     skew,
-    ⊗,
-    ⊡,
+    ⊡₂,
     rotmat,
     rotmatx,
     rotmaty,
@@ -81,7 +82,7 @@ export
     quaternion,
     angleaxis
 
-const contract1 = dot
+const contract1 = ⊡
 
 include("utils.jl")
 include("Symmetry.jl")
@@ -102,10 +103,6 @@ include("abstractarray.jl")
 
 include("quaternion.jl")
 
-const ⊡ = contract2
-const ⊗ = otimes
-
-@deprecate contraction contract true
-@deprecate double_contraction contract2 true
+const ⊡₂ = contract2
 
 end # module

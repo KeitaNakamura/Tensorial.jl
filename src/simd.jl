@@ -13,8 +13,8 @@ end
     S2 = Space(y)
     S = contract(S1, S2, Val(N))
     S_Inner = Space((tensorsize(S2)[i] for i in 1:N)...)
-    S1 = otimes(droplast(S1, Val(N)), S_Inner)
-    S2 = otimes(S_Inner, dropfirst(S2, Val(N)))
+    S1 = ⊗(droplast(S1, Val(N)), S_Inner)
+    S2 = ⊗(S_Inner, dropfirst(S2, Val(N)))
     s1 = [:(Tuple(x)[$i]) for i in 1:ncomponents(S1)]
     s2 = [:(Tuple(y)[$i]) for i in 1:ncomponents(S2)]
     K = prod(tensorsize(S_Inner))

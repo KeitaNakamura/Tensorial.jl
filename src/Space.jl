@@ -103,11 +103,11 @@ function contract(x::Space, y::Space, ::Val{N}) where {N}
     if !(0 ≤ N ≤ tensororder(x) && 0 ≤ N ≤ tensororder(y) && tensorsize(x)[end-N+1:end] === tensorsize(y)[1:N])
         throw(DimensionMismatch("dimensions must match"))
     end
-    otimes(droplast(x, Val(N)), dropfirst(y, Val(N)))
+    ⊗(droplast(x, Val(N)), dropfirst(y, Val(N)))
 end
-otimes(x::Space) = x
-otimes(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
-otimes(x::Space, y::Space, z::Space...) = otimes(otimes(x, y), z...)
+tensor(x::Space) = x
+tensor(x::Space, y::Space) = Space(Tuple(x)..., Tuple(y)...)
+tensor(x::Space, y::Space, z::Space...) = tensor(tensor(x, y), z...)
 contract1(x::Space, y::Space) = contract(x, y, Val(1))
 contract2(x::Space, y::Space) = contract(x, y, Val(2))
 

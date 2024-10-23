@@ -5,8 +5,8 @@
         A_sym = rand(Tensor{Tuple{@Symmetry{dim, dim}}, T})
         AA_sym = rand(Tensor{NTuple{2, @Symmetry{dim, dim}}, T})
         # tovoigt
-        @test (@inferred tovoigt(AA)) * (@inferred tovoigt(A)) ≈ tovoigt(AA ⊡ A)
-        @test (@inferred tovoigt(AA_sym)) * (@inferred tovoigt(A_sym, offdiagscale=T(2))) ≈ tovoigt(AA_sym ⊡ A_sym)
+        @test (@inferred tovoigt(AA)) * (@inferred tovoigt(A)) ≈ tovoigt(AA ⊡₂ A)
+        @test (@inferred tovoigt(AA_sym)) * (@inferred tovoigt(A_sym, offdiagscale=T(2))) ≈ tovoigt(AA_sym ⊡₂ A_sym)
         # fromvoigt
         @test (@inferred fromvoigt(SecondOrderTensor{dim}, tovoigt(A)))::SecondOrderTensor{dim, T} ≈ A
         @test (@inferred fromvoigt(FourthOrderTensor{dim}, tovoigt(AA)))::FourthOrderTensor{dim, T} ≈ AA
@@ -17,7 +17,7 @@
         @test (@inferred fromvoigt(SymmetricSecondOrderTensor{dim, Float64}, tovoigt(A_sym, offdiagscale=T(2)), offdiagscale=T(2)))::SymmetricSecondOrderTensor{dim, Float64} ≈ A_sym
         @test (@inferred fromvoigt(SymmetricFourthOrderTensor{dim, Float64}, tovoigt(AA_sym, offdiagscale=T(2)), offdiagscale=T(2)))::SymmetricFourthOrderTensor{dim, Float64} ≈ AA_sym
         # tomandel
-        @test (@inferred tomandel(AA_sym)) * (@inferred tomandel(A_sym)) ≈ tomandel(AA_sym ⊡ A_sym)
+        @test (@inferred tomandel(AA_sym)) * (@inferred tomandel(A_sym)) ≈ tomandel(AA_sym ⊡₂ A_sym)
         # frommandel
         @test (@inferred frommandel(SymmetricSecondOrderTensor{dim}, tomandel(A_sym)))::SymmetricSecondOrderTensor{dim, T} ≈ A_sym
         @test (@inferred frommandel(SymmetricFourthOrderTensor{dim}, tomandel(AA_sym)))::SymmetricFourthOrderTensor{dim, T} ≈ AA_sym

@@ -83,12 +83,12 @@ julia> x = rand(Mat{3,3})
  0.549051  0.353112  0.795547
  0.218587  0.394255  0.49425
 
-julia> inv(x) ⋅ x ≈ one(x)
+julia> inv(x) * x ≈ one(x)
 true
 
 julia> A = rand(SymmetricFourthOrderTensor{3});
 
-julia> A ⊡ inv(A) ≈ one(A)
+julia> A ⊡₂ inv(A) ≈ one(A)
 true
 ```
 """
@@ -171,24 +171,24 @@ end
 # https://math.stackexchange.com/questions/411492/inverse-of-a-block-matrix-with-singular-diagonal-blocks
 function _inv_with_blocks(x::Mat{dim, dim}) where {dim}
     xᵀ = x
-    M = xᵀ ⋅ x
+    M = xᵀ * x
 
     A, B,
     C, D = toblocks(M)
 
     A⁻¹ = inv(A)
-    A⁻¹B = A⁻¹ ⋅ B
-    E = inv(D - C ⋅ A⁻¹B)
-    A⁻¹BE = A⁻¹B ⋅ E
-    CA⁻¹ = C ⋅ A⁻¹
+    A⁻¹B = A⁻¹ * B
+    E = inv(D - C * A⁻¹B)
+    A⁻¹BE = A⁻¹B * E
+    CA⁻¹ = C * A⁻¹
 
-    X = A⁻¹ + A⁻¹BE ⋅ CA⁻¹
+    X = A⁻¹ + A⁻¹BE * CA⁻¹
     Y = -A⁻¹BE
-    Z = -E ⋅ CA⁻¹
+    Z = -E * CA⁻¹
     W = E
 
     fromblocks(X, Y,
-               Z, W) ⋅ xᵀ
+               Z, W) * xᵀ
 end
 
 @inline function _inv_with_blocks(x::Tensor{Tuple{@Symmetry{dim, dim}}}) where {dim}
@@ -220,14 +220,14 @@ end
 @inline Base.:\(A::AbstractSquareTensor, b::AbstractVec) = _solve(A, b)
 
 # fast solve for dim ≤ 10
-@inline fastsolve(A::AbstractSquareTensor{1, Float64}, b::AbstractVec{1, Float64}) = inv(A) ⋅ b
-@inline fastsolve(A::AbstractSquareTensor{2, Float64}, b::AbstractVec{2, Float64}) = inv(A) ⋅ b
-@inline fastsolve(A::AbstractSquareTensor{3, Float64}, b::AbstractVec{3, Float64}) = inv(A) ⋅ b
-@inline fastsolve(A::AbstractSquareTensor{4, Float64}, b::AbstractVec{4, Float64}) = inv(A) ⋅ b
-@inline fastsolve(A::AbstractSquareTensor{5, Float64}, b::AbstractVec{5, Float64}) = inv(A) ⋅ b
-@inline fastsolve(A::AbstractSquareTensor{6, Float64}, b::AbstractVec{6, Float64}) = inv(A) ⋅ b
-@inline fastsolve(A::AbstractSquareTensor{7, Float64}, b::AbstractVec{7, Float64}) = inv(A) ⋅ b
-@inline fastsolve(A::AbstractSquareTensor{8, Float64}, b::AbstractVec{8, Float64}) = inv(A) ⋅ b
-@inline fastsolve(A::AbstractSquareTensor{9, Float64}, b::AbstractVec{9, Float64}) = inv(A) ⋅ b
-@inline fastsolve(A::AbstractSquareTensor{10, Float64}, b::AbstractVec{10, Float64}) = inv(A) ⋅ b
-@inline fastsolve(A::AbstractSquareTensor{dim, Float64}, b::AbstractVec{dim, Float64}) where {dim} = inv(A) ⋅ b
+@inline fastsolve(A::AbstractSquareTensor{1, Float64}, b::AbstractVec{1, Float64}) = inv(A) * b
+@inline fastsolve(A::AbstractSquareTensor{2, Float64}, b::AbstractVec{2, Float64}) = inv(A) * b
+@inline fastsolve(A::AbstractSquareTensor{3, Float64}, b::AbstractVec{3, Float64}) = inv(A) * b
+@inline fastsolve(A::AbstractSquareTensor{4, Float64}, b::AbstractVec{4, Float64}) = inv(A) * b
+@inline fastsolve(A::AbstractSquareTensor{5, Float64}, b::AbstractVec{5, Float64}) = inv(A) * b
+@inline fastsolve(A::AbstractSquareTensor{6, Float64}, b::AbstractVec{6, Float64}) = inv(A) * b
+@inline fastsolve(A::AbstractSquareTensor{7, Float64}, b::AbstractVec{7, Float64}) = inv(A) * b
+@inline fastsolve(A::AbstractSquareTensor{8, Float64}, b::AbstractVec{8, Float64}) = inv(A) * b
+@inline fastsolve(A::AbstractSquareTensor{9, Float64}, b::AbstractVec{9, Float64}) = inv(A) * b
+@inline fastsolve(A::AbstractSquareTensor{10, Float64}, b::AbstractVec{10, Float64}) = inv(A) * b
+@inline fastsolve(A::AbstractSquareTensor{dim, Float64}, b::AbstractVec{dim, Float64}) where {dim} = inv(A) * b

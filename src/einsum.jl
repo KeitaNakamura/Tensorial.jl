@@ -16,16 +16,16 @@ julia> A = rand(Mat{3,3});
 
 julia> B = rand(Mat{3,3});
 
-julia> (@einsum (i,j) -> A[j,k] * B[k,i]) ≈ (A ⋅ B)'
+julia> (@einsum (i,j) -> A[j,k] * B[k,i]) ≈ (A * B)'
 true
 
-julia> (@einsum A[i,k] * B[k,j]) ≈ A ⋅ B
+julia> (@einsum A[i,k] * B[k,j]) ≈ A * B
 true
 
-julia> (@einsum A[i,j] * A[i,j]) ≈ A ⊡ A
+julia> (@einsum A[i,j] * A[i,j]) ≈ A ⋅ A
 true
 
-julia> (@einsum SymmetricSecondOrderTensor{3} A[k,i] * A[k,j]) ≈ A' ⋅ A
+julia> (@einsum SymmetricSecondOrderTensor{3} A[k,i] * A[k,j]) ≈ A' * A
 true
 ```
 """
@@ -218,7 +218,7 @@ function contract_einsum_expr(tensortypes::NTuple{N}, names::NTuple{N}, tensor_i
         free_axes = ()
     else
         perm = map(index -> only(findall(==(index), reduce(vcat, tensor_indices))), free_indices)
-        TT = tensortype(_permutedims(otimes(map(Space, tensortypes)...), Val(tuple(perm...)))){T}
+        TT = tensortype(_permutedims(⊗(map(Space, tensortypes)...), Val(tuple(perm...)))){T}
         free_axes = axes(TT)
     end
 

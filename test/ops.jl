@@ -57,7 +57,6 @@ end
                 Z[i,j,l,m] += X[i,j,k] * Y[k,l,m]
             end
             @test z ≈ Z
-            @test_deprecated contraction(x, y, Val(1))
             # double contraction
             z = (@inferred contract(x, y, Val(2)))::Tensor{Tuple{3,3}, T}
             X = Array(x);
@@ -67,7 +66,6 @@ end
                 Z[i,l] += X[i,j,k] * Y[j,k,l]
             end
             @test (@inferred Tensorial.contract2(x, y))::Tensor{Tuple{3,3}, T} ≈ z
-            @test_deprecated double_contraction(x, y)
             @test z ≈ Z
             # triple contraction
             z = (@inferred contract(x, y, Val(3)))::T
@@ -77,9 +75,8 @@ end
             for i in axes(X,1), j in axes(X,2), k in axes(X,3)
                 Z += X[i,j,k] * Y[i,j,k]
             end
-            @test (@inferred Tensorial.contract3(x, y))::T ≈ z
             @test z ≈ Z
-            # zero contraction (otimes)
+            # zero contraction (tensor)
             z = (@inferred contract(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry{3,3},@Symmetry{3,3,3}}, T}
             X = Array(x);
             Y = Array(y);
@@ -94,17 +91,17 @@ end
             # dimension error
             A = rand(Mat{3,3,T})
             x = rand(Vec{3,T})
-            @test_throws Exception A ⊡ x
+            @test_throws Exception A ⊡₂ x
             # over given dimensions
             A = rand(Mat{3,3,T})
             B = rand(Mat{3,3,T})
             C = rand(SymmetricFourthOrderTensor{3,T})
-            @test (@inferred contract(A,B,Val(1),Val(2)))::Mat{3,3,T} ≈ A' ⋅ B'
+            @test (@inferred contract(A,B,Val(1),Val(2)))::Mat{3,3,T} ≈ A' * B'
             @test (@inferred contract(A,C,Val((2,1)),Val((2,4))))::Mat{3,3,T} ≈ (@tensor t[i,j] := Array(A)[l,k] * Array(C)[i,k,j,l])
             @test (@inferred contract(A,C,Val((2,1)),Val((2,1))))::SymmetricSecondOrderTensor{3,T} ≈ (@tensor t[i,j] := Array(A)[l,k] * Array(C)[l,k,i,j])
         end
     end
-    @testset "otimes/dot/norm/normalize" begin
+    @testset "tensor/dot/norm/normalize" begin
         for T in (Float32, Float64)
             # square
             x = rand(Vec{3, T})
@@ -191,7 +188,7 @@ end
                                                                    ω[3]  0    -ω[1]
                                                                   -ω[2]  ω[1]  0]
             x = rand(Vec{3, T})
-            @test skew(ω) ⋅ x ≈ ω × x
+            @test skew(ω) * x ≈ ω × x
         end
     end
     @testset "det" begin
@@ -216,13 +213,13 @@ end
         for T in (Float32, Float64), dim in 1:3, TensorType in (SecondOrderTensor{dim, T}, SymmetricSecondOrderTensor{dim, T})
             x = rand(TensorType)
             fm3, fm2, fm1, f0, fp1, fp2, fp3 = x -> x^-3, x -> x^-2, x -> x^-1, x -> x^0, x -> x^1, x -> x^2, x -> x^3
-            @test (@inferred fm3(x))::typeof(x) ≈ inv(x) ⋅ inv(x) ⋅ inv(x)
-            @test (@inferred fm2(x))::typeof(x) ≈ inv(x) ⋅ inv(x)
+            @test (@inferred fm3(x))::typeof(x) ≈ inv(x) * inv(x) * inv(x)
+            @test (@inferred fm2(x))::typeof(x) ≈ inv(x) * inv(x)
             @test (@inferred fm1(x))::typeof(x) == inv(x)
             @test (@inferred f0(x))::typeof(x) == one(x)
             @test (@inferred fp1(x))::typeof(x) == x
-            @test (@inferred fp2(x))::typeof(x) ≈ x ⋅ x
-            @test (@inferred fp3(x))::typeof(x) ≈ x ⋅ x ⋅ x
+            @test (@inferred fp2(x))::typeof(x) ≈ x * x
+            @test (@inferred fp3(x))::typeof(x) ≈ x * x * x
         end
     end
     @testset "rotmat" begin
@@ -241,9 +238,9 @@ end
             for dim in (2, 3)
                 a = normalize(rand(Vec{dim, T}))
                 b = normalize(rand(Vec{dim, T}))
-                @test (@inferred rotmat(a => b))::Mat{dim, dim, T} ⋅ a ≈ b
+                @test (@inferred rotmat(a => b))::Mat{dim, dim, T} * a ≈ b
             end
-            @test (@inferred rotmat(T(π/3), Vec{3, T}(0,0,1)))::Mat{3,3,T} ⋅ Vec(1,0,0) ≈ [cos(π/3), sin(π/3), 0]
+            @test (@inferred rotmat(T(π/3), Vec{3, T}(0,0,1)))::Mat{3,3,T} * Vec(1,0,0) ≈ [cos(π/3), sin(π/3), 0]
         end
         @test_throws Exception rotmat(Vec(1,0) => Vec(1,1)) # length of two vectors must be the same
     end
@@ -256,9 +253,9 @@ end
                 v = rand(Vec{dim, T})
                 A = rand(SecondOrderTensor{dim, T})
                 S = rand(SymmetricSecondOrderTensor{dim, T})
-                @test (@inferred rotate(v, R))::Vec{dim, T} ≈ v ⋅ R
-                @test (@inferred rotate(A, R))::SecondOrderTensor{dim, T} ≈ R ⋅ A ⋅ R'
-                @test (@inferred rotate(S, R))::SymmetricSecondOrderTensor{dim, T} ≈ R ⋅ S ⋅ R'
+                @test (@inferred rotate(v, R))::Vec{dim, T} ≈ v ⊡ R
+                @test (@inferred rotate(A, R))::SecondOrderTensor{dim, T} ≈ R * A * R'
+                @test (@inferred rotate(S, R))::SymmetricSecondOrderTensor{dim, T} ≈ R * S * R'
             end
             # v in 2D, R in 3D
             for R in (rotmatx(T(π/4)), rotmaty(T(π/4)), rotmatz(T(π/4)))
@@ -372,14 +369,14 @@ end
             @test (@inferred I - x)::SquareTensorType == one(x) - x
             y = rand(Mat{3, 4, T})
             v = rand(Vec{3, T})
-            @test (@inferred x ⋅ I)::SquareTensorType == x ⋅ one(x)
-            @test (@inferred I ⋅ x)::SquareTensorType == one(x) ⋅ x
-            @test (@inferred y ⋅ I)::Mat{3, 4, T} == y ⋅ one(Mat{4, 4})
-            @test (@inferred I ⋅ y)::Mat{3, 4, T} == one(Mat{3, 3}) ⋅ y
-            @test (@inferred v ⋅ I)::Vec{3, T} == v ⋅ one(x)
-            @test (@inferred I ⋅ v)::Vec{3, T} == one(x) ⋅ v
-            @test (@inferred I ⊡ x)::T == one(x) ⊡ x
-            @test (@inferred x ⊡ I)::T == x ⊡ one(x)
+            @test (@inferred x ⊡ I)::SquareTensorType == x ⊡ one(x)
+            @test (@inferred I ⊡ x)::SquareTensorType == one(x) ⊡ x
+            @test (@inferred y ⊡ I)::Mat{3, 4, T} == y ⊡ one(Mat{4, 4})
+            @test (@inferred I ⊡ y)::Mat{3, 4, T} == one(Mat{3, 3}) ⊡ y
+            @test (@inferred v ⊡ I)::Vec{3, T} == v ⊡ one(x)
+            @test (@inferred I ⊡ v)::Vec{3, T} == one(x) ⊡ v
+            @test (@inferred I ⊡₂ x)::T == one(x) ⊡₂ x
+            @test (@inferred x ⊡₂ I)::T == x ⊡₂ one(x)
             # multiplication
             @test (@inferred x * I)::typeof(x) == x
             @test (@inferred y * I)::typeof(y) == y
