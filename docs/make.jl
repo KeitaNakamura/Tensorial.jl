@@ -21,7 +21,6 @@ makedocs(;
             "Constructors.md",
             "Operations.md",
             "Voigt form.md",
-            "Broadcast.md",
             "Automatic differentiation.md",
             "Quaternion.md",
         ],
