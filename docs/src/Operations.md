@@ -18,7 +18,7 @@ inv
 
 ```@docs
 contract
-otimes
+tensor
 ^
 @einsum
 ```

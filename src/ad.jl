@@ -68,7 +68,7 @@ end
 @inline extract_gradient(v::NumberOrTensor, ::Number) = zero(v)
 @inline extract_gradient(v::Number, x::AbstractTensor{S}) where {S} = zero(Tensor{S, typeof(v)})
 @generated function extract_gradient(v::AbstractTensor, x::AbstractTensor)
-    S = otimes(Space(v), Space(x))
+    S = ⊗(Space(v), Space(x))
     TT = tensortype(S)
     quote
         @_inline_meta
@@ -86,7 +86,7 @@ end
     end
 end
 @generated function extract_gradient(v::AbstractTensor{<: Tuple, <: Dual}, x::AbstractTensor, offset::Int=0)
-    S = otimes(Space(v), Space(x))
+    S = ⊗(Space(v), Space(x))
     TT = tensortype(S)
     exps = [:(partials(Tuple(v)[$i], offset+$j)) for i in 1:ncomponents(v), j in 1:ncomponents(x)]
     return quote

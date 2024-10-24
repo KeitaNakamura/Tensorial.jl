@@ -133,8 +133,8 @@
             for TensorType in (SecondOrderTensor, SymmetricSecondOrderTensor)
                 for dim in 1:3
                     v = rand(Vec{dim})
-                    @test (@inferred one(TensorType{dim, Int}))::TensorType{dim, Int} ⋅ v ≈ v
-                    @test (@inferred one(TensorType{dim}))::TensorType{dim, Float64} ⋅ v ≈ v
+                    @test (@inferred one(TensorType{dim, Int}))::TensorType{dim, Int} * v ≈ v
+                    @test (@inferred one(TensorType{dim}))::TensorType{dim, Float64} * v ≈ v
                 end
             end
             # fourth order tensor
@@ -144,12 +144,12 @@
                 As = rand(SymmetricSecondOrderTensor{dim})
                 II = (@inferred one(FourthOrderTensor{dim, Float32}))::FourthOrderTensor{dim, Float32}
                 II = (@inferred one(FourthOrderTensor{dim}))::FourthOrderTensor{dim, Float64}
-                @test (II ⊡ A)::SecondOrderTensor{dim} ≈ A
-                @test (II ⊡ As)::SecondOrderTensor{dim} ≈ As
+                @test (II ⊡₂ A)::SecondOrderTensor{dim} ≈ A
+                @test (II ⊡₂ As)::SecondOrderTensor{dim} ≈ As
                 IIs = (@inferred one(SymmetricFourthOrderTensor{dim, Float32}))::SymmetricFourthOrderTensor{dim, Float32}
                 IIs = (@inferred one(SymmetricFourthOrderTensor{dim}))::SymmetricFourthOrderTensor{dim, Float64}
-                @test (IIs ⊡ A)::SymmetricSecondOrderTensor{dim} ≈ (A+A')/2
-                @test (IIs ⊡ As)::SymmetricSecondOrderTensor{dim} ≈ As
+                @test (IIs ⊡₂ A)::SymmetricSecondOrderTensor{dim} ≈ (A+A')/2
+                @test (IIs ⊡₂ As)::SymmetricSecondOrderTensor{dim} ≈ As
             end
             # higher order tensor
             for T in (Float32, Float64)

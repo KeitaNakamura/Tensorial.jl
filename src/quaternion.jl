@@ -96,7 +96,7 @@ julia> x = rand(Vec{3})
  0.5490511363155669
  0.21858665481883066
 
-julia> (q * x / q).vector ≈ rotmatz(π/4) ⋅ x
+julia> (q * x / q).vector ≈ rotmatz(π/4) * x
 true
 ```
 """
@@ -133,7 +133,7 @@ end
                q₂  q₁ -q₄  q₃
                q₃  q₄  q₁ -q₂
                q₄ -q₃  q₂  q₁ ]
-    Quaternion(A ⋅ Vec(p))
+    Quaternion(A * Vec(p))
 end
 
 # quaternion vs number

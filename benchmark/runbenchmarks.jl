@@ -67,29 +67,29 @@ let path = "../docs/src/Benchmarks.md"
               """)
 
         printheader("Single contraction")
-        printrow("a ⋅ a", results["Tensor"]["Space(3) ⋅ Space(3)"],
-                          results["Array" ]["Space(3) ⋅ Space(3)"],
-                          results["SArray"]["Space(3) ⋅ Space(3)"])
-        printrow("A ⋅ a", results["Tensor"]["Space(3,3) ⋅ Space(3)"],
-                          results["Array" ]["Space(3,3) ⋅ Space(3)"],
-                          results["SArray"]["Space(3,3) ⋅ Space(3)"])
-        printrow("S ⋅ a", results["Tensor"]["Space(Symmetry(3,3)) ⋅ Space(3)"],
-                          results["Array" ]["Space(Symmetry(3,3)) ⋅ Space(3)"],
-                          results["SArray"]["Space(Symmetry(3,3)) ⋅ Space(3)"])
+        printrow("a ⊡ a", results["Tensor"]["Space(3) ⊡ Space(3)"],
+                          results["Array" ]["Space(3) ⊡ Space(3)"],
+                          results["SArray"]["Space(3) ⊡ Space(3)"])
+        printrow("A ⊡ a", results["Tensor"]["Space(3,3) ⊡ Space(3)"],
+                          results["Array" ]["Space(3,3) ⊡ Space(3)"],
+                          results["SArray"]["Space(3,3) ⊡ Space(3)"])
+        printrow("S ⊡ a", results["Tensor"]["Space(Symmetry(3,3)) ⊡ Space(3)"],
+                          results["Array" ]["Space(Symmetry(3,3)) ⊡ Space(3)"],
+                          results["SArray"]["Space(Symmetry(3,3)) ⊡ Space(3)"])
 
         printheader("Double contraction")
-        printrow("A ⊡ A", results["Tensor"]["Space(3,3) ⊡ Space(3,3)"],
-                          results["Array" ]["Space(3,3) ⊡ Space(3,3)"],
-                          results["SArray"]["Space(3,3) ⊡ Space(3,3)"])
-        printrow("S ⊡ S", results["Tensor"]["Space(Symmetry(3,3)) ⊡ Space(Symmetry(3,3))"],
-                          results["Array" ]["Space(Symmetry(3,3)) ⊡ Space(Symmetry(3,3))"],
-                          results["SArray"]["Space(Symmetry(3,3)) ⊡ Space(Symmetry(3,3))"])
-        printrow("AA ⊡ A", results["Tensor"]["Space(3,3,3,3) ⊡ Space(3,3)"],
-                           results["Array" ]["Space(3,3,3,3) ⊡ Space(3,3)"],
-                           results["SArray"]["Space(3,3,3,3) ⊡ Space(3,3)"])
-        printrow("SS ⊡ S", results["Tensor"]["Space(Symmetry(3,3),Symmetry(3,3)) ⊡ Space(Symmetry(3,3))"],
-                           results["Array" ]["Space(Symmetry(3,3),Symmetry(3,3)) ⊡ Space(Symmetry(3,3))"],
-                           results["SArray"]["Space(Symmetry(3,3),Symmetry(3,3)) ⊡ Space(Symmetry(3,3))"])
+        printrow("A ⊡₂ A", results["Tensor"]["Space(3,3) ⊡₂ Space(3,3)"],
+                          results["Array" ]["Space(3,3) ⊡₂ Space(3,3)"],
+                          results["SArray"]["Space(3,3) ⊡₂ Space(3,3)"])
+        printrow("S ⊡₂ S", results["Tensor"]["Space(Symmetry(3,3)) ⊡₂ Space(Symmetry(3,3))"],
+                          results["Array" ]["Space(Symmetry(3,3)) ⊡₂ Space(Symmetry(3,3))"],
+                          results["SArray"]["Space(Symmetry(3,3)) ⊡₂ Space(Symmetry(3,3))"])
+        printrow("AA ⊡₂ A", results["Tensor"]["Space(3,3,3,3) ⊡₂ Space(3,3)"],
+                           results["Array" ]["Space(3,3,3,3) ⊡₂ Space(3,3)"],
+                           results["SArray"]["Space(3,3,3,3) ⊡₂ Space(3,3)"])
+        printrow("SS ⊡₂ S", results["Tensor"]["Space(Symmetry(3,3),Symmetry(3,3)) ⊡₂ Space(Symmetry(3,3))"],
+                           results["Array" ]["Space(Symmetry(3,3),Symmetry(3,3)) ⊡₂ Space(Symmetry(3,3))"],
+                           results["SArray"]["Space(Symmetry(3,3),Symmetry(3,3)) ⊡₂ Space(Symmetry(3,3))"])
 
         printheader("Tensor product")
         printrow("a ⊗ a", results["Tensor"]["Space(3) ⊗ Space(3)"],

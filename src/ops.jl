@@ -76,8 +76,8 @@ The following infix operators are also available for specific contractions:
     S1_rhs = S1[fill(1, tensororder(S1)-N)..., fill(:, N)...]
     S2_lhs = S2[fill(:, N)..., fill(1, tensororder(S2)-N)...]
     S_contracted = promote_space(S1_rhs, S2_lhs)
-    S1_new = otimes(droplast(S1, Val(N)), S_contracted)
-    S2_new = otimes(S_contracted, dropfirst(S2, Val(N)))
+    S1_new = ⊗(droplast(S1, Val(N)), S_contracted)
+    S2_new = ⊗(S_contracted, dropfirst(S2, Val(N)))
     K = ncomponents(S_contracted)
     I = ncomponents(S1_new) ÷ K
     J = ncomponents(S2_new) ÷ K
@@ -171,14 +171,15 @@ end
 
 @inline contract1(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(1))
 @inline contract2(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(2))
-@inline contract3(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(3))
+
+@inline dot(x1::AbstractTensor{<: Any, <: Any, N}, x2::AbstractTensor{<: Any, <: Any, N}) where {N} = contract(x1, x2, Val(N))
 
 """
-    otimes(x::AbstractTensor, y::AbstractTensor)
+    tensor(x::AbstractTensor, y::AbstractTensor)
     x ⊗ y
 
 Compute tensor product such as ``A_{ij} = x_i y_j``.
-`x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>`) is a synonym for `otimes(x, y)`.
+`x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>`) is a synonym for `tensor(x, y)`.
 
 # Examples
 ```jldoctest
@@ -201,12 +202,12 @@ julia> A = x ⊗ y
  0.19547   0.0771855  0.086179
 ```
 """
-@inline otimes(x1::Union{AbstractTensor, Number}, x2::Union{AbstractTensor, Number}) = contract(x1, x2, Val(0))
-@inline otimes(x1::Union{AbstractTensor, Number}, x2::Union{AbstractTensor, Number}, others...) = otimes(otimes(x1, x2), others...)
-@inline otimes(x::Union{AbstractTensor, Number}) = x
+@inline tensor(x1::Union{AbstractTensor, Number}, x2::Union{AbstractTensor, Number}) = contract(x1, x2, Val(0))
+@inline tensor(x1::Union{AbstractTensor, Number}, x2::Union{AbstractTensor, Number}, others...) = tensor(tensor(x1, x2), others...)
+@inline tensor(x::Union{AbstractTensor, Number}) = x
 
 struct OTimes{N} end
-otimes(N::Int) = OTimes{N}()
+tensor(N::Int) = OTimes{N}()
 
 @inline Base.:^(x::AbstractVec, ::OTimes{0}) = one(eltype(x))
 @inline Base.:^(x::AbstractVec, ::OTimes{1}) = x
@@ -237,7 +238,7 @@ julia> x^⊗(3)
 @generated function Base.:^(x::AbstractTensor, ::OTimes{N}) where {N}
     ex = :x
     for i in 1:N-1
-        ex = :(otimes($ex, x))
+        ex = :(⊗($ex, x))
     end
     quote
         @_inline_meta
@@ -484,7 +485,7 @@ end
     f = det(x)
     dfdg = adj(x)'
     dgdx = extract_gradient(g, zero(V))
-    create_dual(Tg(), f, dfdg ⊡ dgdx)
+    create_dual(Tg(), f, dfdg ⊡₂ dgdx)
 end
 
 """
@@ -580,10 +581,10 @@ or (x, y, z) for extrinsic rotations.
 ```jldoctest
 julia> α, β, γ = map(deg2rad, rand(3));
 
-julia> rotmat(Vec(α,β,γ), sequence = :XYZ) ≈ rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatz(γ)
+julia> rotmat(Vec(α,β,γ), sequence = :XYZ) ≈ rotmatx(α) * rotmaty(β) * rotmatz(γ)
 true
 
-julia> rotmat(Vec(α,β,γ), sequence = :xyz) ≈ rotmatz(γ) ⋅ rotmaty(β) ⋅ rotmatx(α)
+julia> rotmat(Vec(α,β,γ), sequence = :xyz) ≈ rotmatz(γ) * rotmaty(β) * rotmatx(α)
 true
 
 julia> rotmat(Vec(α,β,γ), sequence = :XYZ) ≈ rotmat(Vec(γ,β,α), sequence = :zyx)
@@ -593,31 +594,31 @@ true
 function rotmat(θ::Vec{3}; sequence::Symbol)
     @inbounds α, β, γ = θ[1], θ[2], θ[3]
     # intrinsic
-    sequence == :XZX && return rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatz(γ)
-    sequence == :XYX && return rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatx(γ)
-    sequence == :YXY && return rotmaty(α) ⋅ rotmatx(β) ⋅ rotmaty(γ)
-    sequence == :YZY && return rotmaty(α) ⋅ rotmatz(β) ⋅ rotmaty(γ)
-    sequence == :ZYZ && return rotmatz(α) ⋅ rotmaty(β) ⋅ rotmatz(γ)
-    sequence == :ZXZ && return rotmatz(α) ⋅ rotmatx(β) ⋅ rotmatz(γ)
-    sequence == :XZY && return rotmatx(α) ⋅ rotmatz(β) ⋅ rotmaty(γ)
-    sequence == :XYZ && return rotmatx(α) ⋅ rotmaty(β) ⋅ rotmatz(γ)
-    sequence == :YXZ && return rotmaty(α) ⋅ rotmatx(β) ⋅ rotmatz(γ)
-    sequence == :YZX && return rotmaty(α) ⋅ rotmatz(β) ⋅ rotmatx(γ)
-    sequence == :ZYX && return rotmatz(α) ⋅ rotmaty(β) ⋅ rotmatx(γ)
-    sequence == :ZXY && return rotmatz(α) ⋅ rotmatx(β) ⋅ rotmaty(γ)
+    sequence == :XZX && return rotmatx(α) * rotmaty(β) * rotmatz(γ)
+    sequence == :XYX && return rotmatx(α) * rotmaty(β) * rotmatx(γ)
+    sequence == :YXY && return rotmaty(α) * rotmatx(β) * rotmaty(γ)
+    sequence == :YZY && return rotmaty(α) * rotmatz(β) * rotmaty(γ)
+    sequence == :ZYZ && return rotmatz(α) * rotmaty(β) * rotmatz(γ)
+    sequence == :ZXZ && return rotmatz(α) * rotmatx(β) * rotmatz(γ)
+    sequence == :XZY && return rotmatx(α) * rotmatz(β) * rotmaty(γ)
+    sequence == :XYZ && return rotmatx(α) * rotmaty(β) * rotmatz(γ)
+    sequence == :YXZ && return rotmaty(α) * rotmatx(β) * rotmatz(γ)
+    sequence == :YZX && return rotmaty(α) * rotmatz(β) * rotmatx(γ)
+    sequence == :ZYX && return rotmatz(α) * rotmaty(β) * rotmatx(γ)
+    sequence == :ZXY && return rotmatz(α) * rotmatx(β) * rotmaty(γ)
     # extrinsic
-    sequence == :xzx && return rotmatx(γ) ⋅ rotmaty(β) ⋅ rotmatz(α)
-    sequence == :xyx && return rotmatx(γ) ⋅ rotmaty(β) ⋅ rotmatx(α)
-    sequence == :yxy && return rotmaty(γ) ⋅ rotmatx(β) ⋅ rotmaty(α)
-    sequence == :yzy && return rotmaty(γ) ⋅ rotmatz(β) ⋅ rotmaty(α)
-    sequence == :zyz && return rotmatz(γ) ⋅ rotmaty(β) ⋅ rotmatz(α)
-    sequence == :zxz && return rotmatz(γ) ⋅ rotmatx(β) ⋅ rotmatz(α)
-    sequence == :xzy && return rotmaty(γ) ⋅ rotmatz(β) ⋅ rotmatx(α)
-    sequence == :xyz && return rotmatz(γ) ⋅ rotmaty(β) ⋅ rotmatx(α)
-    sequence == :yxz && return rotmatz(γ) ⋅ rotmatx(β) ⋅ rotmaty(α)
-    sequence == :yzx && return rotmatx(γ) ⋅ rotmatz(β) ⋅ rotmaty(α)
-    sequence == :zyx && return rotmatx(γ) ⋅ rotmaty(β) ⋅ rotmatz(α)
-    sequence == :zxy && return rotmaty(γ) ⋅ rotmatx(β) ⋅ rotmatz(α)
+    sequence == :xzx && return rotmatx(γ) * rotmaty(β) * rotmatz(α)
+    sequence == :xyx && return rotmatx(γ) * rotmaty(β) * rotmatx(α)
+    sequence == :yxy && return rotmaty(γ) * rotmatx(β) * rotmaty(α)
+    sequence == :yzy && return rotmaty(γ) * rotmatz(β) * rotmaty(α)
+    sequence == :zyz && return rotmatz(γ) * rotmaty(β) * rotmatz(α)
+    sequence == :zxz && return rotmatz(γ) * rotmatx(β) * rotmatz(α)
+    sequence == :xzy && return rotmaty(γ) * rotmatz(β) * rotmatx(α)
+    sequence == :xyz && return rotmatz(γ) * rotmaty(β) * rotmatx(α)
+    sequence == :yxz && return rotmatz(γ) * rotmatx(β) * rotmaty(α)
+    sequence == :yzx && return rotmatx(γ) * rotmatz(β) * rotmaty(α)
+    sequence == :zyx && return rotmatx(γ) * rotmaty(β) * rotmatz(α)
+    sequence == :zxy && return rotmaty(γ) * rotmatx(β) * rotmatz(α)
     throw(ArgumentError("sequence $sequence is not supported"))
 end
 
@@ -713,7 +714,7 @@ julia> R = rotmat(a => b)
   0.853773    -0.267108   0.446905
   0.520617     0.446905  -0.727485
 
-julia> R ⋅ a ≈ b
+julia> R * a ≈ b
 true
 ```
 """
@@ -747,7 +748,7 @@ julia> n = Vec(0.0, 0.0, 1.0)
  0.0
  1.0
 
-julia> rotmat(π/2, n) ⋅ x
+julia> rotmat(π/2, n) * x
 3-element Vec{3, Float64}:
  6.123233995736766e-17
  1.0
@@ -786,13 +787,13 @@ julia> A = rand(SymmetricSecondOrderTensor{3})
  0.549051  0.894245  0.353112
  0.218587  0.353112  0.394255
 
-julia> rotate(A, R) ≈ R ⋅ A ⋅ R'
+julia> rotate(A, R) ≈ R * A * R'
 true
 ```
 """
-@inline rotate(v::Vec, R::SecondOrderTensor) = R ⋅ v
+@inline rotate(v::Vec, R::SecondOrderTensor) = R * v
 @inline rotate(v::Vec{2}, R::SecondOrderTensor{3}) = rotate(vcat(v,0), R) # extend to 3d vector, then rotate it
-@inline rotate(A::SecondOrderTensor, R::SecondOrderTensor) = R ⋅ A ⋅ R'
+@inline rotate(A::SecondOrderTensor, R::SecondOrderTensor) = R * A * R'
 @inline function rotate(A::SymmetricSecondOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim}
     ARᵀ = contract(A, R, Val(2), Val(2))
     contract(SymmetricSecondOrderTensor{dim}, R, ARᵀ, Val(2), Val(1))
@@ -808,11 +809,11 @@ end
 # exp/log
 @inline function Base.exp(x::AbstractSymmetricSecondOrderTensor)
     F = eigen(x)
-    symmetric(F.vectors ⋅ diagm(exp.(F.values)) ⋅ F.vectors')
+    symmetric(F.vectors * diagm(exp.(F.values)) * F.vectors')
 end
 @inline function Base.log(x::AbstractSymmetricSecondOrderTensor)
     F = eigen(x)
-    symmetric(F.vectors ⋅ diagm(log.(F.values)) ⋅ F.vectors')
+    symmetric(F.vectors * diagm(log.(F.values)) * F.vectors')
 end
 
 # ----------------------------------------------#

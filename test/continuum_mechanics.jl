@@ -6,8 +6,8 @@
             # vol/dev for 2nd-order tensors
             @test (@inferred vol(x))::typeof(x) + (@inferred dev(x))::typeof(x) ≈ x
             @test (@inferred vol(y))::typeof(y) + (@inferred dev(y))::typeof(y) ≈ y
-            @test (@inferred vol(x))::typeof(x) ⊡ (@inferred dev(x))::typeof(x) ≈ zero(T)  atol = sqrt(eps(T))
-            @test (@inferred vol(y))::typeof(y) ⊡ (@inferred dev(y))::typeof(y) ≈ zero(T)  atol = sqrt(eps(T))
+            @test (@inferred vol(x))::typeof(x) ⊡₂ (@inferred dev(x))::typeof(x) ≈ zero(T)  atol = sqrt(eps(T))
+            @test (@inferred vol(y))::typeof(y) ⊡₂ (@inferred dev(y))::typeof(y) ≈ zero(T)  atol = sqrt(eps(T))
 
             # vol/dev for vectors
             v = rand(Vec{3, T})
@@ -59,7 +59,7 @@
             # deviatoric stress invariants
             J₁, J₂, J₃ = (@inferred deviatoric_stress_invariants(x))::NTuple{3, T}
             @test J₁ ≈ 0
-            @test J₂ ≈ dev(x) ⊡ dev(x)' / 2
+            @test J₂ ≈ dev(x) ⊡₂ dev(x)' / 2
             @test J₃ ≈ det(dev(x))
             @test dev(x)^3 - J₁*dev(x)^2 - J₂*dev(x) - J₃*I ≈ zero(x)  atol = sqrt(eps(T))
             if x isa SymmetricSecondOrderTensor # check principal stress version

@@ -100,24 +100,24 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
             # check multiplications
             x = rand(Vec{dim, T})
             x3 = ToVec3(x)
-            @test (q * x / q).vector ≈ Rq ⋅ x3
-            @test (p * x / p).vector ≈ Rp ⋅ x3
-            @test (r * x / r).vector ≈ Rp ⋅ Rq ⋅ x3
-            @test (q * x * inv(q)).vector ≈ Rq ⋅ x3
-            @test (p * x * inv(p)).vector ≈ Rp ⋅ x3
-            @test (r * x * inv(r)).vector ≈ Rp ⋅ Rq ⋅ x3
+            @test (q * x / q).vector ≈ Rq * x3
+            @test (p * x / p).vector ≈ Rp * x3
+            @test (r * x / r).vector ≈ Rp * Rq * x3
+            @test (q * x * inv(q)).vector ≈ Rq * x3
+            @test (p * x * inv(p)).vector ≈ Rp * x3
+            @test (r * x * inv(r)).vector ≈ Rp * Rq * x3
             # inverse of rotation
-            @test (inv(q) * x * q).vector ≈ inv(Rq) ⋅ x3
+            @test (inv(q) * x * q).vector ≈ inv(Rq) * x3
             # check order of multiplications
-            @test ((q * x) / q).vector ≈ Rq ⋅ x3
-            @test (q * (x / q)).vector ≈ Rq ⋅ x3
+            @test ((q * x) / q).vector ≈ Rq * x3
+            @test (q * (x / q)).vector ≈ Rq * x3
             # rotate
             @test rotate(x, q) ≈ rotate(x3, Rq)
             @test rotate(x, p) ≈ rotate(x3, Rp)
-            @test rotate(x, r) ≈ rotate(x3, Rp ⋅ Rq)
+            @test rotate(x, r) ≈ rotate(x3, Rp * Rq)
             @test rotate(x, inv(q)) ≈ rotate(x3, inv(Rq))
             @test rotate(x, inv(p)) ≈ rotate(x3, inv(Rp))
-            @test rotate(x, inv(r)) ≈ rotate(x3, inv(Rp ⋅ Rq))
+            @test rotate(x, inv(r)) ≈ rotate(x3, inv(Rp * Rq))
         end
         # test with rotmat(θ, n)
         θ = rand(T)

@@ -20,14 +20,14 @@
             # second order
             x = rand(SecondOrderTensor{dim, T})
             y = rand(SymmetricSecondOrderTensor{dim, T})
-            @test (@inferred inv(x))::typeof(x) ⋅ x ≈ one(x)
-            @test (@inferred inv(y))::typeof(y) ⋅ y ≈ one(y)
+            @test (@inferred inv(x))::typeof(x) * x ≈ one(x)
+            @test (@inferred inv(y))::typeof(y) * y ≈ one(y)
             # fourth order
             dim > 3 && continue
             x = rand(FourthOrderTensor{dim, T})
             y = rand(SymmetricFourthOrderTensor{dim, T})
-            @test (@inferred inv(x))::typeof(x) ⊡ x ≈ one(x)
-            @test (@inferred inv(y))::typeof(y) ⊡ y ≈ one(y)
+            @test (@inferred inv(x))::typeof(x) ⊡₂ x ≈ one(x)
+            @test (@inferred inv(y))::typeof(y) ⊡₂ y ≈ one(y)
         end
         @testset "Fast version using block matrix algorithm" begin
             for T in (Float32, Float64), dim in 1:11
@@ -35,8 +35,8 @@
                 x = rand(SecondOrderTensor{dim, T})
                 y = rand(SymmetricSecondOrderTensor{dim, T})
                 if T == Float64
-                    @test (@inferred Tensorial.fastinv(x))::typeof(x) ⋅ x ≈ one(x)
-                    @test (@inferred Tensorial.fastinv(y))::typeof(y) ⋅ y ≈ one(y)
+                    @test (@inferred Tensorial.fastinv(x))::typeof(x) * x ≈ one(x)
+                    @test (@inferred Tensorial.fastinv(y))::typeof(y) * y ≈ one(y)
                 else
                     @test_throws Exception Tensorial.fastinv(x)
                     @test_throws Exception Tensorial.fastinv(y)

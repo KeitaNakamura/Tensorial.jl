@@ -67,7 +67,7 @@ julia> x = rand(Mat{3,3});
 
 julia> I_vol = vol(FourthOrderTensor{3});
 
-julia> I_vol ⊡ x ≈ vol(x)
+julia> I_vol ⊡₂ x ≈ vol(x)
 true
 
 julia> vol(FourthOrderTensor{3}) + dev(FourthOrderTensor{3}) ≈ one(FourthOrderTensor{3})
@@ -152,7 +152,7 @@ julia> x = rand(Mat{3,3});
 
 julia> I_dev = dev(FourthOrderTensor{3});
 
-julia> I_dev ⊡ x ≈ dev(x)
+julia> I_dev ⊡₂ x ≈ dev(x)
 true
 
 julia> vol(FourthOrderTensor{3}) + dev(FourthOrderTensor{3}) ≈ one(FourthOrderTensor{3})
@@ -184,7 +184,7 @@ julia> vonmises(σ)
 """
 @inline function vonmises(σ::AbstractSquareTensor{3, T}) where {T}
     s = dev(convert(SymmetricSecondOrderTensor{3, T}, σ))
-    sqrt(T(3/2) * (s ⊡ s))
+    sqrt(T(3/2) * (s ⊡₂ s))
 end
 
 """
