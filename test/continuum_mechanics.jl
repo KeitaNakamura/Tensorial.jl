@@ -18,9 +18,9 @@
 
             # vol/dev for 4th-order tensors
             δ = one(SymmetricSecondOrderTensor{3, T})
-            I_vol = @einsum (i,j,k,l) -> δ[i,j]*δ[k,l]/3
-            I_dev = @einsum (i,j,k,l) -> δ[i,k]*δ[j,l] - δ[i,j]*δ[k,l]/3
-            Isym_dev = @einsum (i,j,k,l) -> (δ[i,k]*δ[j,l]+δ[i,l]*δ[j,k])/2 - δ[i,j]*δ[k,l]/3
+            @einsum I_vol[i,j,k,l] := δ[i,j]*δ[k,l]/3
+            @einsum I_dev[i,j,k,l] := δ[i,k]*δ[j,l] - δ[i,j]*δ[k,l]/3
+            @einsum Isym_dev[i,j,k,l] := (δ[i,k]*δ[j,l]+δ[i,l]*δ[j,k])/2 - δ[i,j]*δ[k,l]/3
             @test (@inferred vol(FourthOrderTensor{3}))::FourthOrderTensor{3, Float64}                   ≈ I_vol
             @test (@inferred dev(FourthOrderTensor{3}))::FourthOrderTensor{3, Float64}                   ≈ I_dev
             @test (@inferred vol(FourthOrderTensor{3, T}))::FourthOrderTensor{3, T}                      ≈ I_vol

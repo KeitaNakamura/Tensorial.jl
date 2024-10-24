@@ -175,7 +175,7 @@ end
         for T in (Float32, Float64), dim in 1:4
             x = rand(FourthOrderTensor{dim, T})
             y = rand(SymmetricFourthOrderTensor{dim, T})
-            @test (@inferred minorsymmetric(x))::SymmetricFourthOrderTensor{dim, T} ≈ @einsum (i,j,k,l) -> (x[i,j,k,l]+x[j,i,k,l]+x[i,j,l,k]+x[j,i,l,k])/4
+            @test (@inferred minorsymmetric(x))::SymmetricFourthOrderTensor{dim, T} ≈ @einsum z[i,j,k,l] := (x[i,j,k,l]+x[j,i,k,l]+x[i,j,l,k]+x[j,i,l,k])/4
             @test (@inferred minorsymmetric(y))::typeof(y) == y
         end
     end

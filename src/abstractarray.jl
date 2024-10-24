@@ -19,6 +19,7 @@
         @inbounds x[$ex] # call getindex(x::AbstractTensor, i::Int)
     end
 end
+@inline Base.getindex(x::AbstractTensor{Tuple{}}) = only(Tuple(x))
 
 @inline function Base.getindex(x::AbstractTensor, indices::Union{Int, StaticArray{<: Any, Int}, StaticIndex, Colon}...)
     @_propagate_inbounds_meta

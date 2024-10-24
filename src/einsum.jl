@@ -1,13 +1,9 @@
 """
-    @einsum [TensorType] (i,j...) -> expr
     @einsum [TensorType] expr
 
 Performs tensor computations using the [Einstein summation convention](https://en.wikipedia.org/wiki/Einstein_notation).
-The arguments of the anonymous function are treated as **free indices**.
-If no arguments are provided, they are inferred based on the order
-in which the indices appear from left to right. Since `@einsum` cannot
-fully infer tensor symmetries, it is possible to annotate the returned
-tensor type (though this is not checked for correctness).
+Since `@einsum` cannot fully infer tensor symmetries, it is possible to annotate
+the returned tensor type (though this is not checked for correctness).
 This can help eliminate the computation of the symmetric part, improving performance.
 
 # Examples
@@ -16,16 +12,13 @@ julia> A = rand(Mat{3,3});
 
 julia> B = rand(Mat{3,3});
 
-julia> (@einsum (i,j) -> A[j,k] * B[k,i]) ≈ (A * B)'
+julia> (@einsum C[i,j] := A[j,k] * B[k,i]) ≈ (A * B)'
 true
 
-julia> (@einsum A[i,k] * B[k,j]) ≈ A * B
+julia> (@einsum c := A[i,j] * A[i,j]) ≈ A ⋅ A
 true
 
-julia> (@einsum A[i,j] * A[i,j]) ≈ A ⋅ A
-true
-
-julia> (@einsum SymmetricSecondOrderTensor{3} A[k,i] * A[k,j]) ≈ A' * A
+julia> (@einsum SymmetricSecondOrderTensor{3} D[i,j] := A[k,i] * A[k,j]) ≈ A' * A
 true
 ```
 """
@@ -37,34 +30,33 @@ macro einsum(TT, expr)
 end
 
 function einsum_exprssion(TT, expr)
-    freeinds, body = anonymous_args_body(expr)
+    varname, freeinds, body = split_defexpr(expr)
     einex = einsum_instantiate(body, TT)
-    freeinds === nothing && return einex.ex
-    isempty(freeinds) && return einex.ex
+    isnothing(freeinds) && return :($(esc(varname)) = $(einex.ex))
+    isempty(freeinds) && return :($(esc(varname)) = Tensor{Tuple{}}($(einex.ex)))
     perm = find_perm(einex.freeinds => freeinds)
-    :(permutedims($(einex.ex), $(ValTuple(perm...))))
+    :($(esc(varname)) = permutedims($(einex.ex), $(ValTuple(perm...))))
 end
 
 ValTuple(x...) = Val(x)
 
-function anonymous_args_body(func::Expr)
-    if Meta.isexpr(func, :->)
-        lhs = func.args[1]
-        body = func.args[2]
-        if Meta.isexpr(lhs, :tuple)
-            freeinds = lhs.args
-        elseif lhs isa Symbol
-            freeinds = [lhs]
-        else
-            throw(ArgumentError("wrong arguments in anonymous function expression"))
-        end
-        if Meta.isexpr(body, :block)
-            body = only([x for x in body.args if !(x isa LineNumberNode)])
-        end
-        freeinds, body
+function split_defexpr(func::Expr)
+    Meta.isexpr(func, :(:=)) || throw(ArgumentError("wrong @einsum expression"))
+    lhs = func.args[1]
+    body = func.args[2]
+    if Meta.isexpr(lhs, :ref)
+        varname = lhs.args[1]
+        freeinds = lhs.args[2:end]
+    elseif lhs isa Symbol
+        varname = lhs
+        freeinds = nothing
     else
-        nothing, func
+        throw(ArgumentError("wrong @einsum expression"))
     end
+    if Meta.isexpr(body, :block)
+        body = only([x for x in body.args if !(x isa LineNumberNode)])
+    end
+    varname, freeinds, body
 end
 
 function find_perm((src, dest)::Pair{<: Vector, <: Vector})::Vector{Int}
