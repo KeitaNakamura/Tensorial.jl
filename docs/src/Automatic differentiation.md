@@ -10,7 +10,7 @@
     ```
     ```@repl automatic-differentiation
     A = rand(Mat{3,3})
-    S = A ⋅ A' # `S` is symmetric but not of the type `SymmetricSecondOrderTensor`
+    S = A * A' # `S` is symmetric but not of the type `SymmetricSecondOrderTensor`
     gradient(identity, S) ≈ one(FourthOrderTensor{3})
     gradient(identity, symmetric(S)) ≈ one(SymmetricFourthOrderTensor{3})
     ```
