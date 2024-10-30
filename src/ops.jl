@@ -88,16 +88,23 @@ The following infix operators are also available for specific contractions:
     J = ncomponents(S2_new) ÷ K
     TT = tensortype(contract(S1, S2, Val(N)))
     dups = nduplicates_tuple(S_contracted)
+    if all(isone, dups)
+        t2_vec_mod = :t2_vec
+        t2_array_mod = :t2_array
+    else
+        t2_vec_mod = :($dups .* t2_vec)
+        t2_array_mod = :($dups .* t2_array)
+    end
     quote
         @_inline_meta
         t1_new = convert($(tensortype(S1_new)), t1)
         t2_new = convert($(tensortype(S2_new)), t2)
         t1_vec = SVector(Tuple(t1_new))
         t2_vec = SVector(Tuple(t2_new))
-        $(ndims(TT) == 0) && return dot(t1_vec, $dups .* t2_vec)
+        $(ndims(TT) == 0) && return fastdot(t1_vec, $t2_vec_mod)
         t1_array = reshape(t1_vec, Size($I, $K))
         t2_array = reshape(t2_vec, Size($K, $J))
-        data = Tuple(t1_array * ($dups .* t2_array))
+        data = Tuple(t1_array * $t2_array_mod)
         T = eltype(data)
         $TT{T}(data)
     end
@@ -106,6 +113,17 @@ end
 @inline contract(a::Number, t::AbstractTensor, ::Val{0}) = a * t
 @inline contract(a::Number, b::Number, ::Val{0}) = a * b
 @inline contract(a, b, nth) = contract(a, b, Val(nth))
+
+@generated function fastdot(x::SVector{N}, y::SVector{N}) where {N}
+    ex = :(x[1] * y[1])
+    for i in 2:N
+        ex = :(muladd(x[$i], y[$i], $ex))
+    end
+    quote
+        @_inline_meta
+        $ex
+    end
+end
 
 """
     contract(x, y, Val(xdims), Val(ydims))
