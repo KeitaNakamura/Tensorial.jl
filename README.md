@@ -17,32 +17,42 @@ In addition to supporting basic `AbstractArray` operations, the package offers a
 
 [![Stable](https://img.shields.io/badge/docs-latest%20release-blue.svg)](https://KeitaNakamura.github.io/Tensorial.jl/stable)
 
+## Breaking changes (v0.18)
+
+Starting from version 0.18, Tensorial.jl is now built on [TensorCore.jl](https://github.com/JuliaMath/TensorCore.jl). The changes are as follows:
+
+* Single contraction: `⋅` has been replaced by `⊡` (`⋅` now behaves as in `LinearAlgebra`).
+* Double contraction: `⊡` has been replaced by `⊡₂`.
+* `@einsum`: The syntax now aligns with other tensor packages.
+* Broadcasting: Scalar-like behavior has been removed. Broadcasting now behaves the same as with other `AbstractArray`s.
+* `mean`: The specialized `mean` definition in `Statistics` has been removed.
+
 ## Quick start
 
 ```julia
 julia> using Tensorial
 
-julia> x = Vec{3}(rand(3)); # constructor similar to SArray
+julia> x = Vec{3}(rand(3)); # constructor similar to SArray.jl
 
 julia> A = @Mat rand(3,3); # @Vec, @Mat and @Tensor, analogous to @SVector, @SMatrix and @SArray
 
-julia> A ⋅ x ≈ A * x # single contraction (⋅)
+julia> A ⊡ x ≈ A * x # single contraction (⊡)
 true
 
-julia> A ⊡ A ≈ tr(A'A) # double contraction (⊡)
+julia> A ⊡₂ A ≈ A ⋅ A # double contraction (⊡₂)
 true
 
 julia> x ⊗ x ≈ x * x' # tensor product (⊗)
 true
 
-julia> (@einsum x[i] * A[j,i] * x[j]) ≈ x ⋅ A' ⋅ x # Einstein summation (@einsum)
+julia> (@einsum y := x[i] * A[j,i] * x[j]) ≈ x ⊡ A' ⊡ x # Einstein summation (@einsum)
 true
 
-julia> S = rand(Tensor{Tuple{@Symmetry{3,3}}}); # specify symmetry S₍ᵢⱼ₎
+julia> As = rand(Tensor{Tuple{@Symmetry{3,3}}}); # specify symmetry S₍ᵢⱼ₎
 
-julia> SS = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # SS₍ᵢⱼ₎₍ₖₗ₎
+julia> AAs = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # SS₍ᵢⱼ₎₍ₖₗ₎
 
-julia> inv(SS) ⊡ S ≈ @einsum inv(SS)[i,j,k,l] * S[k,l] # it just works
+julia> inv(AAs) ⊡₂ As ≈ @einsum Bs[i,j] := inv(AAs)[i,j,k,l] * As[k,l] # it just works
 true
 
 julia> δ = one(Mat{3,3}) # identity tensor
@@ -51,7 +61,7 @@ julia> δ = one(Mat{3,3}) # identity tensor
  0.0  1.0  0.0
  0.0  0.0  1.0
 
-julia> gradient(identity, S) ≈ one(SS) # ∂Sᵢⱼ/∂Sₖₗ = (δᵢₖδⱼₗ + δᵢₗδⱼₖ) / 2
+julia> gradient(identity, As) ≈ one(AAs) # ∂Asᵢⱼ/∂Asₖₗ = (δᵢₖδⱼₗ + δᵢₗδⱼₖ) / 2
 true
 ```
 
