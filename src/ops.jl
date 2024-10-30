@@ -101,10 +101,10 @@ The following infix operators are also available for specific contractions:
         t2_new = convert($(tensortype(S2_new)), t2)
         t1_vec = SVector(Tuple(t1_new))
         t2_vec = SVector(Tuple(t2_new))
-        $(ndims(TT) == 0) && return fastdot(t1_vec, $t2_vec_mod)
+        $(ndims(TT) == 0) && return dot_unrolled(t1_vec, $t2_vec_mod)
         t1_array = reshape(t1_vec, Size($I, $K))
         t2_array = reshape(t2_vec, Size($K, $J))
-        data = Tuple(t1_array * $t2_array_mod)
+        data = Tuple(mul_unrolled(t1_array, $t2_array_mod))
         T = eltype(data)
         $TT{T}(data)
     end
@@ -114,14 +114,24 @@ end
 @inline contract(a::Number, b::Number, ::Val{0}) = a * b
 @inline contract(a, b, nth) = contract(a, b, Val(nth))
 
-@generated function fastdot(x::SVector{N}, y::SVector{N}) where {N}
+@generated function dot_unrolled(x::SVector{N}, y::SVector{N}) where {N}
     ex = :(x[1] * y[1])
     for i in 2:N
         ex = :(muladd(x[$i], y[$i], $ex))
     end
     quote
         @_inline_meta
-        $ex
+        @inbounds $ex
+    end
+end
+@generated function mul_unrolled(x::SMatrix{m,l}, y::SMatrix{l,n}) where {l,m,n}
+    exps = map(CartesianIndices((m,n))) do I
+        i, j = Tuple(I)
+        :(dot_unrolled(x[$i,:], y[:,$j]))
+    end
+    quote
+        @_inline_meta
+        @inbounds SMatrix{m,n}($(exps...))
     end
 end
 
