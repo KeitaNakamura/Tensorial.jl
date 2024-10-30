@@ -19,10 +19,10 @@ In addition to supporting basic `AbstractArray` operations, the package offers a
 
 ## Breaking changes (v0.18)
 
-Starting from version 0.18, Tensorial.jl is now built on [TensorCore.jl](https://github.com/JuliaMath/TensorCore.jl). The changes are as follows:
+Starting from version 0.18, Tensorial.jl is now built on [TensorCore.jl](https://github.com/JuliaMath/TensorCore.jl). The breaking changes are as follows:
 
 * Single contraction: `⋅` has been replaced by `⊡` (`⋅` now behaves as in `LinearAlgebra`).
-* Double contraction: `⊡` has been replaced by `⊡₂`.
+* Double contraction: `⊡` has been replaced by `⊡₂` (which can be typed by `\boxdot<tab>\_2<tab>`).
 * `@einsum`: The syntax now aligns with other tensor packages.
 * Broadcasting: Scalar-like behavior has been removed. Broadcasting now behaves the same as with other `AbstractArray`s.
 * `mean`: The specialized `mean` definition in `Statistics` has been removed.
