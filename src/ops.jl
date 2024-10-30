@@ -71,8 +71,8 @@ julia> A = contract(B, C, Val(2))
 
 The following infix operators are also available for specific contractions:
 
-- `x ⋅ y` (where `⋅` can be typed by `\\cdot<tab>` ): `contract(x, y, Val(1))`
-- `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>` ): `contract(x, y, Val(2))`
+- `x ⊡ y` (where `⊡` can be typed by `\\boxdot<tab>` ): `contract(x, y, Val(1))`
+- `x ⊡₂ y` (where `⊡₂` can be typed by `\\boxdot<tab>\\_2<tab>` ): `contract(x, y, Val(2))`
 - `x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>` ): `contract(x, y, Val(0))`
 """
 @generated function contract(t1::AbstractTensor, t2::AbstractTensor, ::Val{N}) where {N}
