@@ -53,10 +53,9 @@ end
         for T in (Float32, Float64)
             x = rand(Tensor{Tuple{3,@Symmetry{3,3}}, T})
             y = rand(Tensor{Tuple{@Symmetry{3,3,3}}, T})
+            X, Y = Array(x), Array(y)
             # single contraction
             z = (@inferred contract(x, y, Val(1)))::Tensor{Tuple{3,3,@Symmetry{3,3}}, T}
-            X = Array(x);
-            Y = Array(y);
             Z = zeros(T, 3,3,3,3)
             for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,2), m in axes(Y,3)
                 Z[i,j,l,m] += X[i,j,k] * Y[k,l,m]
@@ -64,8 +63,6 @@ end
             @test z ≈ Z
             # double contraction
             z = (@inferred contract(x, y, Val(2)))::Tensor{Tuple{3,3}, T}
-            X = Array(x);
-            Y = Array(y);
             Z = zeros(T, 3,3)
             for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,3)
                 Z[i,l] += X[i,j,k] * Y[j,k,l]
@@ -74,8 +71,6 @@ end
             @test z ≈ Z
             # triple contraction
             z = (@inferred contract(x, y, Val(3)))::T
-            X = Array(x);
-            Y = Array(y);
             Z = zero(T)
             for i in axes(X,1), j in axes(X,2), k in axes(X,3)
                 Z += X[i,j,k] * Y[i,j,k]
@@ -83,8 +78,6 @@ end
             @test z ≈ Z
             # zero contraction (tensor)
             z = (@inferred contract(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry{3,3},@Symmetry{3,3,3}}, T}
-            X = Array(x);
-            Y = Array(y);
             Z = zeros(T, 3,3,3,3,3,3)
             for i in axes(X,1), j in axes(X,2), k in axes(X,3), l in axes(Y,1), m in axes(Y,2), n in axes(Y,3)
                 Z[i,j,k,l,m,n] = X[i,j,k] * Y[l,m,n]
@@ -93,10 +86,6 @@ end
             @test (@inferred Tensorial.contract(x, 2, Val(0)))::typeof(x) ≈ 2x
             @test (@inferred Tensorial.contract(3, y, Val(0)))::typeof(y) ≈ 3y
             @test (@inferred Tensorial.contract(T(2), T(3), Val(0)))::T ≈ 6
-            # dimension error
-            A = rand(Mat{3,3,T})
-            x = rand(Vec{3,T})
-            @test_throws Exception A ⊡₂ x
             # over given dimensions
             A = rand(Mat{3,3,T})
             B = rand(Mat{3,3,T})
@@ -104,6 +93,13 @@ end
             @test (@inferred contract(A,B,Val(1),Val(2)))::Mat{3,3,T} ≈ A' * B'
             @test (@inferred contract(A,C,Val((2,1)),Val((2,4))))::Mat{3,3,T} ≈ (@tensor t[i,j] := Array(A)[l,k] * Array(C)[i,k,j,l])
             @test (@inferred contract(A,C,Val((2,1)),Val((2,1))))::SymmetricSecondOrderTensor{3,T} ≈ (@tensor t[i,j] := Array(A)[l,k] * Array(C)[l,k,i,j])
+            # errors
+            @test_throws DimensionMismatch ones(Mat{3,3}) ⊡ ones(Vec{4})
+            @test_throws DimensionMismatch ones(Vec{4}) ⊡ ones(Mat{3,3})
+            @test_throws ArgumentError ones(Vec{3}) ⊡₂ ones(Mat{3,3})
+            @test_throws ArgumentError ones(Mat{3,3}) ⊡₂ ones(Vec{3})
+            @test_throws ArgumentError contract(ones(Mat{3,3}), ones(Mat{3,3}), Val(3))
+            @test_throws ArgumentError contract(ones(Mat{3,3}), ones(Mat{3,3}), Val(-1))
         end
     end
     @testset "tensor/dot/norm/normalize" begin
