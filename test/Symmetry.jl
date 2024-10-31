@@ -28,6 +28,8 @@
     @test @Symmetry{3,3} == Symmetry{Tuple{3,3}}
 
     # errors
-    @test_throws Exception Symmetry(Tuple{3,Int})
-    @test_throws Exception Symmetry(3,2)
+    @test_throws ArgumentError Symmetry(Tuple{3,Int})
+    @test_throws ArgumentError Symmetry(3,2)
+    @test_throws ArgumentError Symmetry(2)
+    @test_throws ArgumentError Symmetry(Tuple{2})
 end

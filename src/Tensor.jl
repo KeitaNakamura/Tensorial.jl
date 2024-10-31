@@ -16,6 +16,18 @@ end
     end
 end
 
+@generated function check_size_parameters(::Type{S}) where {S}
+    for s in S.parameters
+        if !(s isa Int)
+            if s isa Type && s <: Symmetry
+                check_symmetry_parameters(only(s.parameters))
+            else
+                return :(throw(ArgumentError("Tensor's size parameter must be a tuple of `Int`s or `Symmetry` (e.g. `Tensor{Tuple{3,3}}` or `Tensor{Tuple{3, @Symmetry{3,3}}}`).")))
+            end
+        end
+    end
+end
+
 # aliases
 const SecondOrderTensor{dim, T, L} = Tensor{NTuple{2, dim}, T, 2, L}
 const FourthOrderTensor{dim, T, L} = Tensor{NTuple{4, dim}, T, 4, L}
