@@ -76,43 +76,51 @@ The following infix operators are also available for specific contractions:
 - `x ⊗ y` (where `⊗` can be typed by `\\otimes<tab>` ): `contract(x, y, Val(0))`
 """
 @generated function contract(t1::AbstractTensor, t2::AbstractTensor, ::Val{N}) where {N}
-    S1 = Space(t1)
-    S2 = Space(t2)
-    S1_rhs = S1[fill(1, tensororder(S1)-N)..., fill(:, N)...]
-    S2_lhs = S2[fill(:, N)..., fill(1, tensororder(S2)-N)...]
-    S_contracted = promote_space(S1_rhs, S2_lhs)
-    S1_new = ⊗(droplast(S1, Val(N)), S_contracted)
-    S2_new = ⊗(S_contracted, dropfirst(S2, Val(N)))
-    K = ncomponents(S_contracted)
-    I = ncomponents(S1_new) ÷ K
-    J = ncomponents(S2_new) ÷ K
-    TT = tensortype(contract(S1, S2, Val(N)))
-    dups = nduplicates_tuple(S_contracted)
+    _check_contract(t1, t2, Val(N))
+    S1, S2 = Space(t1), Space(t2)
+    Scon = promote_space(dropfirst(S1, Val(ndims(t1)-N)),
+                          droplast(S2, Val(ndims(t2)-N)))
+    S1′, S2′ = ⊗(droplast(S1, Val(N)), Scon), ⊗(Scon, dropfirst(S2, Val(N)))
+    K = ncomponents(Scon)
+    I, J = ncomponents(S1′)÷K, ncomponents(S2′)÷K
+    TT = tensortype(contract(S1′, S2′, Val(N)))
+    dups = nduplicates_tuple(Scon)
     if all(isone, dups)
-        t2_vec_mod = :t2_vec
-        t2_array_mod = :t2_array
+        vec2′ = :(vec(arr2))
+        arr2′ = :(arr2)
     else
-        t2_vec_mod = :($dups .* t2_vec)
-        t2_array_mod = :($dups .* t2_array)
+        vec2′ = :($dups .* vec(arr2))
+        arr2′ = :($dups .* arr2)
     end
     quote
         @_inline_meta
-        t1_new = convert($(tensortype(S1_new)), t1)
-        t2_new = convert($(tensortype(S2_new)), t2)
-        t1_vec = SVector(Tuple(t1_new))
-        t2_vec = SVector(Tuple(t2_new))
-        $(ndims(TT) == 0) && return dot_unrolled(t1_vec, $t2_vec_mod)
-        t1_array = reshape(t1_vec, Size($I, $K))
-        t2_array = reshape(t2_vec, Size($K, $J))
-        data = Tuple(mul_unrolled(t1_array, $t2_array_mod))
-        T = eltype(data)
-        $TT{T}(data)
+        arr1 = SMatrix{$I,$K}(Tuple(convert($(tensortype(S1′)), t1)))
+        arr2 = SMatrix{$K,$J}(Tuple(convert($(tensortype(S2′)), t2)))
+        $(ndims(TT) == 0) && return dot_unrolled(vec(arr1), $vec2′)
+        data = Tuple(mul_unrolled(arr1, $arr2′))
+        $TT(data)
     end
 end
 @inline contract(t::AbstractTensor, a::Number, ::Val{0}) = t * a
 @inline contract(a::Number, t::AbstractTensor, ::Val{0}) = a * t
 @inline contract(a::Number, b::Number, ::Val{0}) = a * b
 @inline contract(a, b, nth) = contract(a, b, Val(nth))
+
+@noinline _throw_contract_dmm(axA, axB) = throw(DimensionMismatch("neighbouring axes of `A` and `B` must match, got $axA and $axB"))
+@noinline _throw_contract_ndims(ndims, n) = throw(ArgumentError("contraction order should be ≤ ndims(A) = $ndims, got $n"))
+@noinline _throw_contract_nth(n) = throw(ArgumentError("contraction order should be ≥ 0, got $n"))
+
+@generated function _check_contract(::Type{A}, ::Type{B}, ::Val{K}) where {A<:AbstractTensor,B<:AbstractTensor,K}
+    K::Int
+    N, M = ndims(A), ndims(B)
+    K ≥ 0 || return :(_throw_contract_nth($K))
+    N ≥ K || return :(_throw_contract_ndims($N, $K))
+    M ≥ K || return :(_throw_contract_ndims($M, $K))
+    for i in 1:K
+        axA, axB = axes(A)[N-K+i], axes(B)[i]
+        axA == axB || return :(_throw_contract_dmm($axA, $axB))
+    end
+end
 
 @generated function dot_unrolled(x::SVector{N}, y::SVector{N}) where {N}
     ex = :(x[1] * y[1])
