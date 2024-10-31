@@ -9,6 +9,9 @@ Symmetry(dims::NTuple{N, Int}) where {N} = Symmetry{Tuple{dims...}}()
 Symmetry(dims::Vararg{Int, N}) where {N} = Symmetry{Tuple{dims...}}()
 
 @generated function check_symmetry_parameters(::Type{S}) where {S <: Tuple}
+    if length(S.parameters) < 2
+        return :(throw(ArgumentError("The number of symmetric indices must be ≥ 2, got $(length(S.parameters)).")))
+    end
     if !all(x -> isa(x, Int), S.parameters)
         return :(throw(ArgumentError("Symmetry parameter must be a tuple of Ints (e.g., `Symmetry{Tuple{3,3}}` or `@Symmetry{3,3}`).")))
     end

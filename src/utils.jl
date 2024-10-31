@@ -1,9 +1,3 @@
-@generated function check_size_parameters(::Type{S}) where {S}
-    if !all(x -> isa(x, Int) || x <: Symmetry, S.parameters)
-        return :(throw(ArgumentError("Tensor's size parameter must be a tuple of `Int`s or `Symmetry` (e.g. `Tensor{Tuple{3,3}}` or `Tensor{Tuple{3, @Symmetry{3,3}}}`).")))
-    end
-end
-
 @generated function flatten_tuple(x::Tuple{Vararg{Tuple, N}}) where {N}
     exps = [Expr(:..., :(x[$i])) for i in 1:N]
     :(tuple($(exps...)))

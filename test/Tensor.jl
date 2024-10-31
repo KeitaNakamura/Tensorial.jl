@@ -17,6 +17,7 @@
         @test_throws Exception Tensor{Tuple{2,2}, Int, 2, 5}((1,2,3,4,5)) # bad ncomponents
         @test_throws Exception Tensor{Tuple{2,2}, Int, 3, 4}((1,2,3,4))   # bad ndims
         @test_throws Exception Tensor{Tuple{2,Symmetry{Int,2}}, Int, 3, 6}((1,2,3,4,5,6)) # bad Symmetry size
+        @test_throws Exception Tensor{Tuple{Symmetry{2}}, Int, 1, 2}((1,2)) # bad Symmetry size
         @test_throws Exception Tensor{Tuple{2,Symmetry{2,2}}, Int, 3, 5}((1,2,3,4,5))     # bad ncomponents
         @test_throws Exception Tensor{Tuple{2,Symmetry{2,2}}, Int, 2, 6}((1,2,3,4,5,6))   # bad ndims
     end
