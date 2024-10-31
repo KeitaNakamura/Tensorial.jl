@@ -32,10 +32,10 @@ end
 function einsum_exprssion(TT, expr)
     varname, freeinds, body = split_defexpr(expr)
     einex = einsum_instantiate(body, TT)
-    isnothing(freeinds) && return :($(esc(varname)) = $(einex.ex))
-    isempty(freeinds) && return :($(esc(varname)) = Tensor{Tuple{}}($(einex.ex)))
+    isnothing(freeinds) && return esc(:($varname = $(einex.ex)))
+    isempty(freeinds) && return esc(:($varname = Tensor{Tuple{}}($(einex.ex))))
     perm = find_perm(einex.freeinds => freeinds)
-    :($(esc(varname)) = permutedims($(einex.ex), $(ValTuple(perm...))))
+    esc(:($varname = permutedims($(einex.ex), $(ValTuple(perm...)))))
 end
 
 ValTuple(x...) = Val(x)
@@ -103,7 +103,7 @@ function einsum_instantiate(expr, TT) # TT is :Any if not given in @einsum or no
             end
         end
     elseif Meta.isexpr(expr, :ref)
-        ex = esc(expr.args[1])
+        ex = expr.args[1]
         allinds = expr.args[2:end]
         freeinds = find_freeindices(allinds)
         return einsum_instantiate_tensor(EinsumExpr(ex, freeinds, allinds))
