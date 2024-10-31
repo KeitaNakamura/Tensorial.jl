@@ -67,6 +67,7 @@ end
         @einsum ans[σ,μ,ν] := A[σp,σ]*A[μp,μ]*A[νp,ν]*B[σp,μp,νp]
         @test (@einsum Tensor{Tuple{4,@Symmetry{4,4}}, Float64} C[σ,μ,ν] := A[σp,σ]*A[μp,μ]*A[νp,ν]*B[σp,μp,νp])::Tensor{Tuple{4,@Symmetry{4,4}}, Float64} ≈ ans
         @test (@einsum Tensor{Tuple{4,@Symmetry{4,4}}, Float32} C[σ,μ,ν] := A[σp,σ]*A[μp,μ]*A[νp,ν]*B[σp,μp,νp])::Tensor{Tuple{4,@Symmetry{4,4}}, Float32} ≈ ans
+        @test (@einsum typeof(B) C[σ,μ,ν] := A[σp,σ]*A[μp,μ]*A[νp,ν]*B[σp,μp,νp])::Tensor{Tuple{4,@Symmetry{4,4}}, Float64} ≈ ans
     end
     @testset "errors" begin
         S1 = rand(SymmetricSecondOrderTensor{3})
