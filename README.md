@@ -10,7 +10,7 @@ In addition to supporting basic `AbstractArray` operations, the package offers a
 
 * Contraction, tensor product (`⊗`), and a flexible `@einsum` macro for Einstein summation convention
 * A `@Symmetry` macro to define the tensor symmetries, eliminating unnecessary calculations
-* Automatic differentiation via `gradient` and `hessian` functions, leveraging [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)
+* Automatic differentiation leveraging [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)
 * Performance comparable to `SArray` (see [benchmarks](https://keitanakamura.github.io/Tensorial.jl/stable/Benchmarks/))
 
 ## Documentation
