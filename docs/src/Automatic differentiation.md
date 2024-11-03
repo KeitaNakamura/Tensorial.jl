@@ -19,3 +19,10 @@
 gradient
 hessian
 ```
+
+## New interface from v0.18
+
+```@docs
+∂ⁿ
+∂
+```

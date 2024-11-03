@@ -55,6 +55,7 @@ Space(::AbstractTensor{S}) where {S} = Space(S)
 
 ncomponents(x::AbstractTensor) = ncomponents(typeof(x))
 ncomponents(::Type{TT}) where {TT <: AbstractTensor} = ncomponents(Space(TT))
+ncomponents(::Type{T}) where {T <: Number} = 1
 
 @generated function getindex_expr(::Type{T}, ex::Union{Symbol, Expr}, i...) where {T <: AbstractTensor}
     if any(x -> x <: Union{Symbol, Expr}, i)
