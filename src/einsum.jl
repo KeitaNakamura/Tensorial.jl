@@ -6,6 +6,9 @@ Since `@einsum` cannot fully infer tensor symmetries, it is possible to annotate
 the returned tensor type (though this is not checked for correctness).
 This can help eliminate the computation of the symmetric part, improving performance.
 
+The `expr` can be an anonymous function, in which case the arguments of the anonymous function are treated as free indices.
+If no arguments are provided, the free indices are inferred based on the order in which they appear from left to right.
+
 # Examples
 ```jldoctest einsum
 julia> A = rand(Mat{3,3});
@@ -20,6 +23,15 @@ true
 
 julia> (@einsum SymmetricSecondOrderTensor{3} D[i,j] := A[k,i] * A[k,j]) ≈ A' * A
 true
+
+julia> (@einsum (i,j) -> A[j,k] * B[k,i]) ≈ (A * B)'
+true
+
+julia> (@einsum A[i,j] * A[i,j]) ≈ A ⋅ A
+true
+
+julia> (@einsum SymmetricSecondOrderTensor{3} A[k,i] * A[k,j]) ≈ A' * A
+true
 ```
 """
 macro einsum(expr)
@@ -32,26 +44,49 @@ end
 function einsum_exprssion(TT, expr)
     varname, freeinds, body = split_defexpr(expr)
     einex = einsum_instantiate(body, TT)
-    isnothing(freeinds) && return esc(:($varname = $(einex.ex)))
-    isempty(freeinds) && return esc(:($varname = Tensor{Tuple{}}($(einex.ex))))
-    perm = find_perm(einex.freeinds => freeinds)
-    esc(:($varname = permutedims($(einex.ex), $(ValTuple(perm...)))))
+    if isnothing(varname) # anonymous function
+        isnothing(freeinds) && return esc(einex.ex)
+        isempty(freeinds) && return esc(einex.ex)
+        perm = find_perm(einex.freeinds => freeinds)
+        return esc(:(permutedims($(einex.ex), $(ValTuple(perm...)))))
+    else
+        isnothing(freeinds) && return esc(:($varname = $(einex.ex)))
+        isempty(freeinds) && return esc(:($varname = Tensor{Tuple{}}($(einex.ex))))
+        perm = find_perm(einex.freeinds => freeinds)
+        return esc(:($varname = permutedims($(einex.ex), $(ValTuple(perm...)))))
+    end
 end
 
 ValTuple(x...) = Val(x)
 
 function split_defexpr(func::Expr)
-    Meta.isexpr(func, :(:=)) || throw(ArgumentError("wrong @einsum expression"))
-    lhs = func.args[1]
-    body = func.args[2]
-    if Meta.isexpr(lhs, :ref)
-        varname = lhs.args[1]
-        freeinds = lhs.args[2:end]
-    elseif lhs isa Symbol
-        varname = lhs
-        freeinds = nothing
+    if Meta.isexpr(func, :(:=))
+        lhs = func.args[1]
+        body = func.args[2]
+        if Meta.isexpr(lhs, :ref)
+            varname = lhs.args[1]
+            freeinds = lhs.args[2:end]
+        elseif lhs isa Symbol
+            varname = lhs
+            freeinds = nothing
+        else
+            throw(ArgumentError("wrong @einsum expression"))
+        end
+    elseif Meta.isexpr(func, :->)
+        varname = nothing
+        lhs = func.args[1]
+        body = func.args[2]
+        if Meta.isexpr(lhs, :tuple)
+            freeinds = lhs.args
+        elseif lhs isa Symbol
+            freeinds = [lhs]
+        else
+            throw(ArgumentError("wrong arguments in anonymous function expression"))
+        end
     else
-        throw(ArgumentError("wrong @einsum expression"))
+        varname = nothing
+        freeinds = nothing
+        body = func
     end
     if Meta.isexpr(body, :block)
         body = only([x for x in body.args if !(x isa LineNumberNode)])
