@@ -41,6 +41,7 @@ end
         check_value_and_type((@einsum s := S1[i,i]), tr(S1), only(@tensor t[] := Array(S1)[i,i]))
         check_value_and_type((@einsum s := S1[i,i]/3), tr(S1)/3, only(@tensor t[] := Array(S1)[i,i]/3))
         check_value_and_type((@einsum s := S1[i,i]/S2[j,j]), tr(S1)/tr(S2), tr(Array(S1))/tr(Array(S2))) # not allowed in TensorOperations
+        check_value_and_type((@einsum S1[i,j] * S2[i,j]), S1 ⋅ S2, only(@tensor t[] := Array(S1)[i,j] * Array(S2)[i,j]))
     end
     @testset "mixed" begin
         S1 = rand(SymmetricSecondOrderTensor{3})
@@ -54,6 +55,7 @@ end
         v1 = rand(Vec{3})
         check_value_and_type((@einsum S[i,j] := S3[j,k,i] * v1[k]), permutedims(S3, Val((3,1,2))) ⊡ v1, (@tensor t[i,j] := Array(S3)[j,k,i] * Array(v1)[k]))
         check_value_and_type((@einsum S[j] := v1[i] * S3[j,k,i] * v1[k]), (S3 ⊡ v1) ⊡ v1, (@tensor t[j] := Array(v1)[i] * Array(S3)[j,k,i] * Array(v1)[k]))
+        check_value_and_type((@einsum j -> v1[i] * S3[j,k,i] * v1[k]), (S3 ⊡ v1) ⊡ v1, (@tensor t[j] := Array(v1)[i] * Array(S3)[j,k,i] * Array(v1)[k]))
 
         # unary operator (#201)
         a = Vec(1,0,0)

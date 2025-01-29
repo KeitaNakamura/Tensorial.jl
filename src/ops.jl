@@ -162,10 +162,10 @@ julia> B = rand(Mat{3,3})
  0.578232  0.199377    0.956741
  0.727935  0.439243    0.647855
 
-julia> contract(A, B, Val(1), Val(2)) ≈ @einsum C[i,j] := A[k,i] * B[j,k]
+julia> contract(A, B, Val(1), Val(2)) ≈ @einsum A[k,i] * B[j,k]
 true
 
-julia> contract(A, B, Val((1,2)), Val((2,1))) ≈ @einsum c := A[i,j] * B[j,i]
+julia> contract(A, B, Val((1,2)), Val((2,1))) ≈ @einsum A[i,j] * B[j,i]
 true
 ```
 """
@@ -424,7 +424,7 @@ Compute the minor symmetric part of a fourth order tensor.
 ```jldoctest
 julia> x = rand(Tensor{Tuple{3,3,3,3}});
 
-julia> minorsymmetric(x) ≈ @einsum y[i,j,k,l] := (x[i,j,k,l] + x[j,i,k,l] + x[i,j,l,k] + x[j,i,l,k]) / 4
+julia> minorsymmetric(x) ≈ @einsum (i,j,k,l) -> (x[i,j,k,l] + x[j,i,k,l] + x[i,j,l,k] + x[j,i,l,k]) / 4
 true
 ```
 """
