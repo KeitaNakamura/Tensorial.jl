@@ -148,11 +148,11 @@ end
 
 # ref case
 function einsum_instantiate_tensor(einex::EinsumExpr)
-    if isscalarexpr(einex) # handle `A[i,i]`
+    if isempty(setdiff(einex.allinds, einex.freeinds)) # no dummy indices
+        return einex
+    else
         ex = :($contract_einsum(Any, ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
         return EinsumExpr(ex, einex.freeinds, einex.allinds)
-    else
-        return einex
     end
 end
 
