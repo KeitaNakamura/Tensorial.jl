@@ -53,6 +53,7 @@ end
 
         S3 = rand(Tensor{Tuple{@Symmetry{3,3,3}}})
         v1 = rand(Vec{3})
+        check_value_and_type((@einsum S[i] := S3[i,j,j]), S3 ⊡₂ one(Mat{3,3}), (@tensor t[i] := Array(S3)[i,j,j]))
         check_value_and_type((@einsum S[i,j] := S3[j,k,i] * v1[k]), permutedims(S3, Val((3,1,2))) ⊡ v1, (@tensor t[i,j] := Array(S3)[j,k,i] * Array(v1)[k]))
         check_value_and_type((@einsum S[j] := v1[i] * S3[j,k,i] * v1[k]), (S3 ⊡ v1) ⊡ v1, (@tensor t[j] := Array(v1)[i] * Array(S3)[j,k,i] * Array(v1)[k]))
         check_value_and_type((@einsum j -> v1[i] * S3[j,k,i] * v1[k]), (S3 ⊡ v1) ⊡ v1, (@tensor t[j] := Array(v1)[i] * Array(S3)[j,k,i] * Array(v1)[k]))
