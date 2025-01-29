@@ -44,14 +44,14 @@ true
 julia> x ⊗ x ≈ x * x' # tensor product (⊗)
 true
 
-julia> (@einsum y := x[i] * A[j,i] * x[j]) ≈ x ⊡ A' ⊡ x # Einstein summation (@einsum)
+julia> (@einsum x[i] * A[j,i] * x[j]) ≈ x ⋅ (A' * x) # Einstein summation (@einsum)
 true
 
-julia> As = rand(Tensor{Tuple{@Symmetry{3,3}}}); # specify symmetry S₍ᵢⱼ₎
+julia> S = rand(Tensor{Tuple{@Symmetry{3,3}}}); # specify symmetry S₍ᵢⱼ₎
 
-julia> AAs = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # SS₍ᵢⱼ₎₍ₖₗ₎
+julia> SS = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # SS₍ᵢⱼ₎₍ₖₗ₎
 
-julia> inv(AAs) ⊡₂ As ≈ @einsum Bs[i,j] := inv(AAs)[i,j,k,l] * As[k,l] # it just works
+julia> inv(SS) ⊡₂ S ≈ @einsum inv(SS)[i,j,k,l] * S[k,l] # it just works
 true
 
 julia> δ = one(Mat{3,3}) # identity tensor
@@ -60,7 +60,7 @@ julia> δ = one(Mat{3,3}) # identity tensor
  0.0  1.0  0.0
  0.0  0.0  1.0
 
-julia> gradient(identity, As) ≈ one(AAs) # ∂Asᵢⱼ/∂Asₖₗ = (δᵢₖδⱼₗ + δᵢₗδⱼₖ) / 2
+julia> gradient(identity, S) ≈ one(SS) # ∂Sᵢⱼ/∂Sₖₗ = (δᵢₖδⱼₗ + δᵢₗδⱼₖ) / 2
 true
 ```
 

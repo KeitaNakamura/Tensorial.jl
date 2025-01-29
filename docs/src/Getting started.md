@@ -13,12 +13,12 @@ A = @Mat rand(3,3); # @Vec, @Mat and @Tensor, analogous to @SVector, @SMatrix an
 A ⊡ x ≈ A * x # single contraction (⊡)
 A ⊡₂ A ≈ A ⋅ A # double contraction (⊡₂)
 x ⊗ x ≈ x * x' # tensor product (⊗)
-(@einsum y := x[i] * A[j,i] * x[j]) ≈ x ⊡ A' ⊡ x # Einstein summation (@einsum)
-As = rand(Tensor{Tuple{@Symmetry{3,3}}}); # specify symmetry S₍ᵢⱼ₎
-AAs = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # SS₍ᵢⱼ₎₍ₖₗ₎
-inv(AAs) ⊡₂ As ≈ @einsum Bs[i,j] := inv(AAs)[i,j,k,l] * As[k,l] # it just works
+(@einsum x[i] * A[j,i] * x[j]) ≈ x ⋅ (A' * x) # Einstein summation (@einsum)
+S = rand(Tensor{Tuple{@Symmetry{3,3}}}); # specify symmetry S₍ᵢⱼ₎
+SS = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # SS₍ᵢⱼ₎₍ₖₗ₎
+inv(SS) ⊡₂ S ≈ @einsum inv(SS)[i,j,k,l] * S[k,l] # it just works
 δ = one(Mat{3,3}) # identity tensor
-gradient(identity, As) ≈ one(AAs) # ∂Asᵢⱼ/∂Asₖₗ = (δᵢₖδⱼₗ + δᵢₗδⱼₖ) / 2
+gradient(identity, S) ≈ one(SS) # ∂Sᵢⱼ/∂Sₖₗ = (δᵢₖδⱼₗ + δᵢₗδⱼₖ) / 2
 ```
 
 ## Defining tensors
