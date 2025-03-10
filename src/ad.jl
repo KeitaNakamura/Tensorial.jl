@@ -102,14 +102,74 @@ end
     end
 end
 
-struct ∂ⁿ{N, all} end
+"""
+    ∂ⁿ{N}(f, x)
+    ∂ⁿ{N}(f)
+
+Differentiate the function `f` at `x` to the order `N`. `x` can be either a `Real` or a `Tensor`.
+`∂` and `∂²` are aliases for `∂ⁿ{1}` and `∂ⁿ{2}`, respectively.
+If only the function is provided, it creates a derivative function.
+To obtain all derivatives, use `∂ⁿ{N, all}`.
+
+```jldoctest
+julia> ∂ⁿ{1}(x -> x^2 - 2x + 3, 4)
+6
+
+julia> f′ = ∂(x -> x^2 - 2x + 3)
+∂{only, var"#3#4"}(var"#3#4"())
+
+julia> f′(4)
+6
+
+julia> f, ∂f∂x = ∂{all}(x -> x^2 - 2x + 1, 4)
+(9, 6)
+
+julia> ∂²(norm, Vec(1,2,3)) ≈ ∂(x -> ∂(norm,x), Vec(1,2,3))
+true
+```
+"""
+struct ∂ⁿ{N, all, F}
+    f::F
+end
+
+∂ⁿ{N}(f::F) where {N, F} = ∂ⁿ{N, only, F}(f)
+∂ⁿ{N, all}(f::F) where {N, F} = ∂ⁿ{N, all, F}(f)
+
+(F::∂ⁿ{N, only})(args...) where {N} = ∂ⁿ{N}(F.f, args...)
+(F::∂ⁿ{N, all})(args...) where {N} = ∂ⁿ{N, all}(F.f, args...)
+
 const ∂  = ∂ⁿ{1}
 const ∂² = ∂ⁿ{2}
 
+"""
+    ∂(f, args...)
+
+Differentiate the function `f` at the arguments `args`. `args` can be `Real`s and `Tensor`s.
+See also [`∂ⁿ`](@ref).
+
+```jldoctest
+julia> x = rand(Mat{3,3})
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 0.325977  0.894245  0.953125
+ 0.549051  0.353112  0.795547
+ 0.218587  0.394255  0.49425
+
+julia> ∂(tr, x)
+3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
+ 1.0  0.0  0.0
+ 0.0  1.0  0.0
+ 0.0  0.0  1.0
+
+julia> map(∂(*), (1,2,3), (4,5,6))
+((4, 1), (5, 2), (6, 3))
+```
+"""
+∂
+
 @inline function ∂ⁿ{N}(f, x) where {N}
-    last(∂ⁿ{N, :all}(f, x))
+    last(∂ⁿ{N, all}(f, x))
 end
-@inline function ∂ⁿ{N, :all}(f, x) where {N}
+@inline function ∂ⁿ{N, all}(f, x) where {N}
     consider_symmetry(extract_all(f(dualize(f, x, Val(N))), x, Val(N)), x)
 end
 
@@ -151,6 +211,62 @@ end
     end
 end
 
+################################
+# multiple-arguments interface #
+################################
+
+# when multiple arguments are given, those components are reduced to single `Vec`
+# then additional decompose process is inserted before applying `f`
+@inline function ∂{all}(f, x1::NumberOrTensor, x2::NumberOrTensor, x3::NumberOrTensor...)
+    xs = (x1, x2, x3...)
+    f★(v) = f(decompose_vec(v, xs)...)
+    v, p = dual_values(xs), dual_partials(xs)
+    ∇f★ = f★(Vec(generate_duals(Tag(f★, typeof(Vec(v))), v, p)))
+    extract_value(∇f★), extract_gradient(∇f★, xs)
+end
+@inline ∂(f, x1::NumberOrTensor, x2::NumberOrTensor, x3::NumberOrTensor...) = last(∂{all}(f, x1, x2, x3...))
+
+# decompose `Vec` into multiple variables
+@generated function decompose_vec(v::Vec, xs::Tuple{Vararg{NumberOrTensor, N}}) where {N}
+    @assert length(v) == sum(ncomponents, xs.parameters)
+    offset = 0
+    exps = []
+    for i in 1:N
+        TT = xs.parameters[i]
+        if TT <: Number
+            push!(exps, :(v[$(offset+1)]))
+        else
+            rng = offset .+ (1:ncomponents(TT))
+            push!(exps, :($(tensortype(Space(TT)))(Tuple(@Tensor(v[$rng])))))
+        end
+        offset += ncomponents(TT)
+    end
+    quote
+        @_inline_meta
+        tuple($(exps...))
+    end
+end
+
+# extract_gradient
+@generated function extract_gradient(v::NumberOrTensor, xs::Tuple{Vararg{NumberOrTensor, N}}) where {N}
+    quote
+        @_inline_meta
+        @ntuple $N i -> extract_gradient(v, xs[i])
+    end
+end
+@generated function extract_gradient(v::Union{Dual, AbstractTensor{S, <: Dual}}, xs::Tuple{Vararg{NumberOrTensor, N}}) where {S <: Tuple, N}
+    exps = []
+    offset = 0
+    for i in 1:N
+        push!(exps, :(extract_gradient(v, xs[$i], $offset)))
+        offset += ncomponents(xs.parameters[i])
+    end
+    quote
+        @_inline_meta
+        tuple($(exps...))
+    end
+end
+
 """
     gradient(f, x)
     gradient(f, x, :all)
@@ -177,7 +293,7 @@ julia> ∇f, f = gradient(tr, x, :all)
 ```
 """
 @inline gradient(f, x::NumberOrTensor) = ∂(f, x)
-@inline gradient(f, x::NumberOrTensor, ::Symbol) = reverse(∂{:all}(f, x))
+@inline gradient(f, x::NumberOrTensor, ::Symbol) = reverse(∂{all}(f, x))
 
 """
     hessian(f, x)
@@ -206,67 +322,3 @@ julia> ∇∇f, ∇f, f = hessian(norm, x, :all)
 """
 @inline hessian(f, x::NumberOrTensor) = last(extract_all(f(dualize(f, x, Val(2))), x, Val(2)))
 @inline hessian(f, x::NumberOrTensor, ::Symbol) = reverse(extract_all(f(dualize(f, x, Val(2))), x, Val(2)))
-
-################################
-# multiple-arguments interface #
-################################
-
-# extract_gradient
-ncomponents(::Number) = 1
-@generated function extract_gradient(v::NumberOrTensor, xs::Tuple{Vararg{NumberOrTensor, N}}) where {N}
-    quote
-        @ntuple $N i -> extract_gradient(v, xs[i])
-    end
-end
-@generated function extract_gradient(v::Union{Dual, AbstractTensor{S, <: Dual}}, xs::Tuple{Vararg{NumberOrTensor, N}}) where {S <: Tuple, N}
-    quote
-        @_inline_meta
-        offset = 0
-        @nexprs $N i -> begin
-            y_i = extract_gradient(v, xs[i], offset)
-            offset += ncomponents(xs[i])
-        end
-        @ntuple $N i -> y_i
-    end
-end
-
-# decompose `Vec` into multiple variables
-_construct(v::Vec, x::Number) = only(Tuple(v))
-_construct(v::Vec, x::AbstractTensor) = tensortype(Space(x))(Tuple(v))
-@inline function each_range(xs::NumberOrTensor...)
-    lens = ncomponents.(xs)
-    stops = cumsum(lens)
-    @. StaticIndex(UnitRange(stops-lens+1, stops))
-end
-@inline function decompose_vec(v::Vec, xs::Tuple{Vararg{NumberOrTensor}})
-    rngs = each_range(xs...)
-    vs = getindex.((v,), rngs)
-    map(_construct, vs, xs)
-end
-
-# when multiple arguments are given, those components are reduced to single `Vec`
-# then additional decompose process is inserted before applying `f`
-@generated function gradient(f, x1::NumberOrTensor, x2::NumberOrTensor, rest...)
-    if !isempty(rest) && rest[end] <: Symbol
-        n = length(rest) - 1
-        code = :(extract_gradient(∇f, xs), extract_value(∇f))
-    else
-        n = length(rest)
-        code = :(extract_gradient(∇f, xs))
-    end
-    @assert all(T->T<:NumberOrTensor, rest[1:n])
-    rt = :(@ntuple $n i -> rest[i])
-    quote
-        @_inline_meta
-        xs = (x1, x2, $rt...)
-        g = insert_decompose_function(f, xs)
-        ∇f = vec_dual_gradient(g, dual_values(xs), dual_partials(xs))
-        $code
-    end
-end
-insert_decompose_function(f, xs) = g(v) = f(decompose_vec(v, xs)...)
-@inline function vec_dual_gradient(f, x::NTuple{N, T}, p::NTuple{N, T}) where {N, T}
-    Tg = Tag(f, typeof(Vec(x)))
-    dx = Vec(generate_duals(Tg, x, p))
-    f(dx)
-end

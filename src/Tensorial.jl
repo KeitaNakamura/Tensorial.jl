@@ -77,6 +77,9 @@ export
 # ad
     gradient,
     hessian,
+    ∂ⁿ,
+    ∂,
+    ∂²,
 # quaternion
     Quaternion,
     quaternion,
