@@ -250,6 +250,9 @@ end
             @test (@inferred convert(Tensor{Tuple{@Symmetry{3, 3}}, T}, A+A')) == Array(A+A')
             @test_throws InexactError convert(Tensor{Tuple{@Symmetry{3, 3}}, T}, A)
         end
+        # Float64 -> Float32
+        x = rand(Mat{3,3,Float64})
+        (@inferred convert(SymmetricSecondOrderTensor{3,Float32}, x+x'))::SymmetricSecondOrderTensor{3,Float32}
     end
     @testset "AbstractArray -> Tensor" begin
         A = [1 3; 2 4]

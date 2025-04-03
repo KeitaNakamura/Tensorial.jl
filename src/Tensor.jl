@@ -300,7 +300,7 @@ end
     quote
         @_inline_meta
         @inbounds y = $TT(tuple($(exps...)))
-        $(S != Sy) && x != y && throw(InexactError(:convert, TT, x))
+        $(S != Sy) && convert_eltype(eltype(TT), x) != y && throw(InexactError(:convert, TT, x))
         y
     end
 end
