@@ -76,6 +76,7 @@ end
                 Z += X[i,j,k] * Y[i,j,k]
             end
             @test z ≈ Z
+            @test (@inferred x ⊡₃ y)::T ≈ z
             # zero contraction (tensor)
             z = (@inferred contract(x, y, Val(0)))::Tensor{Tuple{3,@Symmetry{3,3},@Symmetry{3,3,3}}, T}
             Z = zeros(T, 3,3,3,3,3,3)

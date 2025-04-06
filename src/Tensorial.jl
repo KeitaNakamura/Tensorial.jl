@@ -56,6 +56,13 @@ export
     minorsymmetric,
     skew,
     ⊡₂,
+    ⊡₃,
+    ⊡₄,
+    ⊡₅,
+    ⊡₆,
+    ⊡₇,
+    ⊡₈,
+    ⊡₉,
     rotmat,
     rotmatx,
     rotmaty,
@@ -103,5 +110,12 @@ include("abstractarray.jl")
 include("quaternion.jl")
 
 const ⊡₂ = contract2
+const ⊡₃ = contract3
+const ⊡₄ = contract4
+const ⊡₅ = contract5
+const ⊡₆ = contract6
+const ⊡₇ = contract7
+const ⊡₈ = contract8
+const ⊡₉ = contract9
 
 end # module

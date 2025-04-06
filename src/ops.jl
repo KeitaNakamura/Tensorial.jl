@@ -212,6 +212,13 @@ end
 
 @inline contract1(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(1))
 @inline contract2(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(2))
+@inline contract3(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(3))
+@inline contract4(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(4))
+@inline contract5(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(5))
+@inline contract6(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(6))
+@inline contract7(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(7))
+@inline contract8(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(8))
+@inline contract9(x1::AbstractTensor, x2::AbstractTensor) = contract(x1, x2, Val(9))
 
 @inline dot(x1::AbstractTensor{<: Any, <: Any, N}, x2::AbstractTensor{<: Any, <: Any, N}) where {N} = contract(x1, x2, Val(N))
 
