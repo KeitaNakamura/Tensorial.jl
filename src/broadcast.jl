@@ -2,9 +2,12 @@ import Base.Broadcast: BroadcastStyle, DefaultArrayStyle, AbstractArrayStyle, Br
 
 struct TensorStyle{N} <: AbstractArrayStyle{N} end
 
-BroadcastStyle(::Type{<: AbstractTensor{<: Any, <: Any, N}}) where {N} = TensorStyle{N}()
-BroadcastStyle(::TensorStyle{N}, ::DefaultArrayStyle{0}) where {N} = TensorStyle{N}()
-BroadcastStyle(::TensorStyle, b::DefaultArrayStyle) = b
+BroadcastStyle(::Type{<: AbstractTensor{<: Tuple, <: Any, N}}) where {N} = TensorStyle{N}()
+# BroadcastStyle(::Type{<: AbstractMatLike}) = TensorStyle{2}() # shoud support this?
+
+BroadcastStyle(::TensorStyle{M}, b::DefaultArrayStyle{N}) where {M, N} = DefaultArrayStyle(Val(max(M, N)))
+BroadcastStyle(::TensorStyle{M}, ::DefaultArrayStyle{0}) where {M} = TensorStyle{M}()
+
 BroadcastStyle(a::TensorStyle, ::Broadcast.Style{Tuple}) = a
 
 broadcastable(bc::Broadcasted{<: TensorStyle}) = copy(bc)
