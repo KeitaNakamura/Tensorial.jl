@@ -333,12 +333,15 @@ end
     @testset "lu" begin
         Random.seed!(1234)
         At = rand(Mat{3,3})
+        vt = rand(Vec{3})
         L, U, p = @inferred lu(At)
         As = SArray(At)
+        vs = SArray(vt)
         Fs = lu(As)
         @test L == Fs.L
         @test U == Fs.U
         @test p == Fs.p
+        @test (lu(At) \ vt)::Vec{3} == lu(As) \ vs
     end
     @testset "eigen" begin
         Random.seed!(1234)
@@ -350,14 +353,17 @@ end
     @testset "svd" begin
         Random.seed!(1234)
         At = rand(Mat{3,3})
+        vt = rand(Vec{3})
         Ft = @inferred svd(At)
         U, S, V = Ft
         As = SArray(At)
+        vs = SArray(vt)
         Fs = svd(As)
         @test U == Fs.U
         @test S == Fs.S
         @test V == Fs.V
         @test Ft.Vt == Fs.Vt
+        @test (Ft \ vt)::Vec{3} == Fs \ vs
     end
 end
 

@@ -918,6 +918,11 @@ for pv in (:true, :false)
 end
 lu(A::AbstractMat; check = true) = lu(A, Val(true); check = check)
 
+function Base.:\(F::LU, v::AbstractVecOrMat)
+    F′ = StaticArrays.LU(LowerTriangular(SArray(parent(F.L))), UpperTriangular(SArray(parent(F.U))), SArray(F.p))
+    Tensor(F′ \ SArray(v))
+end
+
 # eigen
 @inline function eigvals(x::AbstractSymmetricSecondOrderTensor; permute::Bool=true, scale::Bool=true)
     Tensor(eigvals(Symmetric(SArray(x)); permute=permute, scale = scale))
@@ -954,4 +959,9 @@ Base.iterate(S::SVD, ::Val{:done}) = nothing
 function svd(A::AbstractMat; full=Val(false))
     F = svd(SArray(A); full = full)
     SVD(Tensor(F.U), Tensor(F.S), Tensor(F.Vt))
+end
+
+function Base.:\(F::SVD, v::AbstractVecOrMat)
+    F′ = StaticArrays.SVD(SArray(F.U), SArray(F.S), SArray(F.Vt))
+    Tensor(F′ \ SArray(v))
 end
