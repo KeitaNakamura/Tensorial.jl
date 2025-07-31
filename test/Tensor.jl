@@ -61,6 +61,9 @@
             # different type
             @test (@inferred Tensor{Tuple{2,2}, Float64, 2}(A))::Tensor{Tuple{2,2}, Float64, 2, 4} |> Tuple == (1.0,2.0,3.0,4.0)
             @test (@inferred Tensor{Tuple{2,2}, Float64}(A))::Tensor{Tuple{2,2}, Float64, 2, 4} |> Tuple == (1.0,2.0,3.0,4.0)
+            # convert
+            @test (@inferred Tensor{Tuple{@Symmetry{2,2}}}([1 2; 2 4]))::Tensor{Tuple{@Symmetry{2,2}}, Int, 2, 3} |> Tuple == (1,2,4)
+            @test_throws InexactError Tensor{Tuple{@Symmetry{2,2}}}([1 2; 3 4])
         end
         @testset "Macro" begin
             a = 2 # check escaping
