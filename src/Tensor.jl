@@ -307,6 +307,7 @@ end
 @inline Base.convert(::Type{TT}, x::Tuple) where {TT <: Tensor} = TT(x)
 
 # promotion
+@inline convert_eltype(::Type{Any}, x) = x
 @inline convert_eltype(::Type{T}, x::Number) where {T <: Number} = convert(T, x)
 @generated function convert_eltype(::Type{T}, x::Tensor) where {T <: Number}
     TT = tensortype(Space(x))
