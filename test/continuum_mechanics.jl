@@ -31,10 +31,6 @@
             @test (@inferred dev(SymmetricFourthOrderTensor{3, T}))::SymmetricFourthOrderTensor{3, T}    ≈ Isym_dev
             @test (vol(FourthOrderTensor{3}) + dev(FourthOrderTensor{3}))::FourthOrderTensor{3} ≈ one(FourthOrderTensor{3})
             @test (vol(SymmetricFourthOrderTensor{3}) + dev(SymmetricFourthOrderTensor{3}))::SymmetricFourthOrderTensor{3} ≈ one(SymmetricFourthOrderTensor{3})
-            A = (@einsum rand(T)*δ[i,j]*δ[k,l] + rand(T)*δ[i,k]*δ[j,l] + rand(T)*δ[i,l]*δ[j,k])::FourthOrderTensor{3, T}
-            Asym = rand(T) * δ ⊗ δ + rand(T) * one(SymmetricFourthOrderTensor{3, T})
-            @test vol(A)::FourthOrderTensor{3, T} + dev(A)::FourthOrderTensor{3, T} ≈ A
-            @test vol(Asym)::SymmetricFourthOrderTensor{3, T} + dev(Asym)::SymmetricFourthOrderTensor{3, T} ≈ Asym
         end
     end
     @testset "vonmises" begin

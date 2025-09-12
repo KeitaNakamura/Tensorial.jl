@@ -54,11 +54,6 @@ true
 """
 @inline vol(x::AbstractVec{3}) = sum(x)/3 * ones(x)
 
-@inline function vol(A::Union{FourthOrderTensor, SymmetricFourthOrderTensor})
-    Pvol = vol(typeof(A))
-    Pvol ⊡₂ A ⊡₂ Pvol
-end
-
 """
     vol(::Type{FourthOrderTensor{3}})
     vol(::Type{SymmetricFourthOrderTensor{3}})
@@ -143,11 +138,6 @@ true
 ```
 """
 @inline dev(x::AbstractVec{3}) = x - vol(x)
-
-@inline function dev(A::Union{FourthOrderTensor, SymmetricFourthOrderTensor})
-    Pdev = dev(typeof(A))
-    Pdev ⊡₂ A ⊡₂ Pdev
-end
 
 """
     dev(::Type{FourthOrderTensor{3}})
