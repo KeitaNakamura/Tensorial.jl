@@ -86,18 +86,23 @@ The following infix operators are also available for specific contractions:
     TT = tensortype(contract(S1′, S2′, Val(N)))
     dups = nduplicates_tuple(Scon)
     if all(isone, dups)
-        vec2′ = :(vec(arr2))
-        arr2′ = :(arr2)
+        vec1′, vec2′ = :(vec(arr1)), :(vec(arr2))
+        arr1′, arr2′ = :(arr1), :(arr2)
     else
-        vec2′ = :($dups .* vec(arr2))
-        arr2′ = :($dups .* arr2)
+        if I <= J
+            arr1′, arr2′ = :(arr1 .* $dups'), :(arr2)
+            vec1′, vec2′ = :(vec($arr1′)), :(vec(arr2))
+        else
+            arr1′, arr2′ = :(arr1), :($dups .* arr2)
+            vec1′, vec2′ = :(vec(arr1)), :(vec($arr2′))
+        end
     end
     quote
         @_inline_meta
         arr1 = SMatrix{$I,$K}(Tuple(convert($(tensortype(S1′)), t1)))
         arr2 = SMatrix{$K,$J}(Tuple(convert($(tensortype(S2′)), t2)))
-        $(ndims(TT) == 0) && return dot_unrolled(vec(arr1), $vec2′)
-        data = Tuple(mul_unrolled(arr1, $arr2′))
+        $(ndims(TT) == 0) && return dot_unrolled($vec1′, $vec2′)
+        data = Tuple(mul_unrolled($arr1′, $arr2′))
         $TT(data)
     end
 end
