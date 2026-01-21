@@ -87,36 +87,42 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
         @test gradient(v -> sum(v) * gradient(a -> f(a, v), a), v) ≈ gradient(v -> sum(v) * dfda(a, v), v)
         @test gradient(a -> a * gradient(v -> f(a, v), v), a) ≈ gradient(a -> a * dfdv(a, v), a)
     end
+    @testset "create function for AD" begin
+        f′ = ∂(identity)
+        f′all = ∂{all}(identity)
+        @test (@inferred f′(Vec(1,2,3))) == ∂(identity, Vec(1,2,3))
+        @test (@inferred f′all(Vec(1,2,3))) == ∂{all}(identity, Vec(1,2,3))
+    end
     @testset "n-th derivatives" begin
         T = Float64
         x = rand(Vec{2, T})
         f = norm(x)
-        ∂f = Tensorial.∂(norm, x)
-        ∂²f = Tensorial.∂(x -> Tensorial.∂(norm, x), x)
-        ∂³f = Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(norm, x), x), x)
-        ∂⁴f = Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(norm, x), x), x), x)
-        @test (@inferred Tensorial.∂(norm, x))::Tensor{Tuple{2}, T} ≈ ∂f
-        @test (@inferred Tensorial.∂²(norm, x))::Tensor{Tuple{@Symmetry{2,2}}, T} ≈ ∂²f
-        @test (@inferred Tensorial.∂ⁿ{3}(norm, x))::Tensor{Tuple{@Symmetry{2,2,2}}, T} ≈ ∂³f
-        @test (@inferred Tensorial.∂ⁿ{4}(norm, x))::Tensor{Tuple{@Symmetry{2,2,2,2}}, T} ≈ ∂⁴f
-        @test (@inferred Tensorial.∂ⁿ{0}(norm, x))::T ≈ f
-        @test all((@inferred Tensorial.∂{:all}(norm, x)) .≈ (f, ∂f))
-        @test all((@inferred Tensorial.∂²{:all}(norm, x)) .≈ (f, ∂f, ∂²f))
-        @test all((@inferred Tensorial.∂ⁿ{3,:all}(norm, x)) .≈ (f, ∂f, ∂²f, ∂³f))
-        @test all((@inferred Tensorial.∂ⁿ{4,:all}(norm, x)) .≈ (f, ∂f, ∂²f, ∂³f, ∂⁴f))
-        @test all((@inferred Tensorial.∂ⁿ{0,:all}(norm, x)) .≈ (f,))
+        ∂f = ∂(norm, x)
+        ∂²f = ∂(x -> ∂(norm, x), x)
+        ∂³f = ∂(x -> ∂(x -> ∂(norm, x), x), x)
+        ∂⁴f = ∂(x -> ∂(x -> ∂(x -> ∂(norm, x), x), x), x)
+        @test (@inferred ∂(norm, x))::Tensor{Tuple{2}, T} ≈ ∂f
+        @test (@inferred ∂²(norm, x))::Tensor{Tuple{@Symmetry{2,2}}, T} ≈ ∂²f
+        @test (@inferred ∂ⁿ{3}(norm, x))::Tensor{Tuple{@Symmetry{2,2,2}}, T} ≈ ∂³f
+        @test (@inferred ∂ⁿ{4}(norm, x))::Tensor{Tuple{@Symmetry{2,2,2,2}}, T} ≈ ∂⁴f
+        @test (@inferred ∂ⁿ{0}(norm, x))::T ≈ f
+        @test all((@inferred ∂{all}(norm, x)) .≈ (f, ∂f))
+        @test all((@inferred ∂²{all}(norm, x)) .≈ (f, ∂f, ∂²f))
+        @test all((@inferred ∂ⁿ{3,all}(norm, x)) .≈ (f, ∂f, ∂²f, ∂³f))
+        @test all((@inferred ∂ⁿ{4,all}(norm, x)) .≈ (f, ∂f, ∂²f, ∂³f, ∂⁴f))
+        @test all((@inferred ∂ⁿ{0,all}(norm, x)) .≈ (f,))
     end
     @testset "Multiple arguments" begin
         for T in (Float32, Float64)
             a = rand(T)
             x = rand(SymmetricSecondOrderTensor{2,T})
-            @test (@inferred gradient((x,y) -> x * tr(y), a, x))::Tuple{T, SymmetricSecondOrderTensor{2,T}} === (tr(x), a*one(SymmetricSecondOrderTensor{2,T}))
-            @test (@inferred gradient((x,y) -> x * tr(y), a, x, :all))::Tuple{Tuple{T, SymmetricSecondOrderTensor{2,T}}, T} === ((tr(x), a*one(SymmetricSecondOrderTensor{2,T})), a*tr(x))
-            @test (@inferred gradient((x,y) -> x * y, a, x))::Tuple{SymmetricSecondOrderTensor{2,T}, SymmetricFourthOrderTensor{2,T}} === (x, a*one(SymmetricFourthOrderTensor{2,T}))
-            @test (@inferred gradient((x,y) -> x * y, a, x, :all))::Tuple{Tuple{SymmetricSecondOrderTensor{2,T}, SymmetricFourthOrderTensor{2,T}}, SymmetricSecondOrderTensor{2,T}} === ((x, a*one(SymmetricFourthOrderTensor{2,T})), a*x)
+            @test (@inferred ∂((x,y) -> x * tr(y), a, x))::Tuple{T, SymmetricSecondOrderTensor{2,T}} === (tr(x), a*one(SymmetricSecondOrderTensor{2,T}))
+            @test (@inferred ∂{all}((x,y) -> x * tr(y), a, x))::Tuple{T, Tuple{T, SymmetricSecondOrderTensor{2,T}}} === (a*tr(x), (tr(x), a*one(SymmetricSecondOrderTensor{2,T})))
+            @test (@inferred ∂((x,y) -> x * y, a, x))::Tuple{SymmetricSecondOrderTensor{2,T}, SymmetricFourthOrderTensor{2,T}} === (x, a*one(SymmetricFourthOrderTensor{2,T}))
+            @test (@inferred ∂{all}((x,y) -> x * y, a, x))::Tuple{SymmetricSecondOrderTensor{2,T}, Tuple{SymmetricSecondOrderTensor{2,T}, SymmetricFourthOrderTensor{2,T}}} === (a*x, (x, a*one(SymmetricFourthOrderTensor{2,T})))
             # nested differentiation
-            @test gradient((x,z) -> x * gradient(y -> x + y, 1), 1, x) === (one(T), zero(x))
-            @test gradient((x,z) -> x * gradient(y -> x + y, 1), 1, x, :all) === ((one(T), zero(x)), one(T))
+            @test ∂((x,z) -> x * ∂(y -> x + y, 1), 1, x) === (one(T), zero(x))
+            @test ∂{all}((x,z) -> x * ∂(y -> x + y, 1), 1, x) === (one(T), (one(T), zero(x)))
         end
     end
 end
