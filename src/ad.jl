@@ -110,7 +110,9 @@ const ∂² = ∂ⁿ{2}
     last(∂ⁿ{N, :all}(f, x))
 end
 @inline function ∂ⁿ{N, :all}(f, x) where {N}
-    consider_symmetry(extract_all(f(dualize(f, x, Val(N))), x, Val(N)), x)
+    dx = dualize(f, x, Val(N))
+    val = @inline f(dx)
+    consider_symmetry(extract_all(val, x, Val(N)), x)
 end
 
 @generated function extract_all(v, x::NumberOrTensor, ::Val{N}) where {N}
@@ -204,8 +206,16 @@ julia> ∇∇f, ∇f, f = hessian(norm, x, :all)
 ([1.1360324375454411 -0.5821964220304534 -0.23178236037013888; -0.5821964220304533 0.5010791569244991 -0.39039709608344814; -0.23178236037013886 -0.39039709608344814 1.3262640626479867], [0.4829957515506539, 0.8135223859352438, 0.3238771859304809], 0.6749059962060727)
 ```
 """
-@inline hessian(f, x::NumberOrTensor) = last(extract_all(f(dualize(f, x, Val(2))), x, Val(2)))
-@inline hessian(f, x::NumberOrTensor, ::Symbol) = reverse(extract_all(f(dualize(f, x, Val(2))), x, Val(2)))
+@inline function hessian(f, x::NumberOrTensor)
+    dx = dualize(f, x, Val(2))
+    val = @inline f(dx)
+    last(extract_all(val, x, Val(2)))
+end
+@inline function hessian(f, x::NumberOrTensor, ::Symbol)
+    dx = dualize(f, x, Val(2))
+    val = @inline f(dx)
+    reverse(extract_all(val, x, Val(2)))
+end
 
 ################################
 # multiple-arguments interface #
@@ -264,9 +274,11 @@ end
         $code
     end
 end
-insert_decompose_function(f, xs) = g(v) = f(decompose_vec(v, xs)...)
+@inline function insert_decompose_function(f, xs)
+    g(v) = @inline f(decompose_vec(v, xs)...)
+end
 @inline function vec_dual_gradient(f, x::NTuple{N, T}, p::NTuple{N, T}) where {N, T}
     Tg = Tag(f, typeof(Vec(x)))
     dx = Vec(generate_duals(Tg, x, p))
-    f(dx)
+    @inline f(dx)
 end
