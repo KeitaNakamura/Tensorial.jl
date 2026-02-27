@@ -1,6 +1,6 @@
 name = "Tensorial"
 uuid = "98f94333-fa9f-48a9-ad80-1c66397b2b38"
-version = "0.18.13"
+version = "0.18.14"
 authors = ["Keita Nakamura <keita.nakamura.1109@gmail.com>"]
 
 [deps]
