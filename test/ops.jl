@@ -288,6 +288,13 @@ end
 end
 
 @testset "Call methods in StaticArrays" begin
+    @testset "sort/sortperm" begin
+        x = Vec(3, 1, 2, 2)
+        @test sort(x) == sort(SArray(x))
+        @test sortperm(x) == sortperm(SArray(x))
+        @test sort(x; rev=true) == sort(SArray(x); rev=true)
+        @test sortperm(x; rev=true) == sortperm(SArray(x); rev=true)
+    end
     @testset "exp" begin
         # error for `Float32`
         # see https://github.com/JuliaArrays/StaticArrays.jl/issues/785

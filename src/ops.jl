@@ -873,6 +873,10 @@ end
 # operations calling methods in StaticArrays.jl #
 # ----------------------------------------------#
 
+# sort/sortperm
+@inline Base.sort(x::AbstractTensor; kwargs...) = Tensor(sort(SArray(x); kwargs...))
+@inline Base.sortperm(x::AbstractTensor; kwargs...) = sortperm(SArray(x); kwargs...)
+
 # exp
 @inline Base.exp(x::AbstractSecondOrderTensor) = typeof(x)(exp(SArray(x)))
 
