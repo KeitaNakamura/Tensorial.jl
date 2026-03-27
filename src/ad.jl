@@ -59,6 +59,7 @@ end
         @inbounds Tensor{S}($(exps...))
     end
 end
+@inline extract_value(v::Tuple) = map(extract_value, v)
 
 ####################
 # extract gradient #
@@ -102,6 +103,8 @@ end
     end
 end
 
+@inline extract_gradient(v::Tuple, x, offset::Int=0) = map(vi -> extract_gradient(vi, x, offset), v)
+
 struct ∂ⁿ{N, all} end
 const ∂  = ∂ⁿ{1}
 const ∂² = ∂ⁿ{2}
@@ -135,19 +138,36 @@ end
 @generated function consider_symmetry(v::Tuple{Vararg{Any, M}}, x::Vec) where {M}
     N = M - 1
     N < 2 && return :v
-    exps = map(2:N) do i
-        TT = v.parameters[i+1]
-        tup = Tuple(Space(TT))
-        s = Space(tup[1:end-i]..., Symmetry(tup[end-i+1:end]))
-        exps = map(tensorindices_tuple(s)) do j
-            getindex_expr(TT, :(v[$(i+1)]), j)
-        end
-        TT_new = tensortype(s)
-        :($TT_new(tuple($(exps...))))
+
+    exps = Any[:(v[1]), :(v[2])]
+    for n in 2:N
+        push!(exps, :(consider_symmetry_result(v[$(n+1)], Val($n), x)))
     end
+
     quote
         @_inline_meta
-        @inbounds (v[1], v[2], $(exps...))
+        @inbounds tuple($(exps...))
+    end
+end
+
+@inline consider_symmetry_result(v, ::Val{0}, x::Vec) = v
+@inline consider_symmetry_result(v, ::Val{1}, x::Vec) = v
+@inline function consider_symmetry_result(v::Tuple, ::Val{N}, x::Vec) where {N}
+    map(vi -> consider_symmetry_result(vi, Val(N), x), v)
+end
+@generated function consider_symmetry_result(v::TT, ::Val{N}, x::Vec) where {TT, N}
+    N < 2 && return :v
+
+    tup = Tuple(Space(TT))
+    s = Space(tup[1:end-N]..., Symmetry(tup[end-N+1:end]))
+    exps = map(tensorindices_tuple(s)) do j
+        getindex_expr(TT, :v, j)
+    end
+    TT_new = tensortype(s)
+
+    quote
+        @_inline_meta
+        @inbounds $TT_new(tuple($(exps...)))
     end
 end
 
@@ -229,6 +249,7 @@ end
         @ntuple $N i -> y_i
     end
 end
+@inline extract_gradient(v::Tuple, xs::Tuple{Vararg{NumberOrTensor}}) = map(vi -> extract_gradient(vi, xs), v)
 
 # decompose `Vec` into multiple variables
 _construct(v::Vec, x::Number) = only(Tuple(v))
