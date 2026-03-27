@@ -119,4 +119,35 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
             @test gradient((x,z) -> x * gradient(y -> x + y, 1), 1, x, :all) === ((one(T), zero(x)), one(T))
         end
     end
+    @testset "AD tuple-output support" begin
+        @testset "single input, tuple output" begin
+            ∇f, f = gradient(x -> (x, 3x^2), 2, :all)
+            @test ∇f == (1, 12)
+            @test f  == (2, 12)
+            @test gradient(x -> (x, 3x^2), 2) == (1, 12)
+        end
+        @testset "multiple inputs, tuple output" begin
+            ∇f, f = gradient((x, y) -> (x + y, x), 2, 3, :all)
+            @test ∇f == ((1, 1), (1, 0))
+            @test f  == (5, 2)
+            @test gradient((x, y) -> (x + y, x), 2, 3) == ((1, 1), (1, 0))
+        end
+        @testset "mixed scalar/tensor outputs" begin
+            x = Vec(2.0, -1.0)
+            ∇f, f = gradient(x -> (x ⋅ x, 2x), x, :all)
+            @test f[1] == 5.0
+            @test f[2] == Vec(4.0, -2.0)
+            @test ∇f[1] == Vec(4.0, -2.0)
+            @test ∇f[2] == 2 * one(Mat{2,2})
+        end
+        @testset "consider_symmetry_result for tuple outputs" begin
+            x = Vec(2.0, -1.0)
+            F, G, H = Tensorial.∂²{:all}(x -> (x ⋅ x, 3(x ⋅ x)), x)
+            @test F == (5.0, 15.0)
+            @test G == (Vec(4.0, -2.0), Vec(12.0, -6.0))
+            @test H == (2 * one(Mat{2,2}), 6 * one(Mat{2,2}))
+            @test H[1] isa SymmetricSecondOrderTensor{2}
+            @test H[2] isa SymmetricSecondOrderTensor{2}
+        end
+    end
 end
