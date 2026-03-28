@@ -103,7 +103,7 @@ end
     end
 end
 
-@inline extract_gradient(v::Tuple, x, offset::Int=0) = map(vi -> extract_gradient(vi, x, offset), v)
+@inline extract_gradient(v::Tuple, x, args...) = map(vi -> extract_gradient(vi, x, args...), v)
 
 struct ∂ⁿ{N, all} end
 const ∂  = ∂ⁿ{1}

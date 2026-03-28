@@ -149,5 +149,11 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
             @test H[1] isa SymmetricSecondOrderTensor{2}
             @test H[2] isa SymmetricSecondOrderTensor{2}
         end
+        @testset "tuple output with constant tensor branch" begin
+            ∇f, f = gradient(x -> (zero(Mat{2,2}), Mat{2,2}(x,x,x,x)), 2.0, :all)
+            @test f == (zero(Mat{2,2}), Mat{2,2}(2.0, 2.0, 2.0, 2.0))
+            @test ∇f[1] == zero(Mat{2,2})
+            @test ∇f[2] == Mat{2,2}(1.0, 1.0, 1.0, 1.0)
+        end
     end
 end
