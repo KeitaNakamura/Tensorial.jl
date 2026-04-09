@@ -73,7 +73,12 @@ end
 """
     inv(A)
 
-Compute the inverse of a tensor `A`.
+Return the inverse of `A`.
+
+An inverse exists only for even-order tensors whose first and second halves
+span the same space and whose stored components define a valid operator
+representation. For symmetric tensor spaces, component multiplicities are
+accounted for accordingly.
 
 # Examples
 ```jldoctest
@@ -107,20 +112,41 @@ end
     typeof(x)(symmetric(Tensor(sa), :U))
 end
 
-@generated function _inv(x::AbstractTensor)
-    iseven(ndims(x)) || return :(throw(ArgumentError("no inverse exists for $(typeof(x))")))
-    spaces = Tuple(Space(x))
-    N = length(spaces) ÷ 2
-    lhs = Space(spaces[1:N])
-    rhs = Space(spaces[N+1:end])
-    lhs === rhs || return :(throw(ArgumentError("no inverse exists for $(typeof(x))")))
-    coef(v) = NTuple{length(v)^2,eltype(x)}(v*v')
-    C = coef(sqrt.(independent_component_multiplicities(lhs)))
-    L = Int(sqrt(ncomponents(x)))
+@generated function _inv(A::AbstractTensor)
+    # An inverse is defined only for even-order tensors interpreted as
+    # linear operators between the first and second halves of their indices.
+    iseven(ndims(A)) || return :(throw(ArgumentError("no inverse exists for $(typeof(A))")))
+
+    subspaces = Tuple(Space(A))
+    N = length(subspaces) ÷ 2
+    domain = Space(subspaces[N+1:end])
+    codomain = Space(subspaces[1:N])
+
+    # The tensor must represent an endomorphism V -> V.
+    codomain === domain || return :(throw(ArgumentError("no inverse exists for $(typeof(A))")))
+
+    # Multiplicities of independent components in the underlying tensor space.
+    # These are used to convert between the stored tensor representation and
+    # the matrix representation of the corresponding linear operator.
+    mults = independent_component_multiplicities(codomain)
+    nind = length(mults)
+
+    # A valid operator representation must have one entry for each pair of
+    # independent components.
+    nind^2 == ncomponents(A) || return :(throw(ArgumentError("no inverse exists for $(typeof(A))")))
+
+    # Scaling factors for the operator matrix:
+    # M[α,β] = A[α,β] * sqrt(mults[α] * mults[β])
+    scales = NTuple{nind^2, eltype(A)}(sqrt.(mults) * sqrt.(mults)')
+
     quote
         @_inline_meta
-        M = SMatrix{$L,$L}(Tuple(x) .* $C)
-        typeof(x)(Tuple(inv(M)) ./ $C)
+
+        # Convert the stored tensor data into the matrix representation of the operator.
+        M = SMatrix{$nind, $nind}(Tuple(A) .* $scales)
+
+        # Invert the operator matrix, then map it back to the tensor representation.
+        typeof(A)(Tuple(inv(M)) ./ $scales)
     end
 end
 
