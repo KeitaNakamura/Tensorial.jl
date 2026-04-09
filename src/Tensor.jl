@@ -189,11 +189,13 @@ Base.one(x::Tensor) = one(typeof(x))
     rhs = _permutedims(Space(TT), Val(ntuple(i->i+N, Val(N))))
     lhs === rhs || return :(throw(ArgumentError("no identity tensor exists for $TT")))
     v = independent_component_multiplicities(lhs)
-    C = diagm(inv.(Vec{length(v), eltype(TT)}(v)))
+    vals = diagm(inv.(Vec{length(v), eltype(TT)}(v)))
     if ndims(TT) == 2
-        TT(Tuple(C[independent_to_component_map(TT)]))
-    else
-        TT(Tuple(C))
+        vals = vals[independent_to_component_map(TT)]
+    end
+    length(vals) == ncomponents(TT) || return :(throw(ArgumentError("no identity tensor exists for $TT")))
+    quote
+        TT(tuple($(vals...)))
     end
 end
 
@@ -219,19 +221,26 @@ zero
 """
     one(TensorType)
 
-Construct an identity tensor.
+Return the identity tensor associated with the tensor space represented by `TensorType`.
 
+The identity tensor is defined as the linear operator that leaves a tensor
+unchanged under contraction. It exists only for even-order tensors whose first
+and second halves span the same space. For symmetric spaces, component
+multiplicities are accounted for accordingly.
+
+# Examples
 ```jldoctest
-julia> δ = one(Mat{3,3})
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 1.0  0.0  0.0
- 0.0  1.0  0.0
- 0.0  0.0  1.0
+julia> I = one(Tensor{Tuple{@Symmetry{2, 2}, @Symmetry{2, 2}}});
 
-julia> I = one(SymmetricFourthOrderTensor{3});
+julia> A = rand(Tensor{Tuple{@Symmetry{2, 2}}})
+2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 0.325977  0.549051
+ 0.549051  0.218587
 
-julia> inv(I) ≈ I
-true
+julia> I ⊡₂ A
+2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 0.325977  0.549051
+ 0.549051  0.218587
 ```
 """
 one
