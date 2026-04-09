@@ -220,13 +220,13 @@ end
 @testset "Indices" begin
     x = rand(Tensor{Tuple{2, @Symmetry{2,2}, 3, @Symmetry{2,2}}})
     n = Tensorial.ncomponents(x)
-    @test (@inferred Tensorial.tupleindices_tensor(x))::SArray{Tuple{size(x)...}, Int} |> unique == 1:n
-    inds = (@inferred Tensorial.tensorindices_tuple(x))::SVector{n, Int}
+    @test (@inferred Tensorial.component_to_independent_map(x))::SArray{Tuple{size(x)...}, Int} |> unique == 1:n
+    inds = (@inferred Tensorial.independent_to_component_map(x))::SVector{n, Int}
     @test x[inds] == unique(x[inds])
-    dups = (@inferred Tensorial.nduplicates_tuple(x))::SVector{n, Int}
+    mults = (@inferred Tensorial.independent_component_multiplicities(x))::SVector{n, Int}
     for i in eachindex(inds)
         v = x[inds[i]]
-        @test count(==(v), x) == dups[i]
+        @test count(==(v), x) == mults[i]
     end
 end
 

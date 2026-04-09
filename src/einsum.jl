@@ -277,7 +277,7 @@ end
     tensor_indices = Tuple(map(p -> collect(only(p.parameters)), indices.parameters))
     TT2, exps = contract_einsum_expr(tensortypes, names, tensor_indices)
     TT = TT1 <: AbstractTensor ? TT1 : TT2
-    ex = TT <: Real ? only(exps) : Expr(:tuple, exps[tensorindices_tuple(TT)]...)
+    ex = TT <: Real ? only(exps) : Expr(:tuple, exps[independent_to_component_map(TT)]...)
     quote
         @_inline_meta
         @inbounds $TT($ex)

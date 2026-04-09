@@ -22,7 +22,7 @@ function adj end
     exps = [x_22, :(-$x_21), :(-$x_12), x_11]
     quote
         @_inline_meta
-        @inbounds typeof(x)(tuple($(exps[tensorindices_tuple(x)]...)))
+        @inbounds typeof(x)(tuple($(exps[independent_to_component_map(x)]...)))
     end
 end
 @generated function adj(x::AbstractSquareTensor{3})
@@ -46,7 +46,7 @@ end
             :( ($x_11*$x_22 - $x_12*$x_21))]
     quote
         @_inline_meta
-        @inbounds typeof(x)(tuple($(exps[tensorindices_tuple(x)]...)))
+        @inbounds typeof(x)(tuple($(exps[independent_to_component_map(x)]...)))
     end
 end
 @generated function adj(x::AbstractSquareTensor)
@@ -56,7 +56,7 @@ end
     end
     quote
         @_inline_meta
-        @inbounds typeof(x)(tuple($(exps[tensorindices_tuple(x)]...)))
+        @inbounds typeof(x)(tuple($(exps[independent_to_component_map(x)]...)))
     end
 end
 
@@ -115,7 +115,7 @@ end
     rhs = Space(spaces[N+1:end])
     lhs === rhs || return :(throw(ArgumentError("no inverse exists for $(typeof(x))")))
     coef(v) = NTuple{length(v)^2,eltype(x)}(v*v')
-    C = coef(sqrt.(nduplicates_tuple(lhs)))
+    C = coef(sqrt.(independent_component_multiplicities(lhs)))
     L = Int(sqrt(ncomponents(x)))
     quote
         @_inline_meta
@@ -127,7 +127,7 @@ end
 @generated function toblocks(x::Mat{dim, dim}) where {dim}
     m = dim ÷ 2
     n = dim - m
-    inds = tupleindices_tensor(x)
+    inds = component_to_independent_map(x)
     a = [:(Tuple(x)[$(inds[I])]) for I in CartesianIndices((1:m, 1:m))]
     b = [:(Tuple(x)[$(inds[I])]) for I in CartesianIndices((1:m, m+1:dim))]
     c = [:(Tuple(x)[$(inds[I])]) for I in CartesianIndices((m+1:dim, 1:m))]
