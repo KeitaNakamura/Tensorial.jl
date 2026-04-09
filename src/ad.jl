@@ -244,11 +244,12 @@ end
     end
 end
 
-# number of tensor slots contributed by each input to a derivative block
-nslots(::Type{<:Number}) = 0
-nslots(::Type{TT}) where {TT<:AbstractTensor} = length(Tuple(Space(TT)))
+# number of tensor subspaces contributed by each input to a derivative block
+nsubspaces(::Type{<:Number}) = 0
+nsubspaces(::Type{TT}) where {TT <: AbstractTensor} = length(Tuple(Space(TT)))
 
 # single input
+# symmetry reduction is only meaningful for repeated differentiation w.r.t. `Vec`.
 @inline consider_symmetry(v::Tuple, x) = v
 @generated function consider_symmetry(v::Tuple{Vararg{Any, M}}, ::Vec) where {M}
     exps = Expr[]
@@ -270,14 +271,14 @@ end
     n = M - 1
     n < 2 && return :v
 
-    slots = map(nslots, xtypes)
+    subspaces = map(nsubspaces, xtypes)
 
-    # Convert differentiation history `path` into:
-    #   1. total number of derivative tensor slots
-    #   2. repeated contiguous Vec-runs measured in slot coordinates
-    function slot_runs(path)
+    # Convert the differentiation history `path` into:
+    #   1. the total number of derivative tensor subspaces
+    #   2. repeated contiguous `Vec`-runs measured in subspace coordinates
+    function subspace_runs(path)
         runs = Tuple{Int,Int}[]
-        slotpos = 1
+        subspacepos = 1
         i = 1
         while i ≤ length(path)
             j = path[i]
@@ -286,21 +287,21 @@ end
                 k += 1
             end
             len = k - i
-            s = slots[j]
+            s = subspaces[j]
 
             if len ≥ 2 && xtypes[j] <: Vec
-                push!(runs, (slotpos, len * s))
+                push!(runs, (subspacepos, len * s))
             end
 
-            slotpos += len * s
+            subspacepos += len * s
             i = k
         end
-        return slotpos - 1, Tuple(runs)
+        return subspacepos - 1, Tuple(runs)
     end
 
     function build_tree(ex, depth, path=Int[])
         if depth == 0
-            K, runs = slot_runs(path)
+            K, runs = subspace_runs(path)
             return :(consider_symmetry($ex, Val($K), Val($(runs))))
         else
             subs = [build_tree(:($ex[$i]), depth - 1, [path..., i]) for i in 1:nvars]
