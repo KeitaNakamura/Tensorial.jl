@@ -1,7 +1,7 @@
 # simd version is defined in simd.jl
 @generated function _map(f, xs::Vararg{AbstractTensor, N}) where {N}
     S = promote_space(map(Space, xs)...)
-    exps = map(tensorindices_tuple(S)) do i
+    exps = map(independent_to_component_map(S)) do i
         vals = [:(xs[$j][$i]) for j in 1:N]
         :(f($(vals...)))
     end
@@ -84,16 +84,16 @@ The following infix operators are also available for specific contractions:
     K = ncomponents(Scon)
     I, J = ncomponents(S1′)÷K, ncomponents(S2′)÷K
     TT = tensortype(contract(S1′, S2′, Val(N)))
-    dups = nduplicates_tuple(Scon)
-    if all(isone, dups)
+    mults = independent_component_multiplicities(Scon)
+    if all(isone, mults)
         vec1′, vec2′ = :(vec(arr1)), :(vec(arr2))
         arr1′, arr2′ = :(arr1), :(arr2)
     else
         if I <= J
-            arr1′, arr2′ = :(arr1 .* $dups'), :(arr2)
+            arr1′, arr2′ = :(arr1 .* $mults'), :(arr2)
             vec1′, vec2′ = :(vec($arr1′)), :(vec(arr2))
         else
-            arr1′, arr2′ = :(arr1), :($dups .* arr2)
+            arr1′, arr2′ = :(arr1), :($mults .* arr2)
             vec1′, vec2′ = :(vec(arr1)), :(vec($arr2′))
         end
     end
@@ -404,11 +404,11 @@ end
 for (uplo, filter) in ((:U, (inds,i,j) -> i ≤ j ? inds[i,j] : inds[j,i]),
                        (:L, (inds,i,j) -> i ≥ j ? inds[i,j] : inds[j,i]))
     @eval @generated function $(Symbol(:symmetric, uplo))(x::AbstractSecondOrderTensor{dim}) where {dim}
-        exps = [:(Tuple(x)[$($filter(tupleindices_tensor(x), Tuple(I)...))]) for I in CartesianIndices(x)]
+        exps = [:(Tuple(x)[$($filter(component_to_independent_map(x), Tuple(I)...))]) for I in CartesianIndices(x)]
         TT = SymmetricSecondOrderTensor{dim}
         quote
             @_inline_meta
-            @inbounds $TT($(exps[tensorindices_tuple(TT)]...))
+            @inbounds $TT($(exps[independent_to_component_map(TT)]...))
         end
     end
 end

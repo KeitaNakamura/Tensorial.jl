@@ -43,7 +43,7 @@ end
 # indices
 Base.LinearIndices(::Type{TT}) where {TT <: AbstractTensor} = LinearIndices(size(TT))
 Base.CartesianIndices(::Type{TT}) where {TT <: AbstractTensor} = CartesianIndices(size(TT))
-for func in (:tupleindices_tensor, :tensorindices_tuple, :nduplicates_tuple)
+for func in (:component_to_independent_map, :independent_to_component_map, :independent_component_multiplicities)
     @eval begin
         $func(::Type{TT}) where {S, TT <: AbstractTensor{S}} = $func(Space(S))
         $func(x::AbstractTensor) = $func(typeof(x))
@@ -63,7 +63,7 @@ ncomponents(::Type{TT}) where {TT <: AbstractTensor} = ncomponents(Space(TT))
         end
     else
         # static getindex
-        inds = tupleindices_tensor(T)
+        inds = component_to_independent_map(T)
         quote
             :(Tuple($ex)[$($inds[i...])])
         end

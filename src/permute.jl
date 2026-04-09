@@ -68,6 +68,6 @@ end
     end
     quote
         @_inline_meta
-        @inbounds $TT(tuple($(exps[tensorindices_tuple(TT)]...)))
+        @inbounds $TT(tuple($(exps[independent_to_component_map(TT)]...)))
     end
 end

@@ -59,7 +59,7 @@ end
 @generated function (::Type{TT})(f::Function) where {TT <: Tensor}
     S = Space(TT)
     tocartesian = CartesianIndices(tensorsize(S))
-    exps = [:(f($(Tuple(tocartesian[i])...))) for i in tensorindices_tuple(S)]
+    exps = [:(f($(Tuple(tocartesian[i])...))) for i in independent_to_component_map(S)]
     quote
         @_inline_meta
         TT($(exps...))
@@ -69,10 +69,10 @@ end
 @generated function (::Type{TT})(A::AbstractArray) where {TT <: Tensor}
     S = Space(tensorsize(Space(TT)))
     if IndexStyle(A) isa IndexLinear
-        exps = [:(A[$i]) for i in tensorindices_tuple(S)]
+        exps = [:(A[$i]) for i in independent_to_component_map(S)]
     else # IndexStyle(A) isa IndexCartesian
         tocartesian = CartesianIndices(tensorsize(S))
-        exps = [:(A[$(tocartesian[i])]) for i in tensorindices_tuple(S)]
+        exps = [:(A[$(tocartesian[i])]) for i in independent_to_component_map(S)]
     end
     quote
         @_inline_meta
@@ -188,10 +188,10 @@ Base.one(x::Tensor) = one(typeof(x))
     lhs = _permutedims(Space(TT), Val(ntuple(i->i,   Val(N))))
     rhs = _permutedims(Space(TT), Val(ntuple(i->i+N, Val(N))))
     lhs === rhs || return :(throw(ArgumentError("no identity tensor exists for $TT")))
-    v = nduplicates_tuple(lhs)
+    v = independent_component_multiplicities(lhs)
     C = diagm(inv.(Vec{length(v), eltype(TT)}(v)))
     if ndims(TT) == 2
-        TT(Tuple(C[tensorindices_tuple(TT)]))
+        TT(Tuple(C[independent_to_component_map(TT)]))
     else
         TT(Tuple(C))
     end
@@ -287,7 +287,7 @@ basetype(::Type{<: Tensor{S, T}}) where {S, T} = Tensor{S, T}
 # getindex
 @inline function Base.getindex(x::Tensor, i::Int)
     @boundscheck checkbounds(x, i)
-    @inbounds Tuple(x)[tupleindices_tensor(x)[i]]
+    @inbounds Tuple(x)[component_to_independent_map(x)[i]]
 end
 
 # convert
@@ -296,7 +296,7 @@ end
 @generated function Base.convert(::Type{TT}, x::AbstractTensor) where {TT <: Tensor}
     Sy = Space(TT)
     S = promote_space(Sy, Space(x))
-    exps = [getindex_expr(x, :x, i) for i in tensorindices_tuple(TT)]
+    exps = [getindex_expr(x, :x, i) for i in independent_to_component_map(TT)]
     quote
         @_inline_meta
         @inbounds y = $TT(tuple($(exps...)))
