@@ -4,12 +4,15 @@ const NumberOrTensor = Union{Number, AbstractTensor}
 # dual generations #
 ####################
 
+@inline _promote_partial(v, p) = p * one(v)
+
 # generate duals from values and partials
-@generated function generate_duals(::Tg, v::NTuple{N, T}, p::NTuple{N, T}) where {Tg, T, N}
+@generated function generate_duals(::Tg, v::NTuple{N, Tv}, p::NTuple{N, Tp}) where {Tg, Tv, Tp, N}
     quote
         @_inline_meta
         @ntuple $N i -> begin
-            partials = @ntuple $N j -> j==i ? p[i] : zero(T)
+            pᵢ = _promote_partial(v[i], p[i])
+            partials = @ntuple $N j -> j == i ? pᵢ : zero(pᵢ)
             Dual{Tg}(v[i], partials)
         end
     end
@@ -27,16 +30,39 @@ dual_partials(x::AbstractTensor) = convert_ntuple(eltype(x), Tuple(inv.(independ
 dual_partials(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_partials(promote_elements(xs...))
 @generated _dual_partials(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}, N}}) where {T, N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_partials(xs[i])))
 
+@inline dualize(f, x) = _dualize(Tag(f, typeof(x)), x)
+@inline dualize(f, x, ::Val{0}) = x
+@inline dualize(f, x, ::Val{1}) = dualize(f, x)
+@inline dualize(f, x, ::Val{N}) where {N} = dualize(f, dualize(f, x), Val(N-1))
+
+# single argument
 @inline function _dualize(::Tg, x::Number) where {Tg}
     Dual{Tg}(x, one(x))
 end
 @inline function _dualize(::Tg, x::AbstractTensor{S, T}) where {Tg, S, T}
     Tensor{S}(generate_duals(Tg(), dual_values(x), dual_partials(x)))
 end
-@inline dualize(f, x::NumberOrTensor) = _dualize(Tag(f, typeof(x)), x)
-@inline dualize(f, x::NumberOrTensor, ::Val{0}) = x
-@inline dualize(f, x::NumberOrTensor, ::Val{1}) = dualize(f, x)
-@inline dualize(f, x::NumberOrTensor, ::Val{N}) where {N} = dualize(f, dualize(f, x), Val(N-1))
+
+# multiple arguments
+@inline function _dualize(::Tg, xs::Tuple{Vararg{NumberOrTensor}}) where {Tg}
+    v = dual_values(xs)
+    p = dual_partials(xs)
+    decompose_vec(Vec(generate_duals(Tg(), v, p)), xs)
+end
+# helpers for multiple arguments
+@inline _reconstruct(v::Vec, x::Number) = only(Tuple(v))
+@inline _reconstruct(v::Vec, x::AbstractTensor) = tensortype(Space(x))(Tuple(v))
+@inline function each_range(xs::Tuple{Vararg{NumberOrTensor, N}}) where {N}
+    lens = ncomponents.(xs)
+    stops = cumsum(lens)
+    ntuple(i -> StaticIndex((stops[i]-lens[i]+1):stops[i]), Val(N))
+end
+# decompose `Vec` into multiple variables
+@inline function decompose_vec(v::Vec, xs::Tuple{Vararg{NumberOrTensor}})
+    rngs = each_range(xs)
+    vs = getindex.((v,), rngs)
+    map(_reconstruct, vs, xs)
+end
 
 # for AD insertion
 @inline function create_dual(::Tg, f::Number, dfdx::Number) where {Tg}
@@ -105,133 +131,7 @@ end
 
 @inline extract_gradient(v::Tuple, x, args...) = map(vi -> extract_gradient(vi, x, args...), v)
 
-struct ∂ⁿ{N, all} end
-const ∂  = ∂ⁿ{1}
-const ∂² = ∂ⁿ{2}
-
-@inline function ∂ⁿ{N}(f, x) where {N}
-    last(∂ⁿ{N, :all}(f, x))
-end
-@inline function ∂ⁿ{N, :all}(f, x) where {N}
-    consider_symmetry(extract_all(f(dualize(f, x, Val(N))), x, Val(N)), x)
-end
-
-@generated function extract_all(v, x::NumberOrTensor, ::Val{N}) where {N}
-    expr = Expr(:tuple)
-    for n in N:-1:0
-        ex = :v
-        for i in 1:n
-            ex = :(extract_value($ex))
-        end
-        for i in 1:(N-n)
-            ex = :(extract_gradient($ex, x))
-        end
-        push!(expr.args, ex)
-    end
-    quote
-        @_inline_meta
-        $expr
-    end
-end
-
-@inline consider_symmetry(v::Tuple, x) = v
-@generated function consider_symmetry(v::Tuple{Vararg{Any, M}}, x::Vec) where {M}
-    N = M - 1
-    N < 2 && return :v
-
-    exps = Any[:(v[1]), :(v[2])]
-    for n in 2:N
-        push!(exps, :(consider_symmetry_result(v[$(n+1)], Val($n), x)))
-    end
-
-    quote
-        @_inline_meta
-        @inbounds tuple($(exps...))
-    end
-end
-
-@inline consider_symmetry_result(v, ::Val{0}, x::Vec) = v
-@inline consider_symmetry_result(v, ::Val{1}, x::Vec) = v
-@inline function consider_symmetry_result(v::Tuple, ::Val{N}, x::Vec) where {N}
-    map(vi -> consider_symmetry_result(vi, Val(N), x), v)
-end
-@generated function consider_symmetry_result(v::TT, ::Val{N}, x::Vec) where {TT, N}
-    N < 2 && return :v
-
-    tup = Tuple(Space(TT))
-    s = Space(tup[1:end-N]..., Symmetry(tup[end-N+1:end]))
-    exps = map(independent_to_component_map(s)) do j
-        getindex_expr(TT, :v, j)
-    end
-    TT_new = tensortype(s)
-
-    quote
-        @_inline_meta
-        @inbounds $TT_new(tuple($(exps...)))
-    end
-end
-
-"""
-    gradient(f, x)
-    gradient(f, x, :all)
-
-Compute the gradient of `f` with respect to `x` by the automatic differentiation.
-If pseudo keyword `:all` is given, the value of `f(x)` is also returned.
-
-# Examples
-```jldoctest
-julia> x = rand(Mat{3,3})
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 0.325977  0.894245  0.953125
- 0.549051  0.353112  0.795547
- 0.218587  0.394255  0.49425
-
-julia> gradient(tr, x)
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- 1.0  0.0  0.0
- 0.0  1.0  0.0
- 0.0  0.0  1.0
-
-julia> ∇f, f = gradient(tr, x, :all)
-([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0], 1.1733382401532275)
-```
-"""
-@inline gradient(f, x::NumberOrTensor) = ∂(f, x)
-@inline gradient(f, x::NumberOrTensor, ::Symbol) = reverse(∂{:all}(f, x))
-
-"""
-    hessian(f, x)
-    hessian(f, x, :all)
-
-Compute the hessian of `f` with respect to `x` by the automatic differentiation.
-If pseudo keyword `:all` is given, the value of `f(x)` is also returned.
-
-# Examples
-```jldoctest
-julia> x = rand(Vec{3})
-3-element Vec{3, Float64}:
- 0.32597672886359486
- 0.5490511363155669
- 0.21858665481883066
-
-julia> hessian(norm, x)
-3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
-  1.13603   -0.582196  -0.231782
- -0.582196   0.501079  -0.390397
- -0.231782  -0.390397   1.32626
-
-julia> ∇∇f, ∇f, f = hessian(norm, x, :all)
-([1.1360324375454411 -0.5821964220304534 -0.23178236037013888; -0.5821964220304533 0.5010791569244991 -0.39039709608344814; -0.23178236037013886 -0.39039709608344814 1.3262640626479867], [0.4829957515506539, 0.8135223859352438, 0.3238771859304809], 0.6749059962060727)
-```
-"""
-@inline hessian(f, x::NumberOrTensor) = last(extract_all(f(dualize(f, x, Val(2))), x, Val(2)))
-@inline hessian(f, x::NumberOrTensor, ::Symbol) = reverse(extract_all(f(dualize(f, x, Val(2))), x, Val(2)))
-
-################################
-# multiple-arguments interface #
-################################
-
-# extract_gradient
+# extract_gradient for multiple arguments
 ncomponents(::Number) = 1
 @generated function extract_gradient(v::NumberOrTensor, xs::Tuple{Vararg{NumberOrTensor, N}}) where {N}
     quote
@@ -251,43 +151,171 @@ end
 end
 @inline extract_gradient(v::Tuple, xs::Tuple{Vararg{NumberOrTensor}}) = map(vi -> extract_gradient(vi, xs), v)
 
-# decompose `Vec` into multiple variables
-_construct(v::Vec, x::Number) = only(Tuple(v))
-_construct(v::Vec, x::AbstractTensor) = tensortype(Space(x))(Tuple(v))
-@inline function each_range(xs::NumberOrTensor...)
-    lens = ncomponents.(xs)
-    stops = cumsum(lens)
-    @. StaticIndex(UnitRange(stops-lens+1, stops))
-end
-@inline function decompose_vec(v::Vec, xs::Tuple{Vararg{NumberOrTensor}})
-    rngs = each_range(xs...)
-    vs = getindex.((v,), rngs)
-    map(_construct, vs, xs)
-end
+"""
+    ∂{N}
 
-# when multiple arguments are given, those components are reduced to single `Vec`
-# then additional decompose process is inserted before applying `f`
-@generated function gradient(f, x1::NumberOrTensor, x2::NumberOrTensor, rest...)
-    if !isempty(rest) && rest[end] <: Symbol
-        n = length(rest) - 1
-        code = :(extract_gradient(∇f, xs), extract_value(∇f))
+An operator representing the `N`th-order partial derivative.
+
+`∂{N}` is callable. Applying it to a function `f` and its arguments computes
+`N`th-order partial derivatives of `f` by automatic differentiation.
+`∂(f, args...)` is equivalent to `∂{1}(f, args...)`.
+
+If pseudo keyword `:all` is given as the last argument, derivatives of all orders up to `N`
+are returned together with the function value.
+For example, `∂{N}(f, x, :all)` returns `(∂{N}(f,x), ..., ∂{2}(f,x), ∂{1}(f,x), f(x))`.
+"""
+struct ∂{N} end
+const gradient = ∂{1}
+const hessian = ∂{2}
+
+@inline _apply_dualized(f, x, ::Val{N}) where {N} = f(dualize(f, x, Val(N)))
+@inline _apply_dualized(f, xs::Tuple, ::Val{N}) where {N} = f(dualize(f, xs, Val(N))...)
+
+@generated function split_all_suffix(args::Tuple)
+    args.parameters
+    if !isempty(args.parameters) && args.parameters[end] <: Symbol
+        expr = :((Base.front(args), :all))
     else
-        n = length(rest)
-        code = :(extract_gradient(∇f, xs))
+        expr = :((args,))
     end
-    @assert all(T->T<:NumberOrTensor, rest[1:n])
-    rt = :(@ntuple $n i -> rest[i])
     quote
         @_inline_meta
-        xs = (x1, x2, $rt...)
-        g = insert_decompose_function(f, xs)
-        ∇f = vec_dual_gradient(g, dual_values(xs), dual_partials(xs))
-        $code
+        return $expr
     end
 end
-insert_decompose_function(f, xs) = g(v) = f(decompose_vec(v, xs)...)
-@inline function vec_dual_gradient(f, x::NTuple{N, T}, p::NTuple{N, T}) where {N, T}
-    Tg = Tag(f, typeof(Vec(x)))
-    dx = Vec(generate_duals(Tg, x, p))
-    f(dx)
+
+@inline ∂(f, args...) = ∂{1}(f, args...)
+@inline function ∂{N}(f, x) where {N}
+    first(∂{N}(f, x, :all))
+end
+@inline function ∂{N}(f, x, ::Symbol) where {N}
+    consider_symmetry(extract_all(_apply_dualized(f, x, Val(N)), x, Val(N)), x)
+end
+@inline function ∂{N}(f, x, y, z...) where {N}
+    ∂{N}(f, split_all_suffix((x,y,z...))...)
+end
+
+@generated function extract_all(v, x, ::Val{N}) where {N}
+    exps = Any[]
+    for n in 0:N
+        ex = :v
+        for _ in 1:n
+            ex = :(extract_value($ex))
+        end
+        for _ in 1:(N-n)
+            ex = :(extract_gradient($ex, x))
+        end
+        push!(exps, ex)
+    end
+    quote
+        @_inline_meta
+        tuple($(exps...))
+    end
+end
+
+# primitive: apply symmetry information to a single derivative block
+@inline consider_symmetry(v::Number, ::Val{K}, ::Val{runs}) where {K, runs} = v
+@inline consider_symmetry(v::Tuple, ::Val{K}, ::Val{runs}) where {K, runs} = map(x -> consider_symmetry(x, Val(K), Val(runs)), v)
+@generated function consider_symmetry(v::TT, ::Val{K}, ::Val{runs}) where {TT <: AbstractTensor, K, runs}
+    K < 2 && return :v
+
+    tup = Tuple(Space(TT))
+    m = length(tup) - K
+
+    pieces = Any[tup[1:m]...]
+    pos = 1
+    for run in runs
+        s, len = run
+        append!(pieces, tup[m + pos : m + s - 1])
+        push!(pieces, Symmetry(tup[m + s : m + s + len - 1]))
+        pos = s + len
+    end
+    append!(pieces, tup[m + pos : m + K])
+
+    snew = Space(Tuple(pieces))
+    exps = map(independent_to_component_map(snew)) do j
+        getindex_expr(TT, :v, j)
+    end
+    TTnew = tensortype(snew)
+
+    quote
+        @_inline_meta
+        @inbounds $TTnew(tuple($(exps...)))
+    end
+end
+
+# number of tensor slots contributed by each input to a derivative block
+nslots(::Type{<:Number}) = 0
+nslots(::Type{TT}) where {TT<:AbstractTensor} = length(Tuple(Space(TT)))
+
+# single input
+@inline consider_symmetry(v::Tuple, x) = v
+@generated function consider_symmetry(v::Tuple{Vararg{Any, M}}, ::Vec) where {M}
+    exps = Expr[]
+    for i in 1:M
+        order = M - i
+        push!(exps, :(consider_symmetry(v[$i], Val($order), Val(((1, $order),)))))
+    end
+    quote
+        @_inline_meta
+        @inbounds tuple($(exps...))
+    end
+end
+
+# multiple inputs
+@generated function consider_symmetry(v::Tuple{Vararg{Any, M}}, xs::Xs) where {M, Xs <: Tuple}
+    xtypes = Xs.parameters
+    nvars = length(xtypes)
+
+    n = M - 1
+    n < 2 && return :v
+
+    slots = map(nslots, xtypes)
+
+    # Convert differentiation history `path` into:
+    #   1. total number of derivative tensor slots
+    #   2. repeated contiguous Vec-runs measured in slot coordinates
+    function slot_runs(path)
+        runs = Tuple{Int,Int}[]
+        slotpos = 1
+        i = 1
+        while i ≤ length(path)
+            j = path[i]
+            k = i + 1
+            while k ≤ length(path) && path[k] == j
+                k += 1
+            end
+            len = k - i
+            s = slots[j]
+
+            if len ≥ 2 && xtypes[j] <: Vec
+                push!(runs, (slotpos, len * s))
+            end
+
+            slotpos += len * s
+            i = k
+        end
+        return slotpos - 1, Tuple(runs)
+    end
+
+    function build_tree(ex, depth, path=Int[])
+        if depth == 0
+            K, runs = slot_runs(path)
+            return :(consider_symmetry($ex, Val($K), Val($(runs))))
+        else
+            subs = [build_tree(:($ex[$i]), depth - 1, [path..., i]) for i in 1:nvars]
+            return :(tuple($(subs...)))
+        end
+    end
+
+    exps = Expr[]
+    for i in 1:M
+        order = M - i
+        push!(exps, build_tree(:(v[$i]), order))
+    end
+
+    quote
+        @_inline_meta
+        @inbounds tuple($(exps...))
+    end
 end

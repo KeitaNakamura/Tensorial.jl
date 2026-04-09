@@ -91,20 +91,20 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
         T = Float64
         x = rand(Vec{2, T})
         f = norm(x)
-        ∂f = Tensorial.∂(norm, x)
-        ∂²f = Tensorial.∂(x -> Tensorial.∂(norm, x), x)
-        ∂³f = Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(norm, x), x), x)
-        ∂⁴f = Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(x -> Tensorial.∂(norm, x), x), x), x)
-        @test (@inferred Tensorial.∂(norm, x))::Tensor{Tuple{2}, T} ≈ ∂f
-        @test (@inferred Tensorial.∂²(norm, x))::Tensor{Tuple{@Symmetry{2,2}}, T} ≈ ∂²f
-        @test (@inferred Tensorial.∂ⁿ{3}(norm, x))::Tensor{Tuple{@Symmetry{2,2,2}}, T} ≈ ∂³f
-        @test (@inferred Tensorial.∂ⁿ{4}(norm, x))::Tensor{Tuple{@Symmetry{2,2,2,2}}, T} ≈ ∂⁴f
-        @test (@inferred Tensorial.∂ⁿ{0}(norm, x))::T ≈ f
-        @test all((@inferred Tensorial.∂{:all}(norm, x)) .≈ (f, ∂f))
-        @test all((@inferred Tensorial.∂²{:all}(norm, x)) .≈ (f, ∂f, ∂²f))
-        @test all((@inferred Tensorial.∂ⁿ{3,:all}(norm, x)) .≈ (f, ∂f, ∂²f, ∂³f))
-        @test all((@inferred Tensorial.∂ⁿ{4,:all}(norm, x)) .≈ (f, ∂f, ∂²f, ∂³f, ∂⁴f))
-        @test all((@inferred Tensorial.∂ⁿ{0,:all}(norm, x)) .≈ (f,))
+        ∂f = ∂(norm, x)
+        ∂²f = ∂(x -> ∂(norm, x), x)
+        ∂³f = ∂(x -> ∂(x -> ∂(norm, x), x), x)
+        ∂⁴f = ∂(x -> ∂(x -> ∂(x -> ∂(norm, x), x), x), x)
+        @test (@inferred ∂(norm, x))::Tensor{Tuple{2}, T} ≈ ∂f
+        @test (@inferred ∂{2}(norm, x))::Tensor{Tuple{@Symmetry{2,2}}, T} ≈ ∂²f
+        @test (@inferred ∂{3}(norm, x))::Tensor{Tuple{@Symmetry{2,2,2}}, T} ≈ ∂³f
+        @test (@inferred ∂{4}(norm, x))::Tensor{Tuple{@Symmetry{2,2,2,2}}, T} ≈ ∂⁴f
+        @test (@inferred ∂{0}(norm, x))::T ≈ f
+        @test all((@inferred ∂(norm, x, :all)) .≈ (∂f, f))
+        @test all((@inferred ∂{2}(norm, x, :all)) .≈ (∂²f, ∂f, f))
+        @test all((@inferred ∂{3}(norm, x, :all)) .≈ (∂³f, ∂²f, ∂f, f))
+        @test all((@inferred ∂{4}(norm, x, :all)) .≈ (∂⁴f, ∂³f, ∂²f, ∂f, f))
+        @test all((@inferred ∂{0}(norm, x, :all)) .≈ (f,))
     end
     @testset "Multiple arguments" begin
         for T in (Float32, Float64)
@@ -142,7 +142,7 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
         end
         @testset "consider_symmetry_result for tuple outputs" begin
             x = Vec(2.0, -1.0)
-            F, G, H = Tensorial.∂²{:all}(x -> (x ⋅ x, 3(x ⋅ x)), x)
+            H, G, F = ∂{2}(x -> (x ⋅ x, 3(x ⋅ x)), x, :all)
             @test F == (5.0, 15.0)
             @test G == (Vec(4.0, -2.0), Vec(12.0, -6.0))
             @test H == (2 * one(Mat{2,2}), 6 * one(Mat{2,2}))
@@ -154,6 +154,66 @@ Base.one(::Type{<: SquareMatrix{n, T}}) where {n, T} = SquareMatrix{n, T, n*n}(T
             @test f == (zero(Mat{2,2}), Mat{2,2}(2.0, 2.0, 2.0, 2.0))
             @test ∇f[1] == zero(Mat{2,2})
             @test ∇f[2] == Mat{2,2}(1.0, 1.0, 1.0, 1.0)
+        end
+    end
+    @testset "automatic differentiation symmetry" begin
+        T = Float64
+
+        @testset "single Vec input" begin
+            x = rand(Vec{2,T})
+
+            # Repeated derivatives with respect to a single Vec should be symmetrized.
+            H = ∂{2}(x -> x ⋅ x, x)
+            @test H isa SymmetricSecondOrderTensor{2,T}
+            @test Tuple(Tensorial.Space(H)) == (Symmetry(2,2),)
+
+            D3 = ∂{3}(x -> sum(x .^ 3), x)
+            @test Tuple(Tensorial.Space(D3)) == (Symmetry(2,2,2),)
+        end
+
+        @testset "mixed derivatives with a matrix input" begin
+            x = rand(Vec{2,T})
+            A = rand(Mat{2,2,T})
+
+            D3 = ∂{3}((x, A) -> (x ⋅ x) * tr(A), x, A)
+
+            @test Tuple(Tensorial.Space(D3[1][1][2])) == (Symmetry(2,2), 2, 2)
+            @test Tuple(Tensorial.Space(D3[1][2][1])) == (2, 2, 2, 2)
+            @test Tuple(Tensorial.Space(D3[2][1][1])) == (2, 2, Symmetry(2,2))
+        end
+
+        @testset "multiple contiguous Vec runs" begin
+            x = rand(Vec{1,T})
+            y = rand(Vec{2,T})
+
+            D4 = ∂{4}((x, y) -> (x ⋅ x) * (y ⋅ y), x, y)
+
+            @test Tuple(Tensorial.Space(D4[1][1][2][2])) == (Symmetry(1,1), Symmetry(2,2))
+            @test Tuple(Tensorial.Space(D4[1][2][2][1])) == (1, Symmetry(2,2), 1)
+            @test Tuple(Tensorial.Space(D4[2][1][1][2])) == (2, Symmetry(1,1), 2)
+        end
+
+        @testset "mixed scalar and tensor inputs" begin
+            x = rand(T)
+            A = rand(SymmetricSecondOrderTensor{2,T})
+
+            H = ∂{2}((x, A) -> x * tr(A), x, A)
+            @test H isa Tuple
+            @test H[1] isa Tuple
+            @test H[2] isa Tuple
+
+            @test H[1][1] isa T
+            @test H[1][2] isa SymmetricSecondOrderTensor{2,T}
+            @test H[2][1] isa SymmetricSecondOrderTensor{2,T}
+            @test H[2][2] isa SymmetricFourthOrderTensor{2,T}
+
+            H, G, F = ∂{2}((x, A) -> x * tr(A), x, A, :all)
+            @test H[1][1] isa T
+            @test H[1][2] isa SymmetricSecondOrderTensor{2,T}
+            @test H[2][1] isa SymmetricSecondOrderTensor{2,T}
+            @test H[2][2] isa SymmetricFourthOrderTensor{2,T}
+            @test G isa Tuple{T, SymmetricSecondOrderTensor{2,T}}
+            @test F isa T
         end
     end
 end
