@@ -4,6 +4,10 @@ DocTestSetup = :(using Tensorial)
 
 # Operations
 
+```@index
+Pages = ["Operations.md"]
+```
+
 ## Basic operations
 
 ```@docs
