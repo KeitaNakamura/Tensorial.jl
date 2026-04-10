@@ -19,16 +19,16 @@ const NumberOrTensor = Union{Number, Tensor}
 end
 
 # generate values
-dual_values(x::Number) = (x,)
-dual_values(x::Tensor) = Tuple(x)
-dual_values(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_values(promote_elements(xs...))
-@generated _dual_values(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}, N}}) where {T, N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_values(xs[i])))
+@inline dual_values(x::Number) = (x,)
+@inline dual_values(x::Tensor) = Tuple(x)
+@inline dual_values(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_values(promote_elements(xs...))
+@inline _dual_values(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}}}) where {T} = flatten_tuple(map(dual_values, xs))
 
 # generate partials
-dual_partials(x::Number) = (one(x),)
-dual_partials(x::Tensor) = convert_ntuple(eltype(x), Tuple(inv.(independent_component_multiplicities(x))))
-dual_partials(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_partials(promote_elements(xs...))
-@generated _dual_partials(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}, N}}) where {T, N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_partials(xs[i])))
+@inline dual_partials(x::Number) = (one(x),)
+@inline dual_partials(x::Tensor) = convert_ntuple(eltype(x), Tuple(inv.(independent_component_multiplicities(x))))
+@inline dual_partials(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_partials(promote_elements(xs...))
+@inline _dual_partials(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}}}) where {T} = flatten_tuple(map(dual_partials, xs))
 
 @inline dualize(f, x) = _dualize(Tag(f, typeof(x)), x)
 @inline dualize(f, x, ::Val{0}) = x
@@ -52,15 +52,16 @@ end
 # helpers for multiple arguments
 @inline _reconstruct(v::Vec, x::Number) = only(Tuple(v))
 @inline _reconstruct(v::Vec, x::Tensor) = tensortype(Space(x))(Tuple(v))
-@inline function each_range(xs::Tuple{Vararg{NumberOrTensor, N}}) where {N}
-    lens = ncomponents.(xs)
+
+@inline function each_range(xs::Tuple{Vararg{NumberOrTensor}})
+    lens = map(ncomponents, xs)
     stops = cumsum(lens)
-    ntuple(i -> StaticIndex((stops[i]-lens[i]+1):stops[i]), Val(N))
+    map((len, stop) -> StaticIndex((stop-len+1):stop), lens, stops)
 end
 # decompose `Vec` into multiple variables
 @inline function decompose_vec(v::Vec, xs::Tuple{Vararg{NumberOrTensor}})
     rngs = each_range(xs)
-    vs = getindex.((v,), rngs)
+    vs = map(rng -> getindex(v, rng), rngs)
     map(_reconstruct, vs, xs)
 end
 
@@ -128,16 +129,11 @@ end
         @inbounds Tensor{S}($(exps...))
     end
 end
-
-@inline extract_gradient(v::Tuple, x, args...) = map(vi -> extract_gradient(vi, x, args...), v)
+@generated extract_gradient(v::Tuple{Vararg{Any, N}}, x, args...) where {N} = :(@_inline_meta; @ntuple $N i -> extract_gradient(v[i], x, args...))
 
 # extract_gradient for multiple arguments
 ncomponents(::Number) = 1
-@generated function extract_gradient(v::NumberOrTensor, xs::Tuple{Vararg{NumberOrTensor, N}}) where {N}
-    quote
-        @ntuple $N i -> extract_gradient(v, xs[i])
-    end
-end
+@inline extract_gradient(v::NumberOrTensor, xs::Tuple{Vararg{NumberOrTensor}}) = map(x -> extract_gradient(v, x), xs)
 @generated function extract_gradient(v::Union{Dual, Tensor{S, <: Dual}}, xs::Tuple{Vararg{NumberOrTensor, N}}) where {S <: Tuple, N}
     quote
         @_inline_meta
@@ -149,7 +145,6 @@ end
         @ntuple $N i -> y_i
     end
 end
-@inline extract_gradient(v::Tuple, xs::Tuple{Vararg{NumberOrTensor}}) = map(vi -> extract_gradient(vi, xs), v)
 
 """
     ∂{N}
