@@ -23,8 +23,7 @@ In addition to supporting basic `AbstractArray` operations, the package offers a
 
 #### New features
 
-* `∂` is now the standard API for automatic differentiation.
-* `gradient` and `hessian` remain available as aliases for `∂{1}` and `∂{2}`, respectively, so existing code using them continues to work.
+* `∂` is now the standard API for automatic differentiation. `gradient` and `hessian` remain available as aliases for `∂{1}` and `∂{2}`, respectively, so existing code using them continues to work.
 * Automatic differentiation now supports multiple inputs and multiple outputs (see [docs](https://keitanakamura.github.io/Tensorial.jl/stable/Automatic%20differentiation/)).
 * Repeated differentiation with respect to `Vec` now accounts for symmetry. In particular, Hessians and higher-order derivatives with respect to `Vec` are returned as symmetric tensors when appropriate.
 
