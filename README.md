@@ -31,9 +31,9 @@ Starting from version 0.18, Tensorial.jl is now built on [TensorCore.jl](https:/
 ```julia
 julia> using Tensorial
 
-julia> x = Vec{3}(rand(3)); # constructor similar to SArray.jl
+julia> x = Vec{3}(rand(3)); # constructor analogous to SArray.jl
 
-julia> A = @Mat rand(3,3); # @Vec, @Mat and @Tensor, analogous to @SVector, @SMatrix and @SArray
+julia> A = @Mat rand(3,3); # @Vec, @Mat, and @Tensor, analogous to @SVector, @SMatrix, and @SArray
 
 julia> A ⊡ x ≈ A * x # single contraction (⊡)
 true
@@ -44,14 +44,14 @@ true
 julia> x ⊗ x ≈ x * x' # tensor product (⊗)
 true
 
-julia> (@einsum x[i] * A[j,i] * x[j]) ≈ x ⋅ (A' * x) # Einstein summation (@einsum)
+julia> (@einsum x[i] * A[j,i] * x[j]) ≈ x ⋅ (A' * x) # Einstein summation with @einsum
 true
 
-julia> S = rand(Tensor{Tuple{@Symmetry{3,3}}}); # specify symmetry S₍ᵢⱼ₎
+julia> S = rand(Tensor{Tuple{@Symmetry{3,3}}}); # symmetric tensor S₍ᵢⱼ₎
 
-julia> SS = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # SS₍ᵢⱼ₎₍ₖₗ₎
+julia> SS = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # symmetric tensor SS₍ᵢⱼ₎₍ₖₗ₎
 
-julia> inv(SS) ⊡₂ S ≈ @einsum inv(SS)[i,j,k,l] * S[k,l] # it just works
+julia> inv(SS) ⊡₂ S ≈ @einsum inv(SS)[i,j,k,l] * S[k,l] # works as expected
 true
 
 julia> δ = one(Mat{3,3}) # identity tensor

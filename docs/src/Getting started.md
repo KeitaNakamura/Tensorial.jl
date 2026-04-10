@@ -8,15 +8,15 @@ using Tensorial
 
 ```@repl quick-start
 using Tensorial
-x = Vec{3}(rand(3)); # constructor similar to SArray.jl
-A = @Mat rand(3,3); # @Vec, @Mat and @Tensor, analogous to @SVector, @SMatrix and @SArray
+x = Vec{3}(rand(3)); # constructor analogous to SArray.jl
+A = @Mat rand(3,3); # @Vec, @Mat, and @Tensor, analogous to @SVector, @SMatrix, and @SArray
 A ⊡ x ≈ A * x # single contraction (⊡)
 A ⊡₂ A ≈ A ⋅ A # double contraction (⊡₂)
 x ⊗ x ≈ x * x' # tensor product (⊗)
-(@einsum x[i] * A[j,i] * x[j]) ≈ x ⋅ (A' * x) # Einstein summation (@einsum)
-S = rand(Tensor{Tuple{@Symmetry{3,3}}}); # specify symmetry S₍ᵢⱼ₎
-SS = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # SS₍ᵢⱼ₎₍ₖₗ₎
-inv(SS) ⊡₂ S ≈ @einsum inv(SS)[i,j,k,l] * S[k,l] # it just works
+(@einsum x[i] * A[j,i] * x[j]) ≈ x ⋅ (A' * x) # Einstein summation with @einsum
+S = rand(Tensor{Tuple{@Symmetry{3,3}}}); # symmetric tensor S₍ᵢⱼ₎
+SS = rand(Tensor{Tuple{@Symmetry{3,3}, @Symmetry{3,3}}}); # symmetric tensor SS₍ᵢⱼ₎₍ₖₗ₎
+inv(SS) ⊡₂ S ≈ @einsum inv(SS)[i,j,k,l] * S[k,l] # works as expected
 δ = one(Mat{3,3}) # identity tensor
 gradient(identity, S) ≈ one(SS) # ∂Sᵢⱼ/∂Sₖₗ = (δᵢₖδⱼₗ + δᵢₗδⱼₖ) / 2
 ```
