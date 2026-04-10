@@ -82,6 +82,7 @@ export
     tomandel,
     frommandel,
 # ad
+    ∂,
     gradient,
     hessian,
 # quaternion
