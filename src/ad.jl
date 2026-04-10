@@ -1,4 +1,4 @@
-const NumberOrTensor = Union{Number, AbstractTensor}
+const NumberOrTensor = Union{Number, Tensor}
 
 ####################
 # dual generations #
@@ -20,13 +20,13 @@ end
 
 # generate values
 dual_values(x::Number) = (x,)
-dual_values(x::AbstractTensor) = Tuple(x)
+dual_values(x::Tensor) = Tuple(x)
 dual_values(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_values(promote_elements(xs...))
 @generated _dual_values(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}, N}}) where {T, N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_values(xs[i])))
 
 # generate partials
 dual_partials(x::Number) = (one(x),)
-dual_partials(x::AbstractTensor) = convert_ntuple(eltype(x), Tuple(inv.(independent_component_multiplicities(x))))
+dual_partials(x::Tensor) = convert_ntuple(eltype(x), Tuple(inv.(independent_component_multiplicities(x))))
 dual_partials(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_partials(promote_elements(xs...))
 @generated _dual_partials(xs::Tuple{Vararg{Union{T, Tensor{<: Any, T}}, N}}) where {T, N} = :(@_inline_meta; flatten_tuple(@ntuple $N i -> dual_partials(xs[i])))
 
@@ -39,7 +39,7 @@ dual_partials(xs::Tuple{Vararg{NumberOrTensor}}) = _dual_partials(promote_elemen
 @inline function _dualize(::Tg, x::Number) where {Tg}
     Dual{Tg}(x, one(x))
 end
-@inline function _dualize(::Tg, x::AbstractTensor{S, T}) where {Tg, S, T}
+@inline function _dualize(::Tg, x::Tensor{S, T}) where {Tg, S, T}
     Tensor{S}(generate_duals(Tg(), dual_values(x), dual_partials(x)))
 end
 
@@ -51,7 +51,7 @@ end
 end
 # helpers for multiple arguments
 @inline _reconstruct(v::Vec, x::Number) = only(Tuple(v))
-@inline _reconstruct(v::Vec, x::AbstractTensor) = tensortype(Space(x))(Tuple(v))
+@inline _reconstruct(v::Vec, x::Tensor) = tensortype(Space(x))(Tuple(v))
 @inline function each_range(xs::Tuple{Vararg{NumberOrTensor, N}}) where {N}
     lens = ncomponents.(xs)
     stops = cumsum(lens)
@@ -68,7 +68,7 @@ end
 @inline function create_dual(::Tg, f::Number, dfdx::Number) where {Tg}
     Dual{Tg}(f, dfdx)
 end
-@inline function create_dual(::Tg, f::Number, dfdx::AbstractTensor) where {Tg}
+@inline function create_dual(::Tg, f::Number, dfdx::Tensor) where {Tg}
     Dual{Tg}(f, Tuple(dfdx))
 end
 
@@ -78,7 +78,7 @@ end
 
 @inline extract_value(v::NumberOrTensor) = v
 @inline extract_value(v::Dual) = value(v)
-@generated function extract_value(v::AbstractTensor{S, <: Dual}) where {S <: Tuple}
+@generated function extract_value(v::Tensor{S, <: Dual}) where {S <: Tuple}
     exps = [:(value(Tuple(v)[$i])) for i in 1:ncomponents(v)]
     quote
         @_inline_meta
@@ -93,8 +93,8 @@ end
 
 # Non-dual case
 @inline extract_gradient(v::NumberOrTensor, ::Number) = zero(v)
-@inline extract_gradient(v::Number, x::AbstractTensor{S}) where {S} = zero(Tensor{S, typeof(v)})
-@generated function extract_gradient(v::AbstractTensor, x::AbstractTensor)
+@inline extract_gradient(v::Number, x::Tensor{S}) where {S} = zero(Tensor{S, typeof(v)})
+@generated function extract_gradient(v::Tensor, x::Tensor)
     S = ⊗(Space(v), Space(x))
     TT = tensortype(S)
     quote
@@ -105,14 +105,14 @@ end
 
 # Dual case
 @inline extract_gradient(v::Dual, ::Number, offset::Int=0) = partials(v, offset+1)
-@generated function extract_gradient(v::Dual, x::AbstractTensor{S}, offset::Int=0) where {S <: Tuple}
+@generated function extract_gradient(v::Dual, x::Tensor{S}, offset::Int=0) where {S <: Tuple}
     exps = [:(partials(v, offset+$i)) for i in 1:ncomponents(x)]
     quote
         @_inline_meta
         @inbounds Tensor{S}(tuple($(exps...)))
     end
 end
-@generated function extract_gradient(v::AbstractTensor{<: Tuple, <: Dual}, x::AbstractTensor, offset::Int=0)
+@generated function extract_gradient(v::Tensor{<: Tuple, <: Dual}, x::Tensor, offset::Int=0)
     S = ⊗(Space(v), Space(x))
     TT = tensortype(S)
     exps = [:(partials(Tuple(v)[$i], offset+$j)) for i in 1:ncomponents(v), j in 1:ncomponents(x)]
@@ -121,7 +121,7 @@ end
         @inbounds $TT($(exps...))
     end
 end
-@generated function extract_gradient(v::AbstractTensor{S, <: Dual}, ::Number, offset::Int=0) where {S <: Tuple}
+@generated function extract_gradient(v::Tensor{S, <: Dual}, ::Number, offset::Int=0) where {S <: Tuple}
     exps = [:(partials(Tuple(v)[$i], offset+1)) for i in 1:ncomponents(v)]
     return quote
         @_inline_meta
@@ -138,7 +138,7 @@ ncomponents(::Number) = 1
         @ntuple $N i -> extract_gradient(v, xs[i])
     end
 end
-@generated function extract_gradient(v::Union{Dual, AbstractTensor{S, <: Dual}}, xs::Tuple{Vararg{NumberOrTensor, N}}) where {S <: Tuple, N}
+@generated function extract_gradient(v::Union{Dual, Tensor{S, <: Dual}}, xs::Tuple{Vararg{NumberOrTensor, N}}) where {S <: Tuple, N}
     quote
         @_inline_meta
         offset = 0
@@ -216,7 +216,7 @@ end
 # primitive: apply symmetry information to a single derivative block
 @inline consider_symmetry(v::Number, ::Val{K}, ::Val{runs}) where {K, runs} = v
 @inline consider_symmetry(v::Tuple, ::Val{K}, ::Val{runs}) where {K, runs} = map(x -> consider_symmetry(x, Val(K), Val(runs)), v)
-@generated function consider_symmetry(v::TT, ::Val{K}, ::Val{runs}) where {TT <: AbstractTensor, K, runs}
+@generated function consider_symmetry(v::TT, ::Val{K}, ::Val{runs}) where {TT <: Tensor, K, runs}
     K < 2 && return :v
 
     tup = Tuple(Space(TT))
@@ -246,7 +246,7 @@ end
 
 # number of tensor subspaces contributed by each input to a derivative block
 nsubspaces(::Type{<:Number}) = 0
-nsubspaces(::Type{TT}) where {TT <: AbstractTensor} = length(Tuple(Space(TT)))
+nsubspaces(::Type{TT}) where {TT <: Tensor} = length(Tuple(Space(TT)))
 
 # single input
 # symmetry reduction is only meaningful for repeated differentiation w.r.t. `Vec`.
