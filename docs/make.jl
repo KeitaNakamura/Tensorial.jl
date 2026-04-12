@@ -22,6 +22,7 @@ makedocs(;
             "Operations.md",
             "Voigt form.md",
             "Automatic differentiation.md",
+            "Direct sum.md",
             "Quaternion.md",
         ],
         "Benchmarks.md",

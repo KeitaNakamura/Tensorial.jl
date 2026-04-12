@@ -68,6 +68,15 @@ export
     rotmaty,
     rotmatz,
     rotate,
+# directsum
+    ⊕,
+    pack,
+    unpack,
+    flatview,
+    flatsize,
+    DirectSumVector,
+    DirectSumMatrix,
+    DirectSumArray,
 # misc
     resize,
 # continuum mechanics
@@ -107,6 +116,7 @@ include("voigt.jl")
 include("ad.jl")
 include("broadcast.jl")
 include("abstractarray.jl")
+include("directsum.jl")
 
 include("quaternion.jl")
 
@@ -118,5 +128,7 @@ const ⊡₆ = contract6
 const ⊡₇ = contract7
 const ⊡₈ = contract8
 const ⊡₉ = contract9
+
+const ⊕ = pack
 
 end # module

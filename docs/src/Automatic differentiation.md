@@ -278,7 +278,7 @@ and the second as
 `gradient` and `hessian` are aliases for first- and second-order partial
 derivatives:
 
-```@repl automatic-differentiation
-gradient === ∂{1}
-hessian === ∂{2}
+```@docs
+gradient
+hessian
 ```
