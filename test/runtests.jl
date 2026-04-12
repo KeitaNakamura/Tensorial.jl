@@ -20,5 +20,6 @@ include("voigt.jl")
 include("ad.jl")
 include("broadcast.jl")
 include("abstractarray.jl")
+include("directsum.jl")
 
 include("quaternion.jl")

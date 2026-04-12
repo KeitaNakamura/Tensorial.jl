@@ -160,7 +160,15 @@ are returned together with the function value.
 For example, `∂{N}(f, x, :all)` returns `(∂{N}(f,x), ..., ∂{2}(f,x), ∂{1}(f,x), f(x))`.
 """
 struct ∂{N} end
+
+"""
+    const gradient = ∂{1}
+"""
 const gradient = ∂{1}
+
+"""
+    const hessian = ∂{2}
+"""
 const hessian = ∂{2}
 
 @inline _apply_dualized(f, x, ::Val{N}) where {N} = f(dualize(f, x, Val(N)))
