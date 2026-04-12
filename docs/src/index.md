@@ -8,7 +8,8 @@ In addition to basic `AbstractArray` operations, Tensorial.jl supports tensor sy
 
 * Contraction, tensor product (`⊗`), and a flexible `@einsum` macro for Einstein summation
 * A `@Symmetry` macro for defining tensor symmetries on adjacent index groups, consistently respected in tensor operations and automatic differentiation
-* Automatic differentiation via `∂`, `gradient`, and `hessian`, leveraging [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)
+* [Automatic differentiation](https://keitanakamura.github.io/Tensorial.jl/stable/Automatic%20differentiation/) via `∂`, `gradient`, and `hessian`, leveraging [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)
+* [Direct sums](https://keitanakamura.github.io/Tensorial.jl/stable/Direct%20sum/) for mixed tensor and scalar variables, preserving block structure in differentiation and linear algebra
 * Performance comparable to `SArray` (see [benchmarks](https://keitanakamura.github.io/Tensorial.jl/stable/Benchmarks/))
 
 ## Installation
