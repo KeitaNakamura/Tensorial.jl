@@ -9,6 +9,8 @@ Tensorial.jl provides a statically sized `Tensor` type compatible with `Abstract
 
 In addition to basic `AbstractArray` operations, Tensorial.jl supports tensor symmetries through `@Symmetry`, allowing adjacent groups of indices to be treated symmetrically. These symmetries are consistently respected in tensor operations such as contraction, inversion, and automatic differentiation, reducing unnecessary computations while preserving the intended tensor structure.
 
+Key features of Tensorial.jl include:
+
 * Contraction, tensor product (`⊗`), and a flexible `@einsum` macro for Einstein summation
 * A `@Symmetry` macro for defining tensor symmetries on adjacent index groups, consistently respected in tensor operations and automatic differentiation
 * [Automatic differentiation](https://keitanakamura.github.io/Tensorial.jl/stable/Automatic%20differentiation/) via `∂`, `gradient`, and `hessian`, leveraging [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)
