@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Direct sum · Tensorial.jl</title><meta name="title" content="Direct sum · Tensorial.jl"/><meta property="og:title" content="Direct sum · Tensorial.jl"/><meta property="twitter:title" content="Direct sum · Tensorial.jl"/><meta name="description" content="Documentation for Tensorial.jl."/><meta property="og:description" content="Documentation for Tensorial.jl."/><meta property="twitter:description" content="Documentation for Tensorial.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Tensorial.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../Getting started/">Getting started</a></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../Constructors/">Constructing tensors</a></li><li><a class="tocitem" href="../Operations/">Operations</a></li><li><a class="tocitem" href="../Voigt form/">Voigt Form</a></li><li><a class="tocitem" href="../Automatic differentiation/">Automatic differentiation</a></li><li class="is-active"><a class="tocitem" href>Direct sum</a><ul class="internal"><li><a class="tocitem" href="#Basic-usage"><span>Basic usage</span></a></li><li><a class="tocitem" href="#Direct-sums-and-automatic-differentiation"><span>Direct sums and automatic differentiation</span></a></li><li><a class="tocitem" href="#Linear-algebra-in-direct-sum-form"><span>Linear algebra in direct-sum form</span></a></li><li><a class="tocitem" href="#Example:-return-mapping-solved-by-Newton&#39;s-method"><span>Example: return mapping solved by Newton&#39;s method</span></a></li><li><a class="tocitem" href="#APIs"><span>APIs</span></a></li></ul></li><li><a class="tocitem" href="../Quaternion/">Quaternion</a></li></ul></li><li><a class="tocitem" href="../Benchmarks/">Benchmarks</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Manual</a></li><li class="is-active"><a href>Direct sum</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Direct sum</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/KeitaNakamura/Tensorial.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/KeitaNakamura/Tensorial.jl/blob/main/docs/src/Direct sum.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Direct-sum"><a class="docs-heading-anchor" href="#Direct-sum">Direct sum</a><a id="Direct-sum-1"></a><a class="docs-heading-anchor-permalink" href="#Direct-sum" title="Permalink"></a></h1><p>A direct sum is useful when a single unknown consists of several blocks with different meanings, for example</p><ul><li>a tensor and a scalar,</li><li>a symmetric tensor and a vector,</li><li>several tensors with different symmetries.</li></ul><p>In such cases, it is often convenient to treat the whole collection as a single object while still keeping the block structure explicit. In Tensorial.jl, this is represented by <a href="#Tensorial.DirectSumArray"><code>DirectSumArray</code></a>. A direct-sum value is constructed with <a href="#Tensorial.pack"><code>pack</code></a>, or equivalently with <code>⊕</code>.</p><h2 id="Basic-usage"><a class="docs-heading-anchor" href="#Basic-usage">Basic usage</a><a id="Basic-usage-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-usage" title="Permalink"></a></h2><p>Direct sums are particularly convenient when a problem naturally has several coupled unknowns of different types.</p><p>The basic constructors are <a href="#Tensorial.pack"><code>pack</code></a> and its alias <code>⊕</code>.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; A = @Mat[1.0 2.0; 3.0 4.0]</code><code class="nohighlight hljs ansi" style="display:block;">2×2 Tensor{Tuple{2, 2}, Float64, 2, 4}:
+ 1.0  2.0
+ 3.0  4.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; x = pack(A, 3.0)</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(2, 2)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; y = A ⊕ 3.0</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(2, 2)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; x == y</code><code class="nohighlight hljs ansi" style="display:block;">true</code></pre><p>The stored blocks are recovered with <a href="#Tensorial.unpack"><code>unpack</code></a>:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(x)</code><code class="nohighlight hljs ansi" style="display:block;">([1.0 2.0; 3.0 4.0], 3.0)</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(x, 1)</code><code class="nohighlight hljs ansi" style="display:block;">2×2 Tensor{Tuple{2, 2}, Float64, 2, 4}:
+ 1.0  2.0
+ 3.0  4.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(x, 2)</code><code class="nohighlight hljs ansi" style="display:block;">3.0</code></pre><p>For symmetric tensor blocks, the internal storage uses Mandel coordinates. This is visible through <a href="#Tensorial.flatview"><code>flatview</code></a>:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; As = symmetric(A)</code><code class="nohighlight hljs ansi" style="display:block;">2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 1.0  2.5
+ 2.5  4.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; z = As ⊕ 3.0</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(Symmetry(2, 2),)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; flatview(z)</code><code class="nohighlight hljs ansi" style="display:block;">4-element StaticArraysCore.SVector{4, Float64} with indices SOneTo(4):
+ 1.0
+ 3.5355339059327378
+ 4.0
+ 3.0</code></pre><h2 id="Direct-sums-and-automatic-differentiation"><a class="docs-heading-anchor" href="#Direct-sums-and-automatic-differentiation">Direct sums and automatic differentiation</a><a id="Direct-sums-and-automatic-differentiation-1"></a><a class="docs-heading-anchor-permalink" href="#Direct-sums-and-automatic-differentiation" title="Permalink"></a></h2><p>One of the main advantages of direct sums is that several coupled variables can be treated as one state while preserving the block structure in derivatives.</p><p>As a first example, consider a function of a symmetric tensor block <code>A</code> and a scalar block <code>s</code>:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; x = symmetric(@Mat[1.0 2.0; 3.0 4.0]) ⊕ 2.0</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(Symmetry(2, 2),)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; function f(z)
+           A, s = unpack(z)
+           dot(A, A) + s * tr(A) + s^2
+       end</code><code class="nohighlight hljs ansi" style="display:block;">f (generic function with 1 method)</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; f(x)</code><code class="nohighlight hljs ansi" style="display:block;">43.5</code></pre><p>The gradient is again a direct-sum object with the same blocks:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; g = gradient(f, x)</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(Symmetry(2, 2),)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(g)</code><code class="nohighlight hljs ansi" style="display:block;">([4.0 5.0; 5.0 10.0], 9.0)</code></pre><p>The Hessian is returned as a block matrix:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; H = hessian(f, x)</code><code class="nohighlight hljs ansi" style="display:block;">2×2 DirectSumMatrix with storage Float64:
+ Space(Symmetry(2, 2), Symmetry(2, 2))  Space(Symmetry(2, 2),)
+ Space(Symmetry(2, 2),)                 Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(H, 1, 1)</code><code class="nohighlight hljs ansi" style="display:block;">2×2×2×2 SymmetricFourthOrderTensor{2, Float64, 9}:
+[:, :, 1, 1] =
+ 2.0  0.0
+ 0.0  0.0
+
+[:, :, 2, 1] =
+ 0.0  1.0
+ 1.0  0.0
+
+[:, :, 1, 2] =
+ 0.0  1.0
+ 1.0  0.0
+
+[:, :, 2, 2] =
+ 0.0  0.0
+ 0.0  2.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(H, 1, 2)</code><code class="nohighlight hljs ansi" style="display:block;">2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 1.0  0.0
+ 0.0  1.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(H, 2, 1)</code><code class="nohighlight hljs ansi" style="display:block;">2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 1.0  0.0
+ 0.0  1.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(H, 2, 2)</code><code class="nohighlight hljs ansi" style="display:block;">2.0</code></pre><p>Thus the derivative already reflects the natural block structure of the problem:</p><ul><li><code>unpack(H, 1, 1)</code> is the tensor–tensor block,</li><li><code>unpack(H, 1, 2)</code> and <code>unpack(H, 2, 1)</code> are the mixed couplings,</li><li><code>unpack(H, 2, 2)</code> is the scalar–scalar block.</li></ul><p>The same idea applies to vector-valued maps.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; x = symmetric(@Mat[1.0 2.0; 3.0 4.0]) ⊕ 2.0</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(Symmetry(2, 2),)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; C = symmetric(@Mat[2.0 1.0; 1.0 3.0])</code><code class="nohighlight hljs ansi" style="display:block;">2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 2.0  1.0
+ 1.0  3.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; function F(z)
+           A, s = unpack(z)
+           B = A + s * C
+           t = tr(A) + s^2
+           B ⊕ t
+       end</code><code class="nohighlight hljs ansi" style="display:block;">F (generic function with 1 method)</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; y = F(x)</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(Symmetry(2, 2),)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(y)</code><code class="nohighlight hljs ansi" style="display:block;">([5.0 4.5; 4.5 10.0], 9.0)</code></pre><p>Its Jacobian is again block-structured:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; J = gradient(F, x)</code><code class="nohighlight hljs ansi" style="display:block;">2×2 DirectSumMatrix with storage Float64:
+ Space(Symmetry(2, 2), Symmetry(2, 2))  Space(Symmetry(2, 2),)
+ Space(Symmetry(2, 2),)                 Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(J, 1, 1)</code><code class="nohighlight hljs ansi" style="display:block;">2×2×2×2 SymmetricFourthOrderTensor{2, Float64, 9}:
+[:, :, 1, 1] =
+ 1.0  0.0
+ 0.0  0.0
+
+[:, :, 2, 1] =
+ 0.0  0.5
+ 0.5  0.0
+
+[:, :, 1, 2] =
+ 0.0  0.5
+ 0.5  0.0
+
+[:, :, 2, 2] =
+ 0.0  0.0
+ 0.0  1.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(J, 1, 2)</code><code class="nohighlight hljs ansi" style="display:block;">2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 2.0  1.0
+ 1.0  3.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(J, 2, 1)</code><code class="nohighlight hljs ansi" style="display:block;">2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 1.0  0.0
+ 0.0  1.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(J, 2, 2)</code><code class="nohighlight hljs ansi" style="display:block;">4.0</code></pre><p>This is precisely the structure needed in many coupled problems.</p><h2 id="Linear-algebra-in-direct-sum-form"><a class="docs-heading-anchor" href="#Linear-algebra-in-direct-sum-form">Linear algebra in direct-sum form</a><a id="Linear-algebra-in-direct-sum-form-1"></a><a class="docs-heading-anchor-permalink" href="#Linear-algebra-in-direct-sum-form" title="Permalink"></a></h2><p>A <code>DirectSumArray</code> also has a flat coordinate representation, which is useful for low-level inspection and for linear algebra operations.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; flatview(x)</code><code class="nohighlight hljs ansi" style="display:block;">4-element StaticArraysCore.SVector{4, Float64} with indices SOneTo(4):
+ 1.0
+ 3.5355339059327378
+ 4.0
+ 2.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; flatview(J)</code><code class="nohighlight hljs ansi" style="display:block;">4×4 StaticArraysCore.SMatrix{4, 4, Float64, 16} with indices SOneTo(4)×SOneTo(4):
+ 1.0  0.0  0.0  2.0
+ 0.0  1.0  0.0  1.41421
+ 0.0  0.0  1.0  3.0
+ 1.0  0.0  1.0  4.0</code></pre><p>For symmetric tensor blocks, the flat coordinates use Mandel scaling. This makes the Euclidean inner product of the flat representation consistent with the natural tensor inner product.</p><p>In particular, linear solves can be written directly in block form. If <code>J</code> is a <code>DirectSumMatrix</code> and <code>r</code> is a <code>DirectSumVector</code>, one may solve</p><pre><code class="language-julia hljs">δx = -J \ r</code></pre><p>without manually converting the system to flat coordinates.</p><h2 id="Example:-return-mapping-solved-by-Newton&#39;s-method"><a class="docs-heading-anchor" href="#Example:-return-mapping-solved-by-Newton&#39;s-method">Example: return mapping solved by Newton&#39;s method</a><a id="Example:-return-mapping-solved-by-Newton&#39;s-method-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-return-mapping-solved-by-Newton&#39;s-method" title="Permalink"></a></h2><p>A natural use of direct sums is a local Newton solve in return mapping, where the unknown consists of multiple blocks with different meanings.</p><p>As a simple model, consider a small-strain von Mises update written as a nonlinear system for</p><ul><li>the updated symmetric stress <code>σ</code>, and</li><li>the plastic multiplier increment <code>Δγ</code>.</li></ul><p>We collect them into one direct-sum variable,</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; σ₀ = SymmetricSecondOrderTensor{3}((1.0, 0.2, 0.1, 0.8, 0.05, 0.5))</code><code class="nohighlight hljs ansi" style="display:block;">3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
+ 1.0  0.2   0.1
+ 0.2  0.8   0.05
+ 0.1  0.05  0.5</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; x = σ₀ ⊕ 0.0</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(Symmetry(3, 3),)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(x)</code><code class="nohighlight hljs ansi" style="display:block;">([1.0 0.2 0.1; 0.2 0.8 0.05; 0.1 0.05 0.5], 0.0)</code></pre><p>Suppose we want to solve the local system</p><p class="math-container">\[R(\bm{\sigma}, \Delta\gamma) =
+\begin{Bmatrix}
+\bm{\sigma} - \bm{\sigma}^{\mathrm{tr}} + \Delta\gamma \bm{n} \\
+\|\operatorname{dev}(\bm{\sigma})\| - (\sigma_y + H\,\Delta\gamma)
+\end{Bmatrix}
+= \bm{0},\]</p><p>where <code>σᵗʳ</code> is the trial stress, <code>σy</code> is the yield stress, and <code>H</code> is the hardening modulus. The flow direction is given by the associative flow rule,</p><p class="math-container">\[n = \frac{\partial f}{\partial \bm{\sigma}},\]</p><p>with <code>f</code> the yield function.</p><p>The residual can be written directly in terms of a packed state:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; σᵗʳ = SymmetricSecondOrderTensor{3}((2.0, 0.4, 0.2, 1.2, 0.1, 0.9))</code><code class="nohighlight hljs ansi" style="display:block;">3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
+ 2.0  0.4  0.2
+ 0.4  1.2  0.1
+ 0.2  0.1  0.9</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; σy = 0.6</code><code class="nohighlight hljs ansi" style="display:block;">0.6</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; H = 2.0</code><code class="nohighlight hljs ansi" style="display:block;">2.0</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; yield_function(σ, Δγ) = norm(dev(σ)) - (σy + H * Δγ)</code><code class="nohighlight hljs ansi" style="display:block;">yield_function (generic function with 1 method)</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; function R(x)
+           σ, Δγ = unpack(x)
+           f = yield_function(σ, Δγ)
+           n = gradient(σ -&gt; yield_function(σ, Δγ), σ)
+           R_σ = σ - σᵗʳ + Δγ * n
+           R_γ = f
+           R_σ ⊕ R_γ
+       end</code><code class="nohighlight hljs ansi" style="display:block;">R (generic function with 1 method)</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; x = σᵗʳ ⊕ 0.0</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(Symmetry(3, 3),)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(R(x))</code><code class="nohighlight hljs ansi" style="display:block;">([0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0], 0.43279555898864464)</code></pre><p>Its Jacobian is obtained automatically:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; J = gradient(R, x)</code><code class="nohighlight hljs ansi" style="display:block;">2×2 DirectSumMatrix with storage Float64:
+ Space(Symmetry(3, 3), Symmetry(3, 3))  Space(Symmetry(3, 3),)
+ Space(Symmetry(3, 3),)                 Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; n = gradient(σ -&gt; yield_function(σ, 0.0), σᵗʳ)</code><code class="nohighlight hljs ansi" style="display:block;">3×3 SymmetricSecondOrderTensor{3, Float64, 6}:
+ 0.613222   0.387298    0.193649
+ 0.387298  -0.161374    0.0968246
+ 0.193649   0.0968246  -0.451848</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(J, 1, 1) ≈ one(SymmetricFourthOrderTensor{3})</code><code class="nohighlight hljs ansi" style="display:block;">true</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(J, 1, 2) ≈ n</code><code class="nohighlight hljs ansi" style="display:block;">true</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(J, 2, 1) ≈ n</code><code class="nohighlight hljs ansi" style="display:block;">true</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; unpack(J, 2, 2) == -H</code><code class="nohighlight hljs ansi" style="display:block;">true</code></pre><p>A Newton step can then be written directly in direct-sum form:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; r = R(x)</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(Symmetry(3, 3),)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; δx = -J \ r</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(Symmetry(3, 3),)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; xnew = x + δx</code><code class="nohighlight hljs ansi" style="display:block;">2-element DirectSumVector with storage Float64:
+ Space(Symmetry(3, 3),)
+ Space()</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; norm(R(xnew))</code><code class="nohighlight hljs ansi" style="display:block;">1.2246705451637024e-16</code></pre><p>For the present von Mises example, the Newton update reaches the solution in a single step. This reflects the classical radial-return structure of the problem.</p><p>For more general return-mapping problems, however, the local residual is genuinely nonlinear, and several Newton iterations are typically required.</p><h2 id="APIs"><a class="docs-heading-anchor" href="#APIs">APIs</a><a id="APIs-1"></a><a class="docs-heading-anchor-permalink" href="#APIs" title="Permalink"></a></h2><ul><li><a href="#Tensorial.DirectSumArray"><code>Tensorial.DirectSumArray</code></a></li><li><a href="#Tensorial.flatview"><code>Tensorial.flatview</code></a></li><li><a href="#Tensorial.pack"><code>Tensorial.pack</code></a></li><li><a href="#Tensorial.unpack"><code>Tensorial.unpack</code></a></li></ul><article><details class="docstring" open="true"><summary id="Tensorial.DirectSumArray"><a class="docstring-binding" href="#Tensorial.DirectSumArray"><code>Tensorial.DirectSumArray</code></a> — <span class="docstring-category">Type</span></summary><section><div><pre><code class="language-julia hljs">DirectSumArray{Axes, T, N, L}</code></pre><p>Container for an element of a direct-sum space stored in Mandel-flat coordinates.</p><p><strong>Type parameters</strong></p><ul><li><code>Axes</code>: block-space layout along each axis</li><li><code>T</code>: scalar storage type</li><li><code>N</code>: block-array dimension</li><li><code>L</code>: total number of flat stored entries</li></ul><p><strong>Notes</strong></p><ul><li><code>size(A)</code> returns the block size.</li><li><code>flatsize(A)</code> returns the size of the flat Mandel storage.</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/KeitaNakamura/Tensorial.jl/blob/da0e5e20b4c89315e7afee2175a6a59a9b3ec953/src/directsum.jl#L1-L15">source</a></section></details></article><article><details class="docstring" open="true"><summary id="Tensorial.pack"><a class="docstring-binding" href="#Tensorial.pack"><code>Tensorial.pack</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">pack(args...)</code></pre><p>Construct a <code>DirectSumArray</code> from the blocks of a direct-sum space.</p><p>Each argument is interpreted as one block of the direct sum. Scalar blocks are stored directly. Tensor blocks are flattened and concatenated into the internal storage. If a block belongs to a symmetric tensor space, Mandel coordinates are used internally.</p><p><code>⊕</code> (typed by <code>\oplus&lt;tab&gt;</code> ) is provided as an alias for <code>pack</code>.</p><p>See also: <a href="#Tensorial.unpack"><code>unpack</code></a>, <a href="#Tensorial.flatview"><code>flatview</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; A = @Mat[1.0 2.0; 3.0 4.0]
+2×2 Tensor{Tuple{2, 2}, Float64, 2, 4}:
+ 1.0  2.0
+ 3.0  4.0
+
+julia&gt; x = pack(A, 3.0)
+2-element DirectSumVector with storage Float64:
+ Space(2, 2)
+ Space()
+
+julia&gt; As = symmetric(A)
+2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 1.0  2.5
+ 2.5  4.0
+
+julia&gt; v = @Vec[4.0, 5.0]
+2-element Vec{2, Float64}:
+ 4.0
+ 5.0
+
+julia&gt; y = As ⊕ 3.0 ⊕ v
+3-element DirectSumVector with storage Float64:
+ Space(Symmetry(2, 2),)
+ Space()
+ Space(2,)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/KeitaNakamura/Tensorial.jl/blob/da0e5e20b4c89315e7afee2175a6a59a9b3ec953/src/directsum.jl#L115-L157">source</a></section></details></article><article><details class="docstring" open="true"><summary id="Tensorial.unpack"><a class="docstring-binding" href="#Tensorial.unpack"><code>Tensorial.unpack</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">unpack(A::DirectSumArray)</code></pre><p>Return the blocks stored in a DirectSumArray.</p><p><code>unpack(A)</code> returns all direct-sum blocks as a tuple. <code>unpack(A, I...)</code> returns the block at block index <code>I</code>. Tensor blocks are reconstructed from the internal flat storage. For symmetric tensor blocks, the internally stored Mandel coordinates are converted back to the corresponding tensor values.</p><p>At the level of block values, unpack is the inverse of pack.</p><div class="admonition is-info" id="Info-ac87cadd3aa3456c"><header class="admonition-header">Info<a class="admonition-anchor" href="#Info-ac87cadd3aa3456c" title="Permalink"></a></header><div class="admonition-body"><p><code>unpack(A)</code> is type-stable, but <code>unpack(A, I...)</code> may be type-unstable if the block index is not known at compile time, since different block indices may correspond to different return types. It is therefore most suitable when <code>I</code> is a constant and constant propagation can resolve the selected block.</p></div></div><p>See also: <a href="#Tensorial.pack"><code>pack</code></a>, <a href="#Tensorial.flatview"><code>flatview</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; A = symmetric(@Mat[1.0 2.0; 3.0 4.0])
+2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 1.0  2.5
+ 2.5  4.0
+
+julia&gt; x = pack(A, 3.0)
+2-element DirectSumVector with storage Float64:
+ Space(Symmetry(2, 2),)
+ Space()
+
+julia&gt; unpack(x)
+([1.0 2.5; 2.5 4.0], 3.0)
+
+julia&gt; unpack(x, 1)
+2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 1.0  2.5
+ 2.5  4.0
+
+julia&gt; unpack(x, 2)
+3.0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/KeitaNakamura/Tensorial.jl/blob/da0e5e20b4c89315e7afee2175a6a59a9b3ec953/src/directsum.jl#L161-L205">source</a></section></details></article><article><details class="docstring" open="true"><summary id="Tensorial.flatview"><a class="docstring-binding" href="#Tensorial.flatview"><code>Tensorial.flatview</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">flatview(A::DirectSumArray)</code></pre><p>Return <code>A</code> as a flat coordinate array. Symmetric tensor blocks are represented in Mandel coordinates.</p><p>See also: <a href="#Tensorial.pack"><code>pack</code></a>, <a href="#Tensorial.unpack"><code>unpack</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; A = @Mat[1.0 2.0; 3.0 4.0]
+2×2 Tensor{Tuple{2, 2}, Float64, 2, 4}:
+ 1.0  2.0
+ 3.0  4.0
+
+julia&gt; x = pack(A, 3.0)
+2-element DirectSumVector with storage Float64:
+ Space(2, 2)
+ Space()
+
+julia&gt; flatview(x)
+5-element StaticArraysCore.SVector{5, Float64} with indices SOneTo(5):
+ 1.0
+ 3.0
+ 2.0
+ 4.0
+ 3.0
+
+julia&gt; As = symmetric(A)
+2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
+ 1.0  2.5
+ 2.5  4.0
+
+julia&gt; y = pack(As, 3.0)
+2-element DirectSumVector with storage Float64:
+ Space(Symmetry(2, 2),)
+ Space()
+
+julia&gt; flatview(y)
+4-element StaticArraysCore.SVector{4, Float64} with indices SOneTo(4):
+ 1.0
+ 3.5355339059327378
+ 4.0
+ 3.0</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/KeitaNakamura/Tensorial.jl/blob/da0e5e20b4c89315e7afee2175a6a59a9b3ec953/src/directsum.jl#L434-L479">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Automatic differentiation/">« Automatic differentiation</a><a class="docs-footer-nextpage" href="../Quaternion/">Quaternion »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Sunday 12 April 2026 13:20">Sunday 12 April 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
