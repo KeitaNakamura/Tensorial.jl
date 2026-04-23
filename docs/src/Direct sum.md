@@ -174,14 +174,14 @@ The residual can be written directly in terms of a packed state:
 σᵗʳ = SymmetricSecondOrderTensor{3}((2.0, 0.4, 0.2, 1.2, 0.1, 0.9))
 σy = 0.6
 H = 2.0
+ℂᵉ = one(SymmetricFourthOrderTensor{3}); # simplified elastic tensor
 
 yield_function(σ, Δγ) = norm(dev(σ)) - (σy + H * Δγ)
 
 function R(x)
     σ, Δγ = unpack(x)
-    f = yield_function(σ, Δγ)
-    n = gradient(σ -> yield_function(σ, Δγ), σ)
-    R_σ = σ - σᵗʳ + Δγ * n
+    n, f = gradient(σ -> yield_function(σ, Δγ), σ, :all)
+    R_σ = σ - σᵗʳ + Δγ * (ℂᵉ ⊡₂ n)
     R_γ = f
     R_σ ⊕ R_γ
 end
