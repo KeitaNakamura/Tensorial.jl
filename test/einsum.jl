@@ -1,3 +1,5 @@
+using Tensorial: EinsumExpr, best_contraction_pair
+
 function check_value_and_type(x, y, z)
     @test x ≈ y ≈ z
     @test typeof(x) == typeof(y)
@@ -82,5 +84,32 @@ end
         # @test_throws Exception (@einsum (k) -> S1[i,j] * S1[i,j])
         # @test_throws Exception (@einsum (j) -> S1[i,i] * S1[i,j])
         # @test_throws Exception (@einsum S1[i,i] * S1[i,j])
+    end
+    @testset "@einsum contraction strategy" begin
+        A = EinsumExpr(:A, [:i, :j], [:i, :j])
+        B = EinsumExpr(:B, [:k, :l], [:k, :l])
+        C = EinsumExpr(:C, [:j, :k], [:j, :k])
+        D = EinsumExpr(:D, [:l, :i], [:l, :i])
+
+        @test best_contraction_pair([A, B, C, D]) == (1, 3)
+        @test best_contraction_pair([A, C, B, D]) == (1, 2)
+
+        A = EinsumExpr(:A, [:i, :j], [:i, :j])
+        B = EinsumExpr(:B, [:j, :k], [:j, :k])
+        C = EinsumExpr(:C, [:k, :l], [:k, :l])
+
+        @test best_contraction_pair([A, B, C]) == (1, 2)
+
+        A = EinsumExpr(:A, [:i, :j], [:i, :j])
+        B = EinsumExpr(:B, [:k, :l], [:k, :l])
+        C = EinsumExpr(:C, [:j, :k], [:j, :k])
+
+        @test best_contraction_pair([A, B, C]) == (1, 3)
+
+        A = EinsumExpr(:A, [:j, :i], [:j, :i])
+        B = EinsumExpr(:B, [:k, :j], [:k, :j])
+        C = EinsumExpr(:C, [:l, :k], [:l, :k])
+
+        @test best_contraction_pair([A, B, C]) == (1, 2)
     end
 end

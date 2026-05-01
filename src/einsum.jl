@@ -173,23 +173,17 @@ end
 
 # contraction
 function einsum_instantiate_contraction(TT, exprs::Vector{EinsumExpr})
-    freeinds = find_freeindices(mapreduce(x->x.freeinds, vcat, exprs))
-
-    if length(exprs) > 2
-        dummies_list = findall(exprs) do einex # tensors having only dummy indices
-            isscalarexpr(einex) || !any(in(freeinds), einex.freeinds)
-        end
-        # compute dummy indices first, improving performance (#191)
-        if !isempty(dummies_list)
-            dummies = exprs[dummies_list]
-            deleteat!(exprs, dummies_list)
-            exprs = [dummies; exprs]
-        end
+    isempty(exprs) && error("@einsum: empty contraction expression")
+    length(exprs) == 1 && return only(exprs)
+    exprs = copy(exprs)
+    while length(exprs) > 2
+        i, j = best_contraction_pair(exprs)
+        einex = einsum_instantiate_contraction(exprs[i], exprs[j], :Any)
+        deleteat!(exprs, j)
+        deleteat!(exprs, i)
+        insert!(exprs, i, einex)
     end
-
-    # lastly apply `TT`
-    ex = foldl(einsum_instantiate_contraction, exprs[1:end-1])
-    einsum_instantiate_contraction(ex, exprs[end], TT)
+    return einsum_instantiate_contraction(exprs[1], exprs[2], TT)
 end
 
 function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr, TT = :Any)
@@ -209,6 +203,41 @@ function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr, TT = :
         end
         return EinsumExpr(ex, free_indices, [lhs.allinds; rhs.allinds])
     end
+end
+
+function contraction_cost(lhs::EinsumExpr, rhs::EinsumExpr)
+    inds = [lhs.freeinds; rhs.freeinds]
+    freeinds = find_freeindices(inds)
+    dummies = setdiff(inds, freeinds)
+
+    N = length(dummies)
+
+    is_fast_contract = false
+
+    if N > 0
+        lhs_dims = map(i -> only(findall(==(i), lhs.freeinds)), dummies)
+        rhs_dims = map(i -> only(findall(==(i), rhs.freeinds)), dummies)
+
+        lhs_tail = collect((length(lhs.freeinds)-N+1):length(lhs.freeinds))
+        rhs_head = collect(1:N)
+
+        is_fast_contract = lhs_dims == lhs_tail && rhs_dims == rhs_head
+    end
+
+    return (!is_fast_contract, -N, length(freeinds))
+end
+
+function best_contraction_pair(exprs::Vector{EinsumExpr})
+    best = (1, 2)
+    cost = contraction_cost(exprs[1], exprs[2])
+    for i in 1:(length(exprs)-1), j in (i+1):length(exprs)
+        c = contraction_cost(exprs[i], exprs[j])
+        if c < cost
+            best = (i, j)
+            cost = c
+        end
+    end
+    return best
 end
 
 # this returns expressions for each index
