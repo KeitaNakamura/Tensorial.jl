@@ -74,6 +74,32 @@ end
         @test (@einsum Tensor{Tuple{4,@Symmetry{4,4}}, Float32} C[σ,μ,ν] := A[σp,σ]*A[μp,μ]*A[νp,ν]*B[σp,μp,νp])::Tensor{Tuple{4,@Symmetry{4,4}}, Float32} ≈ ans
         @test (@einsum typeof(B) C[σ,μ,ν] := A[σp,σ]*A[μp,μ]*A[νp,ν]*B[σp,μp,νp])::Tensor{Tuple{4,@Symmetry{4,4}}, Float64} ≈ ans
     end
+    @testset "type annotation with scalar factors" begin
+        A = rand(SecondOrderTensor{3})
+        ans = A' * A
+
+        @test (@einsum SymmetricSecondOrderTensor{3} (i,j) -> A[k,i] * A[k,j])::SymmetricSecondOrderTensor{3} ≈ ans
+        @test (@einsum SymmetricSecondOrderTensor{3} (i,j) -> 2 * A[k,i] * A[k,j])::SymmetricSecondOrderTensor{3} ≈ 2ans
+        @test (@einsum SymmetricSecondOrderTensor{3} (i,j) -> A[k,i] * A[k,j] * 2)::SymmetricSecondOrderTensor{3} ≈ 2ans
+        @test (@einsum SymmetricSecondOrderTensor{3} (i,j) -> 2 * A[k,i] * A[k,j] / 2)::SymmetricSecondOrderTensor{3} ≈ ans
+        @test (@einsum SymmetricSecondOrderTensor{3} A[k,i] * A[k,j])::SymmetricSecondOrderTensor{3} ≈ ans
+        @test (@einsum SymmetricSecondOrderTensor{3} 2 * A[k,i] * A[k,j])::SymmetricSecondOrderTensor{3} ≈ 2ans
+        @test (@einsum SymmetricSecondOrderTensor{3} A[k,i] * A[k,j] * 2)::SymmetricSecondOrderTensor{3} ≈ 2ans
+    end
+    @testset "type annotation with sums" begin
+        A = rand(SecondOrderTensor{3})
+
+        @test (@einsum SymmetricSecondOrderTensor{3} (i,j) -> A[i,j] + A[j,i])::SymmetricSecondOrderTensor{3} ≈ A + A'
+        @test (@einsum SymmetricSecondOrderTensor{3} (i,j) -> 2A[i,j] + 2A[j,i])::SymmetricSecondOrderTensor{3} ≈ 2(A + A')
+        @test (@einsum SymmetricSecondOrderTensor{3} A[i,j] + A[j,i])::SymmetricSecondOrderTensor{3} ≈ A + A'
+
+        # Forced type annotation: the user-provided tensor type is trusted.
+        # These expressions are not symmetric in general, so only construction
+        # and type are tested.
+        @test (@einsum SymmetricSecondOrderTensor{3} (i,j) -> A[i,j]) isa SymmetricSecondOrderTensor{3}
+        @test (@einsum SymmetricSecondOrderTensor{3} (i,j) -> 2A[i,j]) isa SymmetricSecondOrderTensor{3}
+        @test (@einsum SymmetricSecondOrderTensor{3} (j,i) -> A[i,j] + A[i,j]) isa SymmetricSecondOrderTensor{3}
+    end
     @testset "errors" begin
         S1 = rand(SymmetricSecondOrderTensor{3})
         v = rand(Vec{2})
@@ -111,5 +137,13 @@ end
         C = EinsumExpr(:C, [:l, :k], [:l, :k])
 
         @test best_contraction_pair([A, B, C]) == (1, 2)
+
+        s = EinsumExpr(:s, [], [])
+        A = EinsumExpr(:A, [:k, :i], [:k, :i])
+        B = EinsumExpr(:B, [:k, :j], [:k, :j])
+
+        @test best_contraction_pair([s, A, B]) == (2, 3)
+        @test best_contraction_pair([A, s, B]) == (1, 3)
+        @test best_contraction_pair([A, B, s]) == (1, 2)
     end
 end
