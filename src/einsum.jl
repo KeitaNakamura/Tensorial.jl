@@ -43,17 +43,29 @@ end
 
 function einsum_exprssion(TT, expr)
     varname, freeinds, body = split_defexpr(expr)
-    einex = einsum_instantiate(body, TT)
+
+    probe = einsum_instantiate(body, :Any)
+    body_TT = can_use_einsum_type_in_body(TT, probe, freeinds) ? TT : :Any
+    einex = body_TT == :Any ? probe : einsum_instantiate(body, body_TT)
+
+    if !isnothing(freeinds)
+        if isempty(freeinds)
+            isempty(einex.freeinds) || error("@einsum: wrong free indices given")
+        else
+            einex = reorder_freeinds(einex, freeinds)
+        end
+    end
+
+    einex = apply_einsum_type(TT, einex)
+
     if isnothing(varname) # anonymous function
-        isnothing(freeinds) && return esc(einex.ex)
-        isempty(freeinds) && return esc(einex.ex)
-        perm = find_perm(einex.freeinds => freeinds)
-        return esc(:(permutedims($(einex.ex), $(ValTuple(perm...)))))
+        return esc(einex.ex)
     else
-        isnothing(freeinds) && return esc(:($varname = $(einex.ex)))
-        isempty(freeinds) && return esc(:($varname = Tensor{Tuple{}}($(einex.ex))))
-        perm = find_perm(einex.freeinds => freeinds)
-        return esc(:($varname = permutedims($(einex.ex), $(ValTuple(perm...)))))
+        if !isnothing(freeinds) && isempty(freeinds)
+            return esc(:($varname = Tensor{Tuple{}}($(einex.ex))))
+        else
+            return esc(:($varname = $(einex.ex)))
+        end
     end
 end
 
@@ -112,13 +124,37 @@ struct EinsumExpr
     ex::Any
     freeinds::Vector
     allinds::Vector
-    function EinsumExpr(ex, freeinds, allinds)
+    typed::Bool
+    function EinsumExpr(ex, freeinds, allinds, typed::Bool=false)
         find_freeindices(allinds) # check dummy indices
-        new(ex, freeinds, allinds)
+        new(ex, freeinds, allinds, typed)
     end
 end
 
 isscalarexpr(x::EinsumExpr) = isempty(x.freeinds)
+
+function can_use_einsum_type_in_body(TT, einex::EinsumExpr, freeinds)
+    TT == :Any && return false
+    isscalarexpr(einex) && return false
+    !isnothing(freeinds) && Set(einex.freeinds) != Set(freeinds) && return false
+    true
+end
+
+function apply_einsum_type(TT, einex::EinsumExpr)
+    if TT == :Any || einex.typed || isscalarexpr(einex)
+        return einex
+    else
+        ex = :($contract_einsum($TT, ($(einex.ex),), ($(ValTuple(einex.freeinds...)),)))
+        return EinsumExpr(ex, einex.freeinds, einex.freeinds, true)
+    end
+end
+
+function reorder_freeinds(einex::EinsumExpr, freeinds::Vector)
+    length(einex.freeinds) == length(freeinds) && Set(einex.freeinds) == Set(freeinds) || error("@einsum: wrong free indices given")
+    einex.freeinds == freeinds && return einex
+    perm = find_perm(einex.freeinds => freeinds)
+    EinsumExpr(:(permutedims($(einex.ex), $(ValTuple(perm...)))), freeinds, freeinds, false)
+end
 
 function einsum_instantiate(expr, TT) # TT is :Any if not given in @einsum or not top level
     if Meta.isexpr(expr, :call)
@@ -132,7 +168,7 @@ function einsum_instantiate(expr, TT) # TT is :Any if not given in @einsum or no
             if length(expr.args) == 2 # handle unary operator `-a[i]` (#201)
                 return einsum_instantiate(Expr(:call, :*, ifelse(expr.args[1]==:+, 1, -1), expr.args[2]), TT)
             else
-                return mapreduce(x -> einsum_instantiate(x, TT),
+                return mapreduce(x -> einsum_instantiate(x, :Any),
                                  (x, y) -> einsum_instantiate_addition(expr.args[1], x, y),
                                  expr.args[2:end])
             end
@@ -141,18 +177,19 @@ function einsum_instantiate(expr, TT) # TT is :Any if not given in @einsum or no
         ex = expr.args[1]
         allinds = expr.args[2:end]
         freeinds = find_freeindices(allinds)
-        return einsum_instantiate_tensor(EinsumExpr(ex, freeinds, allinds))
+        return einsum_instantiate_tensor(TT, EinsumExpr(ex, freeinds, allinds))
     end
     EinsumExpr(expr, [], [])
 end
 
 # ref case
-function einsum_instantiate_tensor(einex::EinsumExpr)
+function einsum_instantiate_tensor(TT, einex::EinsumExpr)
     if isempty(setdiff(einex.allinds, einex.freeinds)) # no dummy indices
-        return einex
+        return apply_einsum_type(TT, einex)
     else
-        ex = :($contract_einsum(Any, ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
-        return EinsumExpr(ex, einex.freeinds, einex.allinds)
+        contract_TT = (TT == :Any || isscalarexpr(einex)) ? :Any : TT
+        ex = :($contract_einsum($contract_TT, ($(einex.ex),), ($(ValTuple(einex.allinds...)),)))
+        return EinsumExpr(ex, einex.freeinds, einex.allinds, contract_TT != :Any)
     end
 end
 
@@ -160,21 +197,58 @@ end
 function einsum_instantiate_division(lhs::EinsumExpr, rhs::EinsumExpr)
     @assert isscalarexpr(rhs)
     ex = Expr(:call, :/, lhs.ex, rhs.ex)
-    EinsumExpr(ex, lhs.freeinds, lhs.allinds) # is it ok to ignore indices of `rhs`?
+    EinsumExpr(ex, lhs.freeinds, [lhs.allinds; rhs.allinds], lhs.typed)
 end
 
 # summation
 function einsum_instantiate_addition(op::Symbol, lhs::EinsumExpr, rhs::EinsumExpr)
     @assert Set(lhs.freeinds) == Set(rhs.freeinds)
-    perm = find_perm(rhs.freeinds => lhs.freeinds)
-    ex = Expr(:call, op, lhs.ex, :(permutedims($(rhs.ex), $(ValTuple(perm...)))))
-    EinsumExpr(ex, lhs.freeinds, lhs.freeinds) # reset allinds
+    if isscalarexpr(lhs)
+        ex = Expr(:call, op, lhs.ex, rhs.ex)
+    else
+        perm = find_perm(rhs.freeinds => lhs.freeinds)
+        ex = Expr(:call, op, lhs.ex, :(permutedims($(rhs.ex), $(ValTuple(perm...)))))
+    end
+    EinsumExpr(ex, lhs.freeinds, lhs.freeinds, false) # reset allinds
 end
 
 # contraction
 function einsum_instantiate_contraction(TT, exprs::Vector{EinsumExpr})
     isempty(exprs) && error("@einsum: empty contraction expression")
+
+    if TT != :Any
+        scalars = filter(isscalarexpr, exprs)
+        tensors = filter(!isscalarexpr, exprs)
+
+        if isempty(tensors)
+            return instantiate_scalar_product(scalars)
+        else
+            tensor_TT = isempty(scalars) || length(tensors) >= 2 ? TT : :Any
+            einex = instantiate_product_greedy(tensor_TT, tensors)
+            if !isempty(scalars)
+                scalar_ex = instantiate_scalar_product(scalars)
+                einex = einsum_instantiate_contraction(scalar_ex, einex, :Any)
+            end
+            return apply_einsum_type(TT, einex)
+        end
+    else
+        return instantiate_product_greedy(TT, exprs)
+    end
+end
+
+function instantiate_scalar_product(exprs::Vector{EinsumExpr})
+    isempty(exprs) && error("@einsum: empty scalar product")
     length(exprs) == 1 && return only(exprs)
+
+    foldl(exprs[2:end]; init=exprs[1]) do lhs, rhs
+        einsum_instantiate_contraction(lhs, rhs, :Any)
+    end
+end
+
+function instantiate_product_greedy(TT, exprs::Vector{EinsumExpr})
+    isempty(exprs) && error("@einsum: empty contraction expression")
+    length(exprs) == 1 && return apply_einsum_type(TT, only(exprs))
+
     exprs = copy(exprs)
     while length(exprs) > 2
         i, j = best_contraction_pair(exprs)
@@ -189,7 +263,8 @@ end
 function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr, TT = :Any)
     if isscalarexpr(lhs) || isscalarexpr(rhs)
         ex = Expr(:call, :*, lhs.ex, rhs.ex)
-        return EinsumExpr(ex, [lhs.freeinds; rhs.freeinds], [lhs.allinds; rhs.allinds])
+        einex = EinsumExpr(ex, [lhs.freeinds; rhs.freeinds], [lhs.allinds; rhs.allinds], lhs.typed || rhs.typed)
+        return apply_einsum_type(TT, einex)
     else
         all_indices = [lhs.freeinds; rhs.freeinds]
         free_indices = find_freeindices(all_indices)
@@ -198,10 +273,12 @@ function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr, TT = :
             lhs_dims = map(dummy_index -> only(findall(==(dummy_index), lhs.freeinds)), dummy_indices)
             rhs_dims = map(dummy_index -> only(findall(==(dummy_index), rhs.freeinds)), dummy_indices)
             ex = :($contract($(lhs.ex), $(rhs.ex), $(ValTuple(lhs_dims...)), $(ValTuple(rhs_dims...))))
+            return EinsumExpr(ex, free_indices, [lhs.allinds; rhs.allinds], false)
         else
-            ex = :($contract_einsum($TT, ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
+            contract_TT = (TT == :Any || isempty(free_indices)) ? :Any : TT
+            ex = :($contract_einsum($contract_TT, ($(lhs.ex), $(rhs.ex)), ($(ValTuple(lhs.freeinds...)), $(ValTuple(rhs.freeinds...)))))
+            return EinsumExpr(ex, free_indices, [lhs.allinds; rhs.allinds], contract_TT != :Any)
         end
-        return EinsumExpr(ex, free_indices, [lhs.allinds; rhs.allinds])
     end
 end
 
