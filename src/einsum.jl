@@ -35,13 +35,13 @@ true
 ```
 """
 macro einsum(expr)
-    einsum_exprssion(:Any, expr)
+    einsum_expression(:Any, expr)
 end
 macro einsum(TT, expr)
-    einsum_exprssion(TT, expr)
+    einsum_expression(TT, expr)
 end
 
-function einsum_exprssion(TT, expr)
+function einsum_expression(TT, expr)
     varname, freeinds, body = split_defexpr(expr)
 
     probe = einsum_instantiate(body, :Any)
@@ -50,7 +50,7 @@ function einsum_exprssion(TT, expr)
 
     if !isnothing(freeinds)
         if isempty(freeinds)
-            isempty(einex.freeinds) || error("@einsum: wrong free indices given")
+            isempty(einex.freeinds) || einsum_error("wrong free indices given")
         else
             einex = reorder_freeinds(einex, freeinds)
         end
@@ -71,29 +71,31 @@ end
 
 ValTuple(x...) = Val(x)
 
-function split_defexpr(func::Expr)
+einsum_error(msg) = throw(ArgumentError("@einsum: $msg"))
+
+function split_defexpr(func)
     if Meta.isexpr(func, :(:=))
         lhs = func.args[1]
         body = func.args[2]
         if Meta.isexpr(lhs, :ref)
             varname = lhs.args[1]
-            freeinds = lhs.args[2:end]
+            freeinds = check_freeinds(lhs.args[2:end])
         elseif lhs isa Symbol
             varname = lhs
             freeinds = nothing
         else
-            throw(ArgumentError("wrong @einsum expression"))
+            einsum_error("wrong expression")
         end
     elseif Meta.isexpr(func, :->)
         varname = nothing
         lhs = func.args[1]
         body = func.args[2]
         if Meta.isexpr(lhs, :tuple)
-            freeinds = lhs.args
+            freeinds = check_freeinds(lhs.args)
         elseif lhs isa Symbol
             freeinds = [lhs]
         else
-            throw(ArgumentError("wrong arguments in anonymous function expression"))
+            einsum_error("wrong arguments in anonymous function expression")
         end
     else
         varname = nothing
@@ -101,23 +103,43 @@ function split_defexpr(func::Expr)
         body = func
     end
     if Meta.isexpr(body, :block)
-        body = only([x for x in body.args if !(x isa LineNumberNode)])
+        body = only_body_expression(body)
     end
     varname, freeinds, body
 end
 
 function find_perm((src, dest)::Pair{<: Vector, <: Vector})::Vector{Int}
-    map(index -> only(findall(==(index), src)), dest)
+    map(index -> find_index_position(src, index), dest)
+end
+
+function find_index_position(indices::Vector, index)
+    pos = findfirst(==(index), indices)
+    isnothing(pos) && einsum_error("wrong free indices given")
+    pos
+end
+
+function only_body_expression(body::Expr)
+    args = filter(x -> !(x isa LineNumberNode), body.args)
+    length(args) == 1 || einsum_error("expected a single expression")
+    only(args)
+end
+
+function check_freeinds(freeinds::Vector)
+    allunique(freeinds) || einsum_error("free indices must be unique")
+    freeinds
+end
+
+function same_indices(lhs::Vector, rhs::Vector)
+    length(lhs) == length(rhs) && Set(lhs) == Set(rhs)
 end
 
 function find_freeindices(indices::Vector)
-    freeindices = eltype(indices)[]
-    for index in unique(indices)
-        x = findall(==(index), indices)
-        length(x)  > 2 && error("@einsum: index $index appears more than twice")
-        length(x) == 1 && push!(freeindices, index)
+    counts = Dict{Any, Int}()
+    for index in indices
+        counts[index] = get(counts, index, 0) + 1
+        counts[index] > 2 && einsum_error("index $index appears more than twice")
     end
-    freeindices
+    [index for index in indices if counts[index] == 1]
 end
 
 struct EinsumExpr
@@ -136,7 +158,7 @@ isscalarexpr(x::EinsumExpr) = isempty(x.freeinds)
 function can_use_einsum_type_in_body(TT, einex::EinsumExpr, freeinds)
     TT == :Any && return false
     isscalarexpr(einex) && return false
-    !isnothing(freeinds) && Set(einex.freeinds) != Set(freeinds) && return false
+    !isnothing(freeinds) && !same_indices(einex.freeinds, freeinds) && return false
     true
 end
 
@@ -150,7 +172,7 @@ function apply_einsum_type(TT, einex::EinsumExpr)
 end
 
 function reorder_freeinds(einex::EinsumExpr, freeinds::Vector)
-    length(einex.freeinds) == length(freeinds) && Set(einex.freeinds) == Set(freeinds) || error("@einsum: wrong free indices given")
+    same_indices(einex.freeinds, freeinds) || einsum_error("wrong free indices given")
     einex.freeinds == freeinds && return einex
     perm = find_perm(einex.freeinds => freeinds)
     EinsumExpr(:(permutedims($(einex.ex), $(ValTuple(perm...)))), freeinds, freeinds, false)
@@ -195,14 +217,14 @@ end
 
 # division
 function einsum_instantiate_division(lhs::EinsumExpr, rhs::EinsumExpr)
-    @assert isscalarexpr(rhs)
+    isscalarexpr(rhs) || einsum_error("division is only supported by scalar expressions")
     ex = Expr(:call, :/, lhs.ex, rhs.ex)
     EinsumExpr(ex, lhs.freeinds, [lhs.allinds; rhs.allinds], lhs.typed)
 end
 
 # summation
 function einsum_instantiate_addition(op::Symbol, lhs::EinsumExpr, rhs::EinsumExpr)
-    @assert Set(lhs.freeinds) == Set(rhs.freeinds)
+    same_indices(lhs.freeinds, rhs.freeinds) || einsum_error("summed terms must have the same free indices")
     if isscalarexpr(lhs)
         ex = Expr(:call, op, lhs.ex, rhs.ex)
     else
@@ -214,7 +236,7 @@ end
 
 # contraction
 function einsum_instantiate_contraction(TT, exprs::Vector{EinsumExpr})
-    isempty(exprs) && error("@einsum: empty contraction expression")
+    isempty(exprs) && einsum_error("empty contraction expression")
 
     if TT != :Any
         scalars = filter(isscalarexpr, exprs)
@@ -237,7 +259,7 @@ function einsum_instantiate_contraction(TT, exprs::Vector{EinsumExpr})
 end
 
 function instantiate_scalar_product(exprs::Vector{EinsumExpr})
-    isempty(exprs) && error("@einsum: empty scalar product")
+    isempty(exprs) && einsum_error("empty scalar product")
     length(exprs) == 1 && return only(exprs)
 
     foldl(exprs[2:end]; init=exprs[1]) do lhs, rhs
@@ -246,7 +268,7 @@ function instantiate_scalar_product(exprs::Vector{EinsumExpr})
 end
 
 function instantiate_product_greedy(TT, exprs::Vector{EinsumExpr})
-    isempty(exprs) && error("@einsum: empty contraction expression")
+    isempty(exprs) && einsum_error("empty contraction expression")
     length(exprs) == 1 && return apply_einsum_type(TT, only(exprs))
 
     exprs = copy(exprs)
@@ -270,8 +292,8 @@ function einsum_instantiate_contraction(lhs::EinsumExpr, rhs::EinsumExpr, TT = :
         free_indices = find_freeindices(all_indices)
         if TT == :Any && allunique(lhs.freeinds) && allunique(rhs.freeinds) # use faster computation if possible
             dummy_indices = setdiff(all_indices, free_indices)
-            lhs_dims = map(dummy_index -> only(findall(==(dummy_index), lhs.freeinds)), dummy_indices)
-            rhs_dims = map(dummy_index -> only(findall(==(dummy_index), rhs.freeinds)), dummy_indices)
+            lhs_dims = find_perm(lhs.freeinds => dummy_indices)
+            rhs_dims = find_perm(rhs.freeinds => dummy_indices)
             ex = :($contract($(lhs.ex), $(rhs.ex), $(ValTuple(lhs_dims...)), $(ValTuple(rhs_dims...))))
             return EinsumExpr(ex, free_indices, [lhs.allinds; rhs.allinds], false)
         else
@@ -292,8 +314,8 @@ function contraction_cost(lhs::EinsumExpr, rhs::EinsumExpr)
     is_fast_contract = false
 
     if N > 0
-        lhs_dims = map(i -> only(findall(==(i), lhs.freeinds)), dummies)
-        rhs_dims = map(i -> only(findall(==(i), rhs.freeinds)), dummies)
+        lhs_dims = find_perm(lhs.freeinds => dummies)
+        rhs_dims = find_perm(rhs.freeinds => dummies)
 
         lhs_tail = collect((length(lhs.freeinds)-N+1):length(lhs.freeinds))
         rhs_head = collect(1:N)
@@ -319,9 +341,9 @@ end
 
 # this returns expressions for each index
 function contract_einsum_expr(tensortypes::NTuple{N}, names::NTuple{N}, tensor_indices::NTuple{N, Vector}) where {N}
-    all_indices = reduce(vcat, tensor_indices)
-    free_indices = find_freeindices(all_indices)
-    dummy_indices = setdiff(all_indices, free_indices)
+    input_indices = reduce(vcat, tensor_indices)
+    free_indices = find_freeindices(input_indices)
+    dummy_indices = setdiff(input_indices, free_indices)
     all_indices = [dummy_indices; free_indices]
 
     # check dimensions
@@ -341,7 +363,7 @@ function contract_einsum_expr(tensortypes::NTuple{N}, names::NTuple{N}, tensor_i
     indexmaps = Vector{Int}[]
     for (tensor, inds) in zip(tensortypes, tensor_indices) # (A, [:i,:j])
         ndims(tensor) == length(inds) || error("contract_einsum_expr: the number of indices does not match the order of tensor")
-        indices = map(index -> only(findall(==(index), all_indices)), inds)
+        indices = find_perm(all_indices => inds)
         push!(indexmaps, indices)
     end
 
@@ -350,7 +372,7 @@ function contract_einsum_expr(tensortypes::NTuple{N}, names::NTuple{N}, tensor_i
         TT = T
         free_axes = ()
     else
-        perm = map(index -> only(findall(==(index), reduce(vcat, tensor_indices))), free_indices)
+        perm = find_perm(input_indices => free_indices)
         TT = tensortype(_permutedims(⊗(map(Space, tensortypes)...), Val(tuple(perm...)))){T}
         free_axes = axes(TT)
     end
