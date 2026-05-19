@@ -229,10 +229,45 @@ end
             α = deg2rad(T(10))
             β = deg2rad(T(20))
             γ = deg2rad(T(30))
+            θ = Vec(α, β, γ)
+            intrinsic = (
+                :XZX => rotmatx(α) * rotmatz(β) * rotmatx(γ),
+                :XYX => rotmatx(α) * rotmaty(β) * rotmatx(γ),
+                :YXY => rotmaty(α) * rotmatx(β) * rotmaty(γ),
+                :YZY => rotmaty(α) * rotmatz(β) * rotmaty(γ),
+                :ZYZ => rotmatz(α) * rotmaty(β) * rotmatz(γ),
+                :ZXZ => rotmatz(α) * rotmatx(β) * rotmatz(γ),
+                :XZY => rotmatx(α) * rotmatz(β) * rotmaty(γ),
+                :XYZ => rotmatx(α) * rotmaty(β) * rotmatz(γ),
+                :YXZ => rotmaty(α) * rotmatx(β) * rotmatz(γ),
+                :YZX => rotmaty(α) * rotmatz(β) * rotmatx(γ),
+                :ZYX => rotmatz(α) * rotmaty(β) * rotmatx(γ),
+                :ZXY => rotmatz(α) * rotmatx(β) * rotmaty(γ),
+            )
+            extrinsic = (
+                :xzx => rotmatx(γ) * rotmatz(β) * rotmatx(α),
+                :xyx => rotmatx(γ) * rotmaty(β) * rotmatx(α),
+                :yxy => rotmaty(γ) * rotmatx(β) * rotmaty(α),
+                :yzy => rotmaty(γ) * rotmatz(β) * rotmaty(α),
+                :zyz => rotmatz(γ) * rotmaty(β) * rotmatz(α),
+                :zxz => rotmatz(γ) * rotmatx(β) * rotmatz(α),
+                :xzy => rotmaty(γ) * rotmatz(β) * rotmatx(α),
+                :xyz => rotmatz(γ) * rotmaty(β) * rotmatx(α),
+                :yxz => rotmatz(γ) * rotmatx(β) * rotmaty(α),
+                :yzx => rotmatx(γ) * rotmatz(β) * rotmaty(α),
+                :zyx => rotmatx(γ) * rotmaty(β) * rotmatz(α),
+                :zxy => rotmaty(γ) * rotmatx(β) * rotmatz(α),
+            )
+            for (sequence, expected) in (intrinsic..., extrinsic...)
+                @test (@inferred rotmat(θ, sequence = sequence))::Mat{3,3,T} ≈ expected
+            end
             for (XYZ, zyx) in ((:XZX, :xzx), (:XYX, :xyx), (:YXY, :yxy), (:YZY, :yzy), (:ZYZ, :zyz), (:ZXZ, :zxz),
                                (:XZY, :yzx), (:XYZ, :zyx), (:YXZ, :zxy), (:YZX, :xzy), (:ZYX, :xyz), (:ZXY, :yxz))
                 @test (@inferred rotmat(Vec(α,β,γ), sequence = XYZ))::Mat{3,3,T} ≈ (@inferred rotmat(Vec(γ,β,α), sequence = zyx))::Mat{3,3,T}
             end
+            @test_throws ArgumentError rotmat(θ, sequence = :XXY)
+            @test_throws ArgumentError rotmat(θ, sequence = :XyZ)
+            @test_throws ArgumentError rotmat(θ, sequence = :XY)
             # 2D/3D rotmat
             @test (@inferred rotmat(α)) ≈ (@inferred rotmatx(α))[[2,3], [2,3]]
             @test (@inferred rotmat(α)) ≈ (@inferred rotmaty(α))[[3,1], [3,1]]
@@ -240,8 +275,28 @@ end
             for dim in (2, 3)
                 a = normalize(rand(Vec{dim, T}))
                 b = normalize(rand(Vec{dim, T}))
-                @test (@inferred rotmat(a => b))::Mat{dim, dim, T} * a ≈ b
+                R = (@inferred rotmat(a => b))::Mat{dim, dim, T}
+                @test R * a ≈ b
+                @test R' * R ≈ one(Mat{dim, dim, T})
+                @test det(R) ≈ one(T)
             end
+            @test (@inferred rotmat(Vec{2, T}(1,0) => Vec{2, T}(0,1)))::Mat{2,2,T} ≈ rotmat(T(π/2))
+            Rπ2 = (@inferred rotmat(Vec{2, T}(1,0) => Vec{2, T}(-1,0)))::Mat{2,2,T}
+            @test Rπ2 ≈ rotmat(T(π))
+            @test det(Rπ2) ≈ one(T)
+            @test (@inferred rotmat(Vec{3, T}(1,0,0) => Vec{3, T}(0,1,0)))::Mat{3,3,T} ≈ rotmatz(T(π/2))
+            a = normalize(Vec{3, T}(1,2,3))
+            Rπ3 = (@inferred rotmat(a => -a))::Mat{3,3,T}
+            @test Rπ3 * a ≈ -a
+            @test Rπ3' * Rπ3 ≈ one(Mat{3,3,T})
+            @test det(Rπ3) ≈ one(T)
+            @test (@inferred rotmat(Vec{1, T}(1) => Vec{1, T}(-1)))::Mat{1,1,T} ≈ -one(Mat{1,1,T})
+            a4 = Vec{4, T}(1,0,0,0)
+            b4 = Vec{4, T}(0,1,0,0)
+            R4 = (@inferred rotmat(a4 => b4))::Mat{4,4,T}
+            @test R4 * a4 ≈ b4
+            @test R4' * R4 ≈ one(Mat{4,4,T})
+            @test det(R4) ≈ one(T)
             @test (@inferred rotmat(T(π/3), Vec{3, T}(0,0,1)))::Mat{3,3,T} * Vec(1,0,0) ≈ [cos(π/3), sin(π/3), 0]
         end
         @test_throws Exception rotmat(Vec(1,0) => Vec(1,1)) # length of two vectors must be the same
@@ -255,20 +310,32 @@ end
                 v = rand(Vec{dim, T})
                 A = rand(SecondOrderTensor{dim, T})
                 S = rand(SymmetricSecondOrderTensor{dim, T})
-                @test (@inferred rotate(v, R))::Vec{dim, T} ≈ v ⊡ R
+                @test (@inferred rotate(v, R))::Vec{dim, T} ≈ Tensor(SArray(R) * SArray(v))
                 @test (@inferred rotate(A, R))::SecondOrderTensor{dim, T} ≈ R * A * R'
                 @test (@inferred rotate(S, R))::SymmetricSecondOrderTensor{dim, T} ≈ R * S * R'
             end
-            # v in 2D, R in 3D
+            # v in 2D, R in 3D must be lifted explicitly.
             for R in (rotmatx(T(π/4)), rotmaty(T(π/4)), rotmatz(T(π/4)))
                 v = rand(Vec{2, T})
-                @test (@inferred rotate(v, R))::Vec{3, T} ≈ rotate(v, quaternion(angleaxis(R)...))
+                v3 = vcat(v, zero(T))
+                @test_throws MethodError rotate(v, R)
+                @test (@inferred rotate(v3, R))::Vec{3, T} ≈ rotate(v3, quaternion(angleaxis(R)...))
             end
         end
     end
     @testset "angleaxis" begin
         Random.seed!(1234)
         for T in (Float32, Float64)
+            R = one(Mat{3,3,T})
+            θ, n = (@inferred angleaxis(R))::Tuple{T, Vec{3,T}}
+            @test θ ≈ zero(T)
+            @test rotmat(θ, n) ≈ R
+            for axis in (Vec{3,T}(1,0,0), Vec{3,T}(0,1,0), Vec{3,T}(0,0,1))
+                R = rotmat(T(π), axis)
+                θ, n = (@inferred angleaxis(R))::Tuple{T, Vec{3,T}}
+                @test θ ≈ T(π)
+                @test rotmat(θ, n) ≈ R
+            end
             a = normalize(rand(Vec{3, T}))
             b = normalize(rand(Vec{3, T}))
             R = rotmat(a => b)
