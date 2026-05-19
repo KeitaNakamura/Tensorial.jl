@@ -271,8 +271,12 @@ end
 # tensortype
 _size_parameter(x::Int) = x
 _size_parameter(x::Symmetry) = typeof(x)
-function tensortype(x::Space)
-    Tensor{Tuple{map(_size_parameter, Tuple(x))...}, T, tensororder(x), ncomponents(x)} where {T}
+@generated function tensortype(::Space{S}) where {S}
+    params = map(_size_parameter, S)
+    quote
+        @_inline_meta
+        Tensor{Tuple{$(params...)}}
+    end
 end
 
 #############################
