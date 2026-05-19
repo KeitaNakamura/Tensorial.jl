@@ -647,7 +647,7 @@ true
 function rotmat(θ::Vec{3}; sequence::Symbol)
     @inbounds α, β, γ = θ[1], θ[2], θ[3]
     # intrinsic
-    sequence == :XZX && return rotmatx(α) * rotmaty(β) * rotmatz(γ)
+    sequence == :XZX && return rotmatx(α) * rotmatz(β) * rotmatx(γ)
     sequence == :XYX && return rotmatx(α) * rotmaty(β) * rotmatx(γ)
     sequence == :YXY && return rotmaty(α) * rotmatx(β) * rotmaty(γ)
     sequence == :YZY && return rotmaty(α) * rotmatz(β) * rotmaty(γ)
@@ -660,7 +660,7 @@ function rotmat(θ::Vec{3}; sequence::Symbol)
     sequence == :ZYX && return rotmatz(α) * rotmaty(β) * rotmatx(γ)
     sequence == :ZXY && return rotmatz(α) * rotmatx(β) * rotmaty(γ)
     # extrinsic
-    sequence == :xzx && return rotmatx(γ) * rotmaty(β) * rotmatz(α)
+    sequence == :xzx && return rotmatx(γ) * rotmatz(β) * rotmatx(α)
     sequence == :xyx && return rotmatx(γ) * rotmaty(β) * rotmatx(α)
     sequence == :yxy && return rotmaty(γ) * rotmatx(β) * rotmaty(α)
     sequence == :yzy && return rotmaty(γ) * rotmatz(β) * rotmaty(α)
@@ -744,8 +744,10 @@ end
 """
     rotmat(a => b)
 
-Construct rotation matrix rotating vector `a` to `b`.
-The norms of two vectors must be the same.
+Construct the minimal rotation matrix that maps vector `a` to vector `b`.
+The norms of the two vectors must be the same.
+For antiparallel vectors, where the rotation axis is not unique, a deterministic
+axis orthogonal to `a` is chosen.
 
 # Examples
 ```jldoctest
@@ -763,23 +765,75 @@ julia> b = normalize(rand(Vec{3}))
 
 julia> R = rotmat(a => b)
 3×3 Tensor{Tuple{3, 3}, Float64, 2, 9}:
- -0.00540771   0.853773   0.520617
-  0.853773    -0.267108   0.446905
-  0.520617     0.446905  -0.727485
+  0.836709  0.546409   0.0368198
+ -0.525517  0.819999  -0.22679
+ -0.154112  0.170408   0.973247
 
 julia> R * a ≈ b
 true
 ```
 """
-function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {dim, T}
-    # https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d/2672702#2672702
+@inline function _same_norm2(a²::T, b²::T) where {T <: AbstractFloat}
+    tol = sqrt(eps(T)) * max(abs(a²), abs(b²))
+    abs(a² - b²) ≤ tol
+end
+@inline _same_norm2(a², b²) = a² == b²
+
+@inline function _orthogonal_unit_vector(a::Vec{dim}) where {dim}
+    _, i = findmin(abs.(Tuple(a)))
+    e = Vec(ntuple(j -> ifelse(j == i, one(eltype(a)), zero(eltype(a))), Val(dim)))
+    normalize(e - (e ⋅ a) / (a ⋅ a) * a)
+end
+
+@inline _antiparallel_rotmat(a::Vec{1, T}) where {T} = -one(Mat{1, 1, T})
+@inline function _antiparallel_rotmat(a::Vec{dim, T}) where {dim, T}
+    u_outer = (a ⊗ a) / (a ⋅ a)
+    w = _orthogonal_unit_vector(a)
+    one(Mat{dim, dim, T}) - 2u_outer - 2(w ⊗ w)
+end
+
+function rotmat(pair::Pair{Vec{2, T}, Vec{2, T}})::Mat{2, 2, T} where {T}
     a = pair.first
     b = pair.second
-    contract1(a, a) ≈ contract1(b, b) || throw(ArgumentError("the norms of two vectors must be the same"))
-    a ==  b && return  one(Mat{dim, dim, T})
-    a == -b && return -one(Mat{dim, dim, T})
-    c = a + b
-    2 * (c ⊗ c) / (c ⋅ c) - one(Mat{dim, dim, T})
+    a² = a ⋅ a
+    b² = b ⋅ b
+    _same_norm2(a², b²) || throw(ArgumentError("the norms of two vectors must be the same"))
+    iszero(a²) && return one(Mat{2, 2, T})
+    cosθ = (a ⋅ b) / a²
+    sinθ = (a × b) / a²
+    @Mat [cosθ -sinθ
+          sinθ  cosθ]
+end
+
+function rotmat(pair::Pair{Vec{3, T}, Vec{3, T}})::Mat{3, 3, T} where {T}
+    a = pair.first
+    b = pair.second
+    a² = a ⋅ a
+    b² = b ⋅ b
+    _same_norm2(a², b²) || throw(ArgumentError("the norms of two vectors must be the same"))
+    iszero(a²) && return one(Mat{3, 3, T})
+    n = a × b
+    n² = n ⋅ n
+    if iszero(n²)
+        return a ⋅ b < zero(T) ? _antiparallel_rotmat(a) : one(Mat{3, 3, T})
+    end
+    n_norm = sqrt(n²)
+    rotmat(atan(n_norm, a ⋅ b), n / n_norm)
+end
+
+function rotmat(pair::Pair{Vec{dim, T}, Vec{dim, T}})::Mat{dim, dim, T} where {dim, T}
+    a = pair.first
+    b = pair.second
+    a² = a ⋅ a
+    b² = b ⋅ b
+    _same_norm2(a², b²) || throw(ArgumentError("the norms of two vectors must be the same"))
+    iszero(a²) && return one(Mat{dim, dim, T})
+    c = (a ⋅ b) / a²
+    c == one(c) && return one(Mat{dim, dim, T})
+    c == -one(c) && return _antiparallel_rotmat(a)
+    K = (b ⊗ a - a ⊗ b) / a²
+    I = one(Mat{dim, dim, T})
+    I + K + K * K / (one(c) + c)
 end
 
 """
@@ -844,19 +898,53 @@ julia> rotate(A, R) ≈ R * A * R'
 true
 ```
 """
-@inline rotate(v::Vec, R::SecondOrderTensor) = R * v
-@inline rotate(v::Vec{2}, R::SecondOrderTensor{3}) = rotate(vcat(v,0), R) # extend to 3d vector, then rotate it
-@inline rotate(A::SecondOrderTensor, R::SecondOrderTensor) = R * A * R'
+@inline rotate(v::Vec{dim}, R::SecondOrderTensor{dim}) where {dim} = R * v
+@inline rotate(A::SecondOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim} = R * A * R'
 @inline function rotate(A::SymmetricSecondOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim}
     ARᵀ = contract(A, R, Val(2), Val(2))
     contract(SymmetricSecondOrderTensor{dim}, R, ARᵀ, Val(2), Val(1))
 end
 
-function angleaxis(R::SecondOrderTensor{3})
-    # https://math.stackexchange.com/questions/893984/conversion-of-rotation-matrix-to-quaternion
-    θ = acos((tr(R)-1) / 2)
-    n = Tensor(Real.(eigvecs(SArray(R))[:,3]))
-    θ, n
+function _rotation_axis_at_pi(R::SecondOrderTensor{3})
+    T = eltype(R)
+    half = inv(T(2))
+    x² = max((R[1,1] + one(T)) * half, zero(T))
+    y² = max((R[2,2] + one(T)) * half, zero(T))
+    z² = max((R[3,3] + one(T)) * half, zero(T))
+    if x² ≥ y² && x² ≥ z²
+        x = sqrt(x²)
+        y = (R[1,2] + R[2,1]) / 4x
+        z = (R[1,3] + R[3,1]) / 4x
+    elseif y² ≥ z²
+        y = sqrt(y²)
+        x = (R[1,2] + R[2,1]) / 4y
+        z = (R[2,3] + R[3,2]) / 4y
+    else
+        z = sqrt(z²)
+        x = (R[1,3] + R[3,1]) / 4z
+        y = (R[2,3] + R[3,2]) / 4z
+    end
+    normalize(Vec(x, y, z))
+end
+
+"""
+    angleaxis(R::SecondOrderTensor{3})
+
+Convert a 3D rotation matrix to an angle-axis pair `(θ, n)`.
+`R` is assumed to be a rotation matrix; orthogonality and determinant are not
+validated.
+"""
+function angleaxis(R::SecondOrderTensor{3, T}) where {T}
+    cosθ = clamp((tr(R) - one(T)) / 2, -one(T), one(T))
+    θ = acos(cosθ)
+    if cosθ == one(cosθ)
+        return θ, Vec(one(θ), zero(θ), zero(θ))
+    elseif cosθ == -one(cosθ)
+        return θ, _rotation_axis_at_pi(R)
+    end
+    sinθ = sin(θ)
+    n = Vec(R[3,2] - R[2,3], R[1,3] - R[3,1], R[2,1] - R[1,2]) / (2sinθ)
+    θ, normalize(n)
 end
 
 # exp/log
