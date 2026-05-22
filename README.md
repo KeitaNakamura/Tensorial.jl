@@ -61,6 +61,17 @@ true
 
 ## Change log
 
+### v0.20
+
+#### Improvements
+
+* Fixed `:XZX` and `:xzx` Euler rotation sequences.
+* Improved `@einsum` validation errors.
+
+#### Breaking changes
+
+* `rotmat(a => b)` now returns a proper minimal rotation for parallel and antiparallel vectors, instead of returning `±I`.
+
 ### v0.19
 
 #### New features
