@@ -70,7 +70,7 @@ true
 
 #### Breaking changes
 
-* `rotmat(a => b)` now returns a proper minimal rotation for parallel and antiparallel vectors, instead of returning `±I`.
+* `rotmat(a => b)` now returns the minimal rotation from `a` to `b`, instead of the previous Householder-style matrix based on `a + b`.
 
 ### v0.19
 
