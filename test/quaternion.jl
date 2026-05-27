@@ -36,21 +36,19 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
         @test (@inferred get_data(q))::NTuple{4, T} == map(T, (1,2,3,4))
 
         # quaternion
-        @test (@inferred quaternion(T(π/4), Vec{2, T}(1,2)))::Quaternion{T} == (@inferred quaternion(T(π/4), Vec{3, T}(1,2,0)))::Quaternion{T}
-        @test (@inferred quaternion(T, π/4, Vec(1,2)))::Quaternion{T} == (@inferred quaternion(T, π/4, Vec(1,2,0)))::Quaternion{T}
-        q = (@inferred quaternion(T(π/4), Vec{3, T}(1,2,3)))::Quaternion{T}
-        q = (@inferred quaternion(T, π/4, Vec(1,2,3)))::Quaternion{T}
+        n2 = normalize(Vec{2, T}(1,2))
+        n3 = normalize(Vec{3, T}(1,2,3))
+        @test (@inferred quaternion(T(π/4), n2))::Quaternion{T} == (@inferred quaternion(T(π/4), Vec(n2[1], n2[2], zero(T))))::Quaternion{T}
+        @test (@inferred quaternion(T, π/4, n2))::Quaternion{T} == (@inferred quaternion(T, π/4, Vec(n2[1], n2[2], zero(T))))::Quaternion{T}
+        q = (@inferred quaternion(T(π/4), n3))::Quaternion{T}
+        q = (@inferred quaternion(T, π/4, n3))::Quaternion{T}
         @test length(q) == 4
         @test size(q) == (4,)
         @test norm(q) ≈ 1
         @test q/q ≈ 1
-        q = (@inferred quaternion(T(π/4), Vec{3, T}(1,2,3), normalize = false))::Quaternion{T}
-        q = (@inferred quaternion(T, π/4, Vec(1,2,3), normalize = false))::Quaternion{T}
-        @test !(norm(q) ≈ 1)
-        @test q/q ≈ 1
 
-        q = quaternion(rand(T), rand(Vec{3, T}))
-        p = quaternion(rand(T), rand(Vec{3, T}), normalize = false)
+        q = quaternion(rand(T), normalize(rand(Vec{3, T})))
+        p = Quaternion(rand(T), rand(Vec{3, T}))
 
         # conversion
         @test (@inferred convert(Quaternion{T}, q))::Quaternion{T} == q
@@ -121,7 +119,7 @@ ToVec3(x::Vec{2}) = Vec(x[1], x[2], 0)
         end
         # test with rotmat(θ, n)
         θ = rand(T)
-        n = rand(Vec{3, T})
+        n = normalize(rand(Vec{3, T}))
         @test rotmat(θ, n) ≈ rotmat(quaternion(θ, n))
     end
 end
