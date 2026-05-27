@@ -1,6 +1,6 @@
 """
 `Quaternion` represents ``q_w + q_x \\bm{i} + q_y \\bm{j} + q_z \\bm{k}``.
-The salar part and vector part can be accessed by `q.scalar` and `q.vector`, respectively.
+The scalar part and vector part can be accessed by `q.scalar` and `q.vector`, respectively.
 
 # Examples
 ```jldoctest
@@ -30,10 +30,13 @@ end
 @inline Quaternion(data::NTuple{4, Any}) = Quaternion{promote_ntuple_eltype(data)}(data)
 @inline (::Type{T})(data::Vararg{Any}) where {T <: Quaternion} = T(data)
 
+@inline _quaternion_vec3(v::Vec{2}) = @inbounds Vec(v[1], v[2], zero(eltype(v)))
+@inline _quaternion_vec3(v::Vec{1}) = @inbounds Vec(v[1], zero(eltype(v)), zero(eltype(v)))
+
 # from scalar and vector
 @inline Quaternion{T}(r::Real, v::Vec{3}) where {T} = @inbounds Quaternion{T}(r, v[1], v[2], v[3])
-@inline Quaternion{T}(r::Real, v::Vec{2}) where {T} = @inbounds Quaternion{T}(r, v[1], v[2], zero(eltype(v)))
-@inline Quaternion{T}(r::Real, v::Vec{1}) where {T} = @inbounds Quaternion{T}(r, v[1], zero(eltype(v)), zero(eltype(v)))
+@inline Quaternion{T}(r::Real, v::Vec{2}) where {T} = Quaternion{T}(r, _quaternion_vec3(v))
+@inline Quaternion{T}(r::Real, v::Vec{1}) where {T} = Quaternion{T}(r, _quaternion_vec3(v))
 @inline Quaternion(r::Real, v::Vec) = Quaternion{promote_type(typeof(r), eltype(v))}(r, v)
 
 # from vector
@@ -72,10 +75,10 @@ Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{U}}) where {T <: Real
 
 # used for `isapprox`
 Base.real(q::Quaternion) = q.scalar
-Base.isfinite(q::Quaternion) = prod(map(isfinite, Tuple(q)))
+Base.isfinite(q::Quaternion) = all(isfinite, Tuple(q))
 
 """
-    quaternion(θ, n::Vec; normalize = true)
+    quaternion(θ, n::Vec)
 
 Construct `Quaternion` from angle `θ` and axis `n` as
 
@@ -83,7 +86,7 @@ Construct `Quaternion` from angle `θ` and axis `n` as
 q = \\cos\\frac{\\theta}{2} + \\bm{n} \\sin\\frac{\\theta}{2}
 ```
 
-The constructed quaternion is normalized such as `norm(q) ≈ 1` by default.
+`n` must be a unit vector.
 
 # Examples
 ```jldoctest
@@ -100,19 +103,15 @@ julia> (q * x / q).vector ≈ rotmatz(π/4) * x
 true
 ```
 """
-function quaternion(::Type{T}, θ::Real, x::Vec{3}; normalize::Bool = true) where {T}
+function quaternion(::Type{T}, θ::Real, n::Vec{3}) where {T}
     ϕ = θ / 2
-    if normalize
-        n = LinearAlgebra.normalize(x) * sin(ϕ)
-    else
-        n = x * sin(ϕ)
-    end
-    @inbounds Quaternion{T}(cos(ϕ), n)
+    v = n * sin(ϕ)
+    @inbounds Quaternion{T}(cos(ϕ), v)
 end
-quaternion(T::Type, θ::Real, x::Vec{2}; normalize::Bool = true) =
-    @inbounds quaternion(T, θ, Vec(x[1], x[2], 0); normalize = normalize)
-quaternion(θ::Real, x::Vec; normalize::Bool = true) =
-    quaternion(promote_type(typeof(θ), eltype(x)), θ, x; normalize = normalize)
+quaternion(T::Type, θ::Real, n::Vec{2}) =
+    @inbounds quaternion(T, θ, Vec(n[1], n[2], 0))
+quaternion(θ::Real, n::Vec) =
+    quaternion(promote_type(typeof(θ), eltype(n)), θ, n)
 
 Base.length(::Quaternion) = 4
 Base.size(::Quaternion) = (4,)
@@ -133,7 +132,7 @@ end
                q₂  q₁ -q₄  q₃
                q₃  q₄  q₁ -q₂
                q₄ -q₃  q₂  q₁ ]
-    Quaternion(A * Vec(p))
+    Quaternion(A ⊡ Vec(p))
 end
 
 # quaternion vs number
@@ -146,6 +145,11 @@ end
 @inline Base.:*(v::Vec, q::Quaternion) = Quaternion(v) * q
 @inline Base.:/(v::Vec, q::Quaternion) = v * inv(q)
 
+"""
+    angleaxis(::Quaternion)
+
+Convert a quaternion to an angle-axis pair `(θ, n)`.
+"""
 function angleaxis(q::Quaternion)
     a = norm(q.vector)
     θ = 2atan(a, q.scalar)
@@ -198,7 +202,7 @@ function Base.exp(q::Quaternion)
     else
         n = zero(v)
     end
-    exp(q.scalar) * quaternion(2*v_norm, n; normalize = false)
+    exp(q.scalar) * quaternion(2*v_norm, n)
 end
 
 """
@@ -212,7 +216,9 @@ Compute the logarithm of quaternion as
 """
 function Base.log(q::Quaternion)
     q_norm = norm(q)
-    Quaternion(log(q_norm), normalize(q.vector) * acos(q.scalar/q_norm))
+    v = q.vector
+    ϕ = acos(q.scalar/q_norm)
+    Quaternion(log(q_norm), normalize(v) * ϕ)
 end
 
 @inline normalize(q::Quaternion) = q / norm(q)

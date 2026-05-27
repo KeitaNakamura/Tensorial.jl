@@ -840,6 +840,7 @@ end
     rotmat(θ, n::Vec)
 
 Construct rotation matrix from angle `θ` and axis `n`.
+`n` must be a unit vector.
 
 # Examples
 ```jldoctest
@@ -863,9 +864,8 @@ julia> rotmat(π/2, n) * x
 ```
 """
 function rotmat(θ::Number, n::Vec{3})
-    n′ = normalize(n)
     sinθ, cosθ = sincos(θ)
-    cosθ*I + sinθ*skew(n′) + (1-cosθ)*(n′⊗n′)
+    cosθ*I + sinθ*skew(n) + (1-cosθ)*(n⊗n)
 end
 
 """
