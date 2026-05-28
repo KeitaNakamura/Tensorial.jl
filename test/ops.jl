@@ -347,18 +347,54 @@ end
         end
     end
     @testset "sqrt/exp/log" begin
+        divdiff(f, df, x, y) = x == y ? df(x) : (f(x) - f(y)) / (x - y)
         for T in (Float32, Float64)
             for dim in (2, 3)
                 x = rand(SymmetricSecondOrderTensor{dim, T})
                 A = rand(SecondOrderTensor{dim, T})
                 C = symmetric(A' * A + one(SymmetricSecondOrderTensor{dim, T}))
                 U = sqrt(C)
+                H = rand(SymmetricSecondOrderTensor{dim, T})
                 @test (@inferred sqrt(C))::SymmetricSecondOrderTensor{dim, T} ≈ sqrt(Array(C))
                 @test U * U ≈ C
+                Dsqrt = (@inferred gradient(sqrt, C))::SymmetricFourthOrderTensor{dim, T}
+                X = (@inferred Dsqrt ⊡₂ H)::SymmetricSecondOrderTensor{dim, T}
+                @test U * X + X * U ≈ H rtol=sqrt(eps(T)) atol=sqrt(eps(T))
+                I = one(SymmetricSecondOrderTensor{dim, T})
+                @test (@inferred gradient(sqrt, I))::SymmetricFourthOrderTensor{dim, T} ≈ T(1/2) * one(SymmetricFourthOrderTensor{dim, T})
+                @test (@inferred gradient(log, I))::SymmetricFourthOrderTensor{dim, T} ≈ one(SymmetricFourthOrderTensor{dim, T})
+                @test (@inferred gradient(exp, I))::SymmetricFourthOrderTensor{dim, T} ≈ exp(one(T)) * one(SymmetricFourthOrderTensor{dim, T})
+                g = (@inferred gradient((A, s) -> s * log(A), I, T(2)))::Tuple{SymmetricFourthOrderTensor{dim, T}, SymmetricSecondOrderTensor{dim, T}}
+                @test g[1] ≈ T(2) * one(SymmetricFourthOrderTensor{dim, T})
+                @test g[2] ≈ zero(SymmetricSecondOrderTensor{dim, T})
                 y = exp(x)
                 @test (@inferred exp(x))::SymmetricSecondOrderTensor{dim, T} ≈ exp(Array(x))
                 @test (@inferred log(y))::SymmetricSecondOrderTensor{dim, T} ≈ x
+                Dexp = (@inferred gradient(exp, x))::SymmetricFourthOrderTensor{dim, T}
+                Dlog = (@inferred gradient(log, y))::SymmetricFourthOrderTensor{dim, T}
+                dY = (@inferred Dexp ⊡₂ H)::SymmetricSecondOrderTensor{dim, T}
+                @test (@inferred Dlog ⊡₂ dY)::SymmetricSecondOrderTensor{dim, T} ≈ H rtol=sqrt(eps(T)) atol=sqrt(eps(T))
             end
+        end
+        for T in (Float32, Float64)
+            λ = Vec{3, T}(2, 2, 3)
+            C = SymmetricSecondOrderTensor{3, T}((i, j) -> i == j ? λ[i] : zero(T))
+            H = SymmetricSecondOrderTensor{3, T}(0.2, 0.3, -0.1, -0.4, 0.5, 0.6)
+            for (f, df) in ((sqrt, x -> inv(2sqrt(x))), (log, inv), (exp, exp))
+                expected = SymmetricSecondOrderTensor{3, T}((i, j) -> divdiff(f, df, λ[i], λ[j]) * H[i,j])
+                D = gradient(f, C)
+                @test D isa SymmetricFourthOrderTensor{3, T}
+                @test (D ⊡₂ H)::SymmetricSecondOrderTensor{3, T} ≈ expected rtol=sqrt(eps(T)) atol=sqrt(eps(T))
+            end
+        end
+        C = SymmetricSecondOrderTensor{3}(2.0, 0, 0, 2.0, 0, 3.0)
+        H = SymmetricSecondOrderTensor{3}(0.2, 0.3, -0.1, -0.4, 0.5, 0.6)
+        ε = 1e-6
+        for f in (sqrt, log, exp)
+            D = gradient(f, C)
+            fd = (f(C + ε * H) - f(C - ε * H)) / (2ε)
+            @test all(isfinite, Tuple(D))
+            @test D ⊡₂ H ≈ fd rtol=1e-5 atol=1e-6
         end
     end
 end

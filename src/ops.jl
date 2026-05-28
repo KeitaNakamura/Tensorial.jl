@@ -537,7 +537,7 @@ end
     x = extract_value(g)
     f = det(x)
     dfdg = adj(x)'
-    dgdx = extract_gradient(g, zero(V))
+    dgdx = extract_gradient(g, _zero_primal(V))
     create_dual(Tg(), f, dfdg ⊡₂ dgdx)
 end
 
@@ -955,18 +955,62 @@ function angleaxis(R::SecondOrderTensor{3, T}) where {T}
 end
 
 # sqrt/exp/log
-@inline function Base.sqrt(x::AbstractSymmetricSecondOrderTensor)
-    F = eigen(x)
-    symmetric(F.vectors * diagm(sqrt.(F.values)) * F.vectors')
+@inline _scalar_derivative(::typeof(sqrt), x) = inv(2sqrt(x))
+@inline _scalar_derivative(::typeof(log), x) = inv(x)
+@inline _scalar_derivative(::typeof(exp), x) = exp(x)
+
+@inline function _divided_difference(op, x, y)
+    x == y && return _scalar_derivative(op, x)
+    (op(x) - op(y)) / (x - y)
 end
-@inline function Base.exp(x::AbstractSymmetricSecondOrderTensor)
-    F = eigen(x)
-    symmetric(F.vectors * diagm(exp.(F.values)) * F.vectors')
+
+@inline function _spectral_decomposition(A::AbstractSymmetricSecondOrderTensor)
+    F = eigen(A)
+    F.values, F.vectors
 end
-@inline function Base.log(x::AbstractSymmetricSecondOrderTensor)
-    F = eigen(x)
-    symmetric(F.vectors * diagm(log.(F.values)) * F.vectors')
+
+@inline function _spectral_value(op, λ::AbstractVec{dim}, Q::AbstractSecondOrderTensor{dim}) where {dim}
+    Λ = diagm(op.(λ))
+    @einsum SymmetricSecondOrderTensor{dim} (i,l) -> Q[i,j] * Λ[j,k] * Q[l,k]
 end
+
+@inline function _spectral_value(op, A::AbstractSymmetricSecondOrderTensor)
+    λ, Q = _spectral_decomposition(A)
+    _spectral_value(op, λ, Q)
+end
+
+@inline function _spectral_derivative(op, λ::AbstractVec{dim}, Q::AbstractSecondOrderTensor{dim}) where {dim}
+    G = Mat{dim, dim}((a, b) -> @inbounds _divided_difference(op, λ[a], λ[b]))
+    SymmetricFourthOrderTensor{dim}(
+        @inline function(i, j, k, l)
+            sum(
+                @inbounds G[a,b] *
+                    (Q[i,a]*Q[j,b] + Q[i,b]*Q[j,a]) *
+                    (Q[k,a]*Q[l,b] + Q[k,b]*Q[l,a]) / 4
+                for a in 1:dim, b in 1:dim
+            )
+        end
+    )
+end
+
+@inline _chain_spectral_derivative(dydA, dAdx::Tensor) = dydA ⊡₂ dAdx
+@inline _chain_spectral_derivative(dydA, dAdxs::Tuple) = map(dAdx -> _chain_spectral_derivative(dydA, dAdx), dAdxs)
+
+@inline function _spectral_dual(op, A::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N}
+    A₀ = extract_value(A)
+    λ, Q = _spectral_decomposition(A₀)
+    y = _spectral_value(op, λ, Q)
+    dydA = _spectral_derivative(op, λ, Q)
+    dAdx = extract_gradient(A, _zero_primal(V))
+    create_dual(Tg(), y, _chain_spectral_derivative(dydA, dAdx))
+end
+
+@inline Base.sqrt(x::AbstractSymmetricSecondOrderTensor) = _spectral_value(sqrt, x)
+@inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = _spectral_value(exp, x)
+@inline Base.log(x::AbstractSymmetricSecondOrderTensor) = _spectral_value(log, x)
+@inline Base.sqrt(x::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N} = _spectral_dual(sqrt, x)
+@inline Base.exp(x::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N} = _spectral_dual(exp, x)
+@inline Base.log(x::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N} = _spectral_dual(log, x)
 
 # ----------------------------------------------#
 # operations calling methods in StaticArrays.jl #

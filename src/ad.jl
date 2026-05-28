@@ -66,11 +66,50 @@ end
 end
 
 # for AD insertion
+_zero_primal(::Type{T}) where {T <: Number} = zero(T)
+_zero_primal(::Type{T}) where {T <: Tensor} = zero(T)
+@generated function _zero_primal(::Type{T}) where {T <: Tuple}
+    exps = map(T.parameters) do TT
+        :(_zero_primal($TT))
+    end
+    quote
+        @_inline_meta
+        tuple($(exps...))
+    end
+end
+
 @inline function create_dual(::Tg, f::Number, dfdx::Number) where {Tg}
     Dual{Tg}(f, dfdx)
 end
 @inline function create_dual(::Tg, f::Number, dfdx::Tensor) where {Tg}
     Dual{Tg}(f, Tuple(dfdx))
+end
+@generated function create_dual(::Tg, f::Tensor{S}, dfdx::Tensor) where {Tg, S}
+    nf = ncomponents(Space(S))
+    nd = ncomponents(dfdx) ÷ nf
+    duals = map(1:nf) do i
+        partials = [:(Tuple(dfdx)[$(i + nf * (j - 1))]) for j in 1:nd]
+        :(Dual{Tg}(Tuple(f)[$i], tuple($(partials...))))
+    end
+    quote
+        @_inline_meta
+        @inbounds Tensor{S}(tuple($(duals...)))
+    end
+end
+@generated function create_dual(::Tg, f::Tensor{S}, dfdxs::Tuple) where {Tg, S}
+    nf = ncomponents(Space(S))
+    duals = map(1:nf) do i
+        partials = Expr[]
+        for (b, TT) in enumerate(dfdxs.parameters)
+            nb = ncomponents(TT) ÷ nf
+            append!(partials, [:(Tuple(dfdxs[$b])[$(i + nf * (j - 1))]) for j in 1:nb])
+        end
+        :(Dual{Tg}(Tuple(f)[$i], tuple($(partials...))))
+    end
+    quote
+        @_inline_meta
+        @inbounds Tensor{S}(tuple($(duals...)))
+    end
 end
 
 #################
