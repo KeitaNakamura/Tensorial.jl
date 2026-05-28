@@ -310,9 +310,13 @@ end
                 v = rand(Vec{dim, T})
                 A = rand(SecondOrderTensor{dim, T})
                 S = rand(SymmetricSecondOrderTensor{dim, T})
+                C = rand(FourthOrderTensor{dim, T})
+                Cs = rand(SymmetricFourthOrderTensor{dim, T})
                 @test (@inferred rotate(v, R))::Vec{dim, T} ≈ Tensor(SArray(R) * SArray(v))
                 @test (@inferred rotate(A, R))::SecondOrderTensor{dim, T} ≈ R * A * R'
                 @test (@inferred rotate(S, R))::SymmetricSecondOrderTensor{dim, T} ≈ R * S * R'
+                @test (@inferred rotate(C, R))::FourthOrderTensor{dim, T} ⊡₂ rotate(A, R) ≈ rotate(C ⊡₂ A, R)
+                @test (@inferred rotate(Cs, R))::SymmetricFourthOrderTensor{dim, T} ⊡₂ rotate(S, R) ≈ rotate(Cs ⊡₂ S, R)
             end
             # v in 2D, R in 3D must be lifted explicitly.
             for R in (rotmatx(T(π/4)), rotmaty(T(π/4)), rotmatz(T(π/4)))

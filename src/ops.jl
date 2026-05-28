@@ -872,7 +872,8 @@ end
     rotate(x, R::SecondOrderTensor)
 
 Rotate `x` using the rotation matrix `R`.
-This function preserves the symmetry of the matrix.
+Supported inputs are vectors and second- and fourth-order tensors; symmetric
+tensor types are rotated into the corresponding symmetric tensor type.
 
 # Examples
 ```jldoctest
@@ -903,6 +904,12 @@ true
 @inline function rotate(A::SymmetricSecondOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim}
     ARᵀ = contract(A, R, Val(2), Val(2))
     contract(SymmetricSecondOrderTensor{dim}, R, ARᵀ, Val(2), Val(1))
+end
+@inline function rotate(A::FourthOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim}
+    @einsum FourthOrderTensor{dim} (i,j,k,l) -> R[i,I] * R[j,J] * R[k,K] * R[l,L] * A[I,J,K,L]
+end
+@inline function rotate(A::SymmetricFourthOrderTensor{dim}, R::SecondOrderTensor{dim}) where {dim}
+    @einsum SymmetricFourthOrderTensor{dim} (i,j,k,l) -> R[i,I] * R[j,J] * R[k,K] * R[l,L] * A[I,J,K,L]
 end
 
 function _rotation_axis_at_pi(R::SecondOrderTensor{3})
