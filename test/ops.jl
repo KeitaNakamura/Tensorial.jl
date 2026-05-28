@@ -346,10 +346,15 @@ end
             @test rotmat((@inferred angleaxis(R))::Tuple{T, Vec{3, T}}...) ≈ R
         end
     end
-    @testset "exp/log" begin
+    @testset "sqrt/exp/log" begin
         for T in (Float32, Float64)
             for dim in (2, 3)
                 x = rand(SymmetricSecondOrderTensor{dim, T})
+                A = rand(SecondOrderTensor{dim, T})
+                C = symmetric(A' * A + one(SymmetricSecondOrderTensor{dim, T}))
+                U = sqrt(C)
+                @test (@inferred sqrt(C))::SymmetricSecondOrderTensor{dim, T} ≈ sqrt(Array(C))
+                @test U * U ≈ C
                 y = exp(x)
                 @test (@inferred exp(x))::SymmetricSecondOrderTensor{dim, T} ≈ exp(Array(x))
                 @test (@inferred log(y))::SymmetricSecondOrderTensor{dim, T} ≈ x

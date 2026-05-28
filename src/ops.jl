@@ -954,7 +954,11 @@ function angleaxis(R::SecondOrderTensor{3, T}) where {T}
     θ, normalize(n)
 end
 
-# exp/log
+# sqrt/exp/log
+@inline function Base.sqrt(x::AbstractSymmetricSecondOrderTensor)
+    F = eigen(x)
+    symmetric(F.vectors * diagm(sqrt.(F.values)) * F.vectors')
+end
 @inline function Base.exp(x::AbstractSymmetricSecondOrderTensor)
     F = eigen(x)
     symmetric(F.vectors * diagm(exp.(F.values)) * F.vectors')
