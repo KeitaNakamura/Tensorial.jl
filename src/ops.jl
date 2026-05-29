@@ -1005,8 +1005,58 @@ end
     create_dual(Tg(), y, _chain_spectral_derivative(dydA, dAdx))
 end
 
+"""
+    sqrt(A::AbstractSymmetricSecondOrderTensor)
+
+Compute the principal square root of a symmetric second-order tensor.
+
+For an eigendecomposition,
+
+```math
+\\bm{A} = \\bm{Q} \\operatorname{diag}(\\lambda_i) \\bm{Q}^\\mathsf{T},
+\\quad
+\\sqrt{\\bm{A}} = \\bm{Q} \\operatorname{diag}(\\sqrt{\\lambda_i}) \\bm{Q}^\\mathsf{T}.
+```
+
+The result is a `SymmetricSecondOrderTensor`. Automatic differentiation is
+defined as a spectral tensor function, including repeated eigenvalues.
+"""
 @inline Base.sqrt(x::AbstractSymmetricSecondOrderTensor) = _spectral_value(sqrt, x)
+
+"""
+    exp(A::AbstractSymmetricSecondOrderTensor)
+
+Compute the exponential of a symmetric second-order tensor.
+
+For an eigendecomposition,
+
+```math
+\\bm{A} = \\bm{Q} \\operatorname{diag}(\\lambda_i) \\bm{Q}^\\mathsf{T},
+\\quad
+\\exp(\\bm{A}) = \\bm{Q} \\operatorname{diag}(\\exp(\\lambda_i)) \\bm{Q}^\\mathsf{T}.
+```
+
+The result is a `SymmetricSecondOrderTensor`. Automatic differentiation is
+defined as a spectral tensor function, including repeated eigenvalues.
+"""
 @inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = _spectral_value(exp, x)
+
+"""
+    log(A::AbstractSymmetricSecondOrderTensor)
+
+Compute the principal logarithm of a symmetric second-order tensor.
+
+For an eigendecomposition,
+
+```math
+\\bm{A} = \\bm{Q} \\operatorname{diag}(\\lambda_i) \\bm{Q}^\\mathsf{T},
+\\quad
+\\log(\\bm{A}) = \\bm{Q} \\operatorname{diag}(\\log(\\lambda_i)) \\bm{Q}^\\mathsf{T}.
+```
+
+The result is a `SymmetricSecondOrderTensor`. Automatic differentiation is
+defined as a spectral tensor function, including repeated eigenvalues.
+"""
 @inline Base.log(x::AbstractSymmetricSecondOrderTensor) = _spectral_value(log, x)
 @inline Base.sqrt(x::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N} = _spectral_dual(sqrt, x)
 @inline Base.exp(x::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N} = _spectral_dual(exp, x)

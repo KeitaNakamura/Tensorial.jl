@@ -45,6 +45,14 @@ rotmat
 rotate
 ```
 
+## Spectral functions
+
+```@docs
+sqrt(::Tensorial.AbstractSymmetricSecondOrderTensor)
+exp(::Tensorial.AbstractSymmetricSecondOrderTensor)
+log(::Tensorial.AbstractSymmetricSecondOrderTensor)
+```
+
 ## Continuum mechanics
 
 ```@docs
