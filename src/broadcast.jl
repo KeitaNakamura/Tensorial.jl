@@ -28,6 +28,9 @@ end
 @inline _tensor_broadcast_getindex(x::Any, ::Val{i}) where {i} = x
 @inline _tensor_broadcast_getindex(x::Base.RefValue, ::Val{i}) where {i} = x[]
 @inline _tensor_broadcast_getindex(x::Tuple, ::Val{i}) where {i} = length(x) == 1 ? x[1] : x[i]
+# `@.` can turn scalar subexpressions like `2a` into 0-dimensional broadcasts.
+@inline _tensor_broadcast_getindex(bc::Broadcasted{DefaultArrayStyle{0}}, ::Val{i}) where {i} =
+    bc.f(map(arg -> _tensor_broadcast_getindex(arg, Val(i)), bc.args)...)
 
 @inline function _check_tensor_broadcast_tuple_length(x::Tuple, ::Val{L}) where {L}
     if length(x) != 1 && length(x) != L
