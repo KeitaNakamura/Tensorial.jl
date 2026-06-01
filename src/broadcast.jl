@@ -39,7 +39,7 @@ end
     nothing
 end
 
-@generated function _copy_tensor_broadcasted(::Type{TT}, f, args::Args) where {TT <: AbstractTensor, Args <: Tuple}
+function _tensor_broadcast_exprs(::Type{TT}, ::Type{Args}) where {TT <: AbstractTensor, Args <: Tuple}
     L = ncomponents(TT)
     N = length(Args.parameters)
     xs = [gensym(:x) for _ in 1:N]
@@ -55,6 +55,24 @@ end
         callargs = [:( _tensor_broadcast_getindex($(xs[j]), Val($i)) ) for j in 1:N]
         :(f($(callargs...)))
     end
+    return L, setup, checks, values
+end
+
+@generated function _copyto_tensor!(dest::AbstractArray, src::TT) where {TT <: AbstractTensor}
+    L = length(TT)
+    exps = [:(dest[$i] = $(getindex_expr(TT, :src, i))) for i in 1:L]
+    quote
+        @_inline_meta
+        @boundscheck length(dest) == $L || throw(DimensionMismatch("destination array has wrong length"))
+        @inbounds $(Expr(:block, exps...))
+        dest
+    end
+end
+
+@inline Base.copyto!(dest::AbstractArray, src::AbstractTensor) = _copyto_tensor!(dest, src)
+
+@generated function _copy_tensor_broadcasted(::Type{TT}, f, args::Args) where {TT <: AbstractTensor, Args <: Tuple}
+    _, setup, checks, values = _tensor_broadcast_exprs(TT, Args)
     tuple = Expr(:tuple, values...)
     quote
         @_inline_meta
@@ -64,8 +82,33 @@ end
     end
 end
 
+@generated function _copyto_tensor_broadcasted!(dest::AbstractArray, ::Type{TT}, f, args::Args) where {TT <: AbstractTensor, Args <: Tuple}
+    L, setup, checks, values = _tensor_broadcast_exprs(TT, Args)
+    inds = Tuple(component_to_independent_map(TT))
+    vals = [gensym(:val) for _ in 1:L]
+    evals = [:( $(vals[i]) = $(values[i]) ) for i in 1:L]
+    sets = map(1:length(inds)) do i
+        :(dest[$i] = $(vals[inds[i]]))
+    end
+    quote
+        @_inline_meta
+        $(setup...)
+        $(checks...)
+        $(Expr(:block, evals...))
+        @inbounds $(Expr(:block, sets...))
+        dest
+    end
+end
+
 @inline function Base.copy(bc::Broadcasted{<: TensorStyle})
     S = _promote_space_for_broadcast(bc.args)
     TT = tensortype(S)
     _copy_tensor_broadcasted(TT, bc.f, bc.args)
+end
+
+@inline function Base.copyto!(dest::AbstractArray, bc::Broadcasted{<: TensorStyle})
+    @boundscheck axes(dest) == axes(bc) || Broadcast.throwdm(axes(dest), axes(bc))
+    S = _promote_space_for_broadcast(bc.args)
+    TT = tensortype(S)
+    _copyto_tensor_broadcasted!(dest, TT, bc.f, bc.args)
 end

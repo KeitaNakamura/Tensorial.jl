@@ -35,4 +35,50 @@ _broadcast_dotted_scalar_tuple(v, μ) = @. 2μ * v * (true, true, false)
         @test (@inferred(broadcast(sqrt, v)))::Vec{3, T} ≈ map(sqrt, v)
         @test (@inferred(broadcast(sqrt, A)))::Mat{2, 3, T} ≈ map(sqrt, A)
     end
+
+    @testset "copyto! to AbstractArray" begin
+        for T in (Float32, Float64)
+            A = zeros(T, 3, 3)
+            A_sarray = zeros(T, 3, 3)
+            I = 1:2
+            J = 1:2
+            X = Tensor{Tuple{2, 2}, T}((1, 2, 3, 4))
+
+            copyto!(view(A, I, J), X)
+            copyto!(view(A_sarray, I, J), SArray(X))
+            @test A == A_sarray
+
+            fill!(A, zero(T))
+            fill!(A_sarray, zero(T))
+            A[I, J] .= X
+            A_sarray[I, J] .= SArray(X)
+            @test A == A_sarray
+
+            fill!(A, zero(T))
+            fill!(A_sarray, zero(T))
+            A[I, J] .= X .+ X
+            A_sarray[I, J] .= SArray(X) .+ SArray(X)
+            @test A == A_sarray
+
+            fill!(A, zero(T))
+            fill!(A_sarray, zero(T))
+            A[I, J] .= X .* T(3)
+            A_sarray[I, J] .= SArray(X) .* T(3)
+            @test A == A_sarray
+
+            S = SymmetricSecondOrderTensor{2, T}((1, 2, 3))
+            fill!(A, zero(T))
+            fill!(A_sarray, zero(T))
+            A[I, J] .= S
+            A_sarray[I, J] .= SArray(S)
+            @test A == A_sarray
+
+            C = SymmetricFourthOrderTensor{2, T}(ntuple(i -> T(i), 9))
+            B = zeros(T, 2, 2, 2, 2)
+            B_sarray = similar(B)
+            B .= C
+            B_sarray .= SArray(C)
+            @test B == B_sarray
+        end
+    end
 end
