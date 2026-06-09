@@ -1,35 +1,43 @@
 # Tensorial.jl
 
-## Introduction
+Tensorial.jl provides statically sized tensor types for Julia. They behave like
+`AbstractArray`s, but carry tensor-specific structure such as symmetry.
 
-Tensorial.jl provides a statically sized `Tensor` type compatible with `AbstractArray`, similar to `SArray` from [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl), together with a *tensorial* interface for concise and efficient computations.
-
-In addition to basic `AbstractArray` operations, Tensorial.jl supports tensor symmetries through `@Symmetry`, allowing adjacent groups of indices to be treated symmetrically. These symmetries are consistently respected in tensor operations such as contraction, inversion, and automatic differentiation, reducing unnecessary computations while preserving the intended tensor structure.
-
-Key features of Tensorial.jl include:
-
-* Contraction, tensor product (`⊗`), and a flexible `@einsum` macro for Einstein summation
-* A `@Symmetry` macro for defining tensor symmetries on adjacent index groups, consistently respected in tensor operations and automatic differentiation
-* [Automatic differentiation](https://keitanakamura.github.io/Tensorial.jl/stable/Automatic%20differentiation/) via `∂`, `gradient`, and `hessian`, leveraging [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)
-* [Direct sums](https://keitanakamura.github.io/Tensorial.jl/stable/Direct%20sum/) for mixed tensor and scalar variables, preserving block structure in differentiation and linear algebra
-* Performance comparable to `SArray` (see [benchmarks](https://keitanakamura.github.io/Tensorial.jl/stable/Benchmarks/))
+This manual is organized by what you want to do. If you are new to Tensorial,
+start with [Getting Started](@ref); it gives a short executable tour of the main
+pieces: tensor construction, operations, `@einsum`, symmetry, automatic
+differentiation, and direct sums.
 
 ## Installation
 
-```julia
+Install Tensorial with Julia's package manager:
+
+```julia-repl
 pkg> add Tensorial
 ```
 
-## Other tensor packages
+## Choose by task
 
-* [Einsum.jl](https://github.com/ahwillia/Einsum.jl)
-* [TensorOprations.jl](https://github.com/Jutho/TensorOperations.jl)
-* [Tensors.jl](https://github.com/Ferrite-FEM/Tensors.jl)
-* [Tullio.jl](https://github.com/mcabbott/Tullio.jl)
+- Understand tensor spaces, aliases, and symmetry in tensor types:
+  [Tensor Types and Spaces](@ref).
+- Create vectors, matrices, higher-order tensors, and symmetric tensors:
+  [Constructing Tensors](@ref).
+- Write contractions, tensor products, and indexed formulas:
+  [Operations](@ref).
+- Differentiate tensor formulas and get tensor results back:
+  [Automatic Differentiation](@ref).
+- Pack several related unknowns into one block-structured state:
+  [Direct Sum](@ref).
+- Convert tensors at array boundaries with Voigt or Mandel notation:
+  [Voigt Form](@ref).
+- Work with 3D rotations and quaternions:
+  [Quaternion](@ref).
+- Check practical notes for writing Tensorial code:
+  [Practical Tips](@ref).
 
-## Inspiration
+## Reference pages
 
-Some functionalities are inspired from the following packages:
-
-* [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl)
-* [Tensors.jl](https://github.com/Ferrite-FEM/Tensors.jl)
+- Look up public signatures and docstrings:
+  [API Reference](@ref).
+- Check small-tensor performance against `Array` and `SArray`:
+  [Benchmarks](@ref "Benchmarks").

@@ -73,6 +73,28 @@ Base.size(A::DirectSumArray) = size(typeof(A))
         tuple($(dims...))
     end
 end
+
+"""
+    flatsize(A::DirectSumArray)
+    flatsize(::Type{<:DirectSumArray})
+
+Return the size of the flat Mandel-coordinate storage.
+
+This differs from `size(A)`, which returns the block size.
+
+# Examples
+```jldoctest
+julia> A = symmetric(@Mat [1.0 2.0; 2.0 4.0]);
+
+julia> x = pack(A, 3.0);
+
+julia> size(x)
+(2,)
+
+julia> flatsize(x)
+(4,)
+```
+"""
 flatsize(::Type{<: DirectSumArray{Axes}}) where {Axes} = _flatsize(Axes)
 flatsize(A::DirectSumArray) = flatsize(typeof(A))
 
@@ -128,7 +150,7 @@ See also: [`unpack`](@ref), [`flatview`](@ref)
 
 # Examples
 ```jldoctest
-julia> A = @Mat[1.0 2.0; 3.0 4.0]
+julia> A = @Mat [1.0 2.0; 3.0 4.0]
 2×2 Tensor{Tuple{2, 2}, Float64, 2, 4}:
  1.0  2.0
  3.0  4.0
@@ -143,7 +165,7 @@ julia> As = symmetric(A)
  1.0  2.5
  2.5  4.0
 
-julia> v = @Vec[4.0, 5.0]
+julia> v = @Vec [4.0, 5.0]
 2-element Vec{2, Float64}:
  4.0
  5.0
@@ -181,7 +203,7 @@ See also: [`pack`](@ref), [`flatview`](@ref)
 
 # Examples
 ```jldoctest
-julia> A = symmetric(@Mat[1.0 2.0; 3.0 4.0])
+julia> A = symmetric(@Mat [1.0 2.0; 3.0 4.0])
 2×2 SymmetricSecondOrderTensor{2, Float64, 3}:
  1.0  2.5
  2.5  4.0
@@ -441,7 +463,7 @@ See also: [`pack`](@ref), [`unpack`](@ref)
 
 # Examples
 ```jldoctest
-julia> A = @Mat[1.0 2.0; 3.0 4.0]
+julia> A = @Mat [1.0 2.0; 3.0 4.0]
 2×2 Tensor{Tuple{2, 2}, Float64, 2, 4}:
  1.0  2.0
  3.0  4.0

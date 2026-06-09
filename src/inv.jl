@@ -75,10 +75,12 @@ end
 
 Return the inverse of `A`.
 
-An inverse exists only for even-order tensors whose first and second halves
-span the same space and whose stored components define a valid operator
-representation. For symmetric tensor spaces, component multiplicities are
-accounted for accordingly.
+Tensorial treats an even-order tensor as a linear operator: the second half of
+the indices is the input space, and the first half is the output space.
+`inv(A)` is defined when those two spaces match and `A` stores a full `n × n`
+operator on that space, where `n` is the number of independent components. For
+symmetric tensor spaces, component multiplicities are accounted for in this
+operator representation.
 
 # Examples
 ```jldoctest
