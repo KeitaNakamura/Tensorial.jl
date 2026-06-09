@@ -18,13 +18,16 @@ makedocs(;
         "Home" => "index.md",
         "Getting started.md",
         "Manual" => [
+            "Tensor types and spaces.md",
             "Constructors.md",
             "Operations.md",
-            "Voigt form.md",
             "Automatic differentiation.md",
             "Direct sum.md",
+            "Voigt form.md",
             "Quaternion.md",
+            "Practical tips.md",
         ],
+        "API Reference" => "API reference.md",
         "Benchmarks.md",
     ],
     doctest = true, # :fix

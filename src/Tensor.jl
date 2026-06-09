@@ -1,3 +1,13 @@
+"""
+    Tensor{S, T, N, L}
+
+Statically sized tensor with tensor space `S`, element type `T`, tensor order
+`N`, and `L` stored independent components.
+
+The tensor space `S` is a tuple of ordinary dimensions and symmetry groups. For
+example, `Tensor{Tuple{3,3}}` is a general 3×3 second-order tensor, while
+`Tensor{Tuple{@Symmetry{3,3}}}` is a symmetric 3×3 second-order tensor.
+"""
 struct Tensor{S <: Tuple, T, N, L} <: AbstractTensor{S, T, N}
     data::NTuple{L, T}
     function Tensor{S, T, N, L}(data::NTuple{L, Number}) where {S, T, N, L}
@@ -17,11 +27,47 @@ end
 end
 
 # aliases
+"""
+    SecondOrderTensor{dim, T, L}
+
+Alias for a general second-order tensor in `dim` dimensions.
+"""
 const SecondOrderTensor{dim, T, L} = Tensor{NTuple{2, dim}, T, 2, L}
+
+"""
+    FourthOrderTensor{dim, T, L}
+
+Alias for a general fourth-order tensor in `dim` dimensions.
+"""
 const FourthOrderTensor{dim, T, L} = Tensor{NTuple{4, dim}, T, 4, L}
+
+"""
+    SymmetricSecondOrderTensor{dim, T, L}
+
+Alias for a symmetric second-order tensor in `dim` dimensions.
+"""
 const SymmetricSecondOrderTensor{dim, T, L} = Tensor{Tuple{@Symmetry{dim, dim}}, T, 2, L}
+
+"""
+    SymmetricFourthOrderTensor{dim, T, L}
+
+Alias for a fourth-order tensor whose first two and last two indices are
+symmetric.
+"""
 const SymmetricFourthOrderTensor{dim, T, L} = Tensor{NTuple{2, @Symmetry{dim, dim}}, T, 4, L}
+
+"""
+    Mat{m, n, T, L}
+
+Alias for an `m`×`n` second-order tensor.
+"""
 const Mat{m, n, T, L} = Tensor{Tuple{m, n}, T, 2, L}
+
+"""
+    Vec{dim, T}
+
+Alias for a first-order tensor with `dim` components.
+"""
 const Vec{dim, T} = Tensor{Tuple{dim}, T, 1, dim}
 
 # constructors

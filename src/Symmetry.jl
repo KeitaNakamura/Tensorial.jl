@@ -1,3 +1,18 @@
+"""
+    Symmetry{S}
+    Symmetry(dims...)
+
+Symmetric index group used in tensor spaces.
+
+All dimensions in one symmetry group must be equal. In type-level tensor spaces,
+the usual spelling is [`@Symmetry`](@ref).
+
+# Examples
+```jldoctest
+julia> Symmetry(3, 3)
+Symmetry(3, 3)
+```
+"""
 struct Symmetry{S <: Tuple}
     function Symmetry{S}() where {S}
         check_symmetry_parameters(S)
@@ -26,6 +41,22 @@ ncomponents(::Symmetry{NTuple{order, dim}}) where {order, dim} = binomial(dim + 
 
 Base.getindex(s::Symmetry, i::Int) = tensorsize(s)[i]
 
+"""
+    @Symmetry{dim, dim, ...}
+
+Type-level spelling for a symmetric index group.
+
+Use it inside `Tensor{Tuple{...}}` when several neighboring tensor indices are
+symmetric.
+
+# Examples
+```jldoctest
+julia> S = rand(Tensor{Tuple{@Symmetry{3,3}}});
+
+julia> S isa SymmetricSecondOrderTensor{3}
+true
+```
+"""
 macro Symmetry(ex::Expr)
     @assert ex.head == :braces
     esc(:($Symmetry{Tuple{$(ex.args...)}}))
