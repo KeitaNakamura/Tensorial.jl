@@ -29,17 +29,15 @@ using Tensorial
 Tensorial.jl is useful when you want tensor formulas to show up clearly in
 Julia code:
 
-- Carry tensor-space information in the type, including symmetry:
-  `SymmetricSecondOrderTensor{3}` and `@Symmetry`
+- Carry tensor-space structure in the type, including symmetry
   ([Tensor types and spaces](https://keitanakamura.github.io/Tensorial.jl/stable/Tensor%20types%20and%20spaces/)).
 - Write contractions and tensor products directly with `⊡`, `⊡₂`, `⊗`,
   and `@einsum`
   ([Operations](https://keitanakamura.github.io/Tensorial.jl/stable/Operations/)).
-- Differentiate tensor formulas with `gradient`, `hessian`, and the general
-  `∂` interface, and get tensor results back
+- Differentiate tensor formulas with `gradient`, `hessian`, and `∂`
   ([Automatic differentiation](https://keitanakamura.github.io/Tensorial.jl/stable/Automatic%20differentiation/)).
-- Build block-structured states with direct sums when a calculation has several
-  related unknowns: `pack(σ, Δγ)`
+- Build block-structured states with direct sums for related unknowns:
+  `pack(σ, Δγ)`
   ([Direct sum](https://keitanakamura.github.io/Tensorial.jl/stable/Direct%20sum/)).
 - Use small tensors efficiently, with performance comparable to `SArray`
   ([Benchmarks](https://keitanakamura.github.io/Tensorial.jl/stable/Benchmarks/)).
