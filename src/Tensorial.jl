@@ -68,6 +68,7 @@ export
     rotmaty,
     rotmatz,
     rotate,
+    spectral,
 # directsum
     ⊕,
     pack,

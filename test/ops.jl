@@ -348,6 +348,9 @@ end
     end
     @testset "sqrt/exp/log" begin
         divdiff(f, df, x, y) = x == y ? df(x) : (f(x) - f(y)) / (x - y)
+        poly(x) = x^3 + 2x
+        dpoly(x) = 3x^2 + 2
+        generic_log(x) = log(x)
         for T in (Float32, Float64)
             for dim in (2, 3)
                 x = rand(SymmetricSecondOrderTensor{dim, T})
@@ -374,15 +377,20 @@ end
                 Dlog = (@inferred gradient(log, y))::SymmetricFourthOrderTensor{dim, T}
                 dY = (@inferred Dexp ⊡₂ H)::SymmetricSecondOrderTensor{dim, T}
                 @test (@inferred Dlog ⊡₂ dY)::SymmetricSecondOrderTensor{dim, T} ≈ H rtol=sqrt(eps(T)) atol=sqrt(eps(T))
+                @test (@inferred spectral(poly, C))::SymmetricSecondOrderTensor{dim, T} ≈ C^3 + 2C
+                @test (@inferred spectral(poly, dpoly, C))::SymmetricSecondOrderTensor{dim, T} ≈ C^3 + 2C
+                Dpoly = (@inferred gradient(A -> spectral(poly, A), C))::SymmetricFourthOrderTensor{dim, T}
+                Dpoly_explicit = (@inferred gradient(A -> spectral(poly, dpoly, A), C))::SymmetricFourthOrderTensor{dim, T}
+                @test Dpoly ≈ Dpoly_explicit
             end
         end
         for T in (Float32, Float64)
             λ = Vec{3, T}(2, 2, 3)
             C = SymmetricSecondOrderTensor{3, T}((i, j) -> i == j ? λ[i] : zero(T))
             H = SymmetricSecondOrderTensor{3, T}(0.2, 0.3, -0.1, -0.4, 0.5, 0.6)
-            for (f, df) in ((sqrt, x -> inv(2sqrt(x))), (log, inv), (exp, exp))
+            for (f, df) in ((sqrt, x -> inv(2sqrt(x))), (log, inv), (exp, exp), (poly, dpoly))
                 expected = SymmetricSecondOrderTensor{3, T}((i, j) -> divdiff(f, df, λ[i], λ[j]) * H[i,j])
-                D = gradient(f, C)
+                D = f === poly ? gradient(A -> spectral(f, A), C) : gradient(f, C)
                 @test D isa SymmetricFourthOrderTensor{3, T}
                 @test (D ⊡₂ H)::SymmetricSecondOrderTensor{3, T} ≈ expected rtol=sqrt(eps(T)) atol=sqrt(eps(T))
             end
@@ -395,6 +403,41 @@ end
             fd = (f(C + ε * H) - f(C - ε * H)) / (2ε)
             @test all(isfinite, Tuple(D))
             @test D ⊡₂ H ≈ fd rtol=1e-5 atol=1e-6
+        end
+        @testset "spectral repeated eigenvalue tolerance" begin
+            @test Tensorial._spectral_repeated_eigenvalue_tol_factor() == 16
+            cases = (
+                (Float32, Float32(100), Vec{3, Float32}(-1.6006851, 0.55908036, -0.028148232)),
+                (Float64, 100.0, Vec(0.9529424983699967, -1.333610706246097, 0.45111839663929376)),
+                (Float64, 1.0e8, Vec(0.267689506816948, 0.17903522287287554, -1.095730985293828)),
+            )
+            for (T, μ, v) in cases
+                P = SymmetricSecondOrderTensor{3, T}((i, j) -> v[i] * v[j] / dot(v, v))
+                C = μ * one(SymmetricSecondOrderTensor{3, T}) - (μ - one(T)) * P
+                λ, Q = eigen(C)
+                scale = max(abs(λ[1]), abs(λ[2]), abs(λ[3]), one(T))
+                gap = abs(λ[3] - λ[2])
+                split = gap / eps(scale)
+                H = SymmetricSecondOrderTensor{3, T}((i, j) -> Q[i,2] * Q[j,3] + Q[i,3] * Q[j,2])
+                @test λ ≈ Vec(one(T), μ, μ)
+                @test split ≤ Tensorial._spectral_repeated_eigenvalue_tol_factor()
+                nextμ = nextfloat(μ)
+                @test Tensorial._divided_difference(generic_log, inv, μ, nextμ, scale) == inv((μ + nextμ) / 2)
+                D = gradient(A -> spectral(generic_log, inv, A), C)
+                @test D ⊡₂ H ≈ inv(μ) * H rtol=sqrt(eps(T)) atol=sqrt(eps(T))
+                D = gradient(A -> spectral(sqrt, A), C)
+                @test D ⊡₂ H ≈ inv(2sqrt(μ)) * H rtol=sqrt(eps(T)) atol=sqrt(eps(T))
+            end
+            v = Vec(0.3, -0.7, 1.2)
+            P = SymmetricSecondOrderTensor{3}((i, j) -> v[i] * v[j] / dot(v, v))
+            C = 100.0 * one(SymmetricSecondOrderTensor{3}) - 99.0 * P
+            λ, Q = eigen(C)
+            H = SymmetricSecondOrderTensor{3}((i, j) -> Q[i,2] * Q[j,3] + Q[i,3] * Q[j,2])
+            @test λ ≈ Vec(1.0, 100.0, 100.0)
+            for (f, df) in ((sqrt, x -> inv(2sqrt(x))), (log, inv), (exp, exp), (poly, dpoly))
+                D = gradient(A -> spectral(f, A), C)
+                @test D ⊡₂ H ≈ df(100.0) * H rtol=1e-12 atol=1e-12
+            end
         end
     end
 end

@@ -135,6 +135,13 @@ sqrt(one(SymmetricSecondOrderTensor{3})) ≈ one(SymmetricSecondOrderTensor{3})
 exp(zero(SymmetricSecondOrderTensor{3})) ≈ one(SymmetricSecondOrderTensor{3})
 ```
 
+Use [`spectral`](@ref) to apply another scalar function to the eigenvalues:
+
+```@repl operations
+S = symmetric(A' * A)
+spectral(x -> x^2 + 2x, S) ≈ S^2 + 2S
+```
+
 For operation docstrings, see [Core operations](@ref),
 [Continuum mechanics API](@ref), [Rotations and quaternions](@ref), and
 [Spectral functions](@ref).
