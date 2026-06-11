@@ -106,6 +106,7 @@ Base.log(::Quaternion)
 ## Spectral functions
 
 ```@docs
+spectral
 Base.sqrt(::Tensorial.AbstractSymmetricSecondOrderTensor)
 Base.exp(::Tensorial.AbstractSymmetricSecondOrderTensor)
 Base.log(::Tensorial.AbstractSymmetricSecondOrderTensor)

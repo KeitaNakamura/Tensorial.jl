@@ -954,15 +954,31 @@ function angleaxis(R::SecondOrderTensor{3, T}) where {T}
     θ, normalize(n)
 end
 
-# sqrt/exp/log
-@inline _scalar_derivative(::typeof(sqrt), x) = inv(2sqrt(x))
-@inline _scalar_derivative(::typeof(log), x) = inv(x)
-@inline _scalar_derivative(::typeof(exp), x) = exp(x)
+@inline _sinhc(x) = x == zero(x) ? one(x) : sinh(x) / x
+@inline _atanhc(x) = x == zero(x) ? one(x) : atanh(x) / x
 
-@inline function _divided_difference(op, x, y)
-    x == y && return _scalar_derivative(op, x)
+# StaticArrays' 3x3 symmetric eigensolver can split an exactly repeated
+# eigenvalue by a few ulps after rotations. The margin below is deliberately
+# narrow: rank-one projector cases reached 6 ulps in stress checks, so 16 ulps
+# covers that with room for platform noise without treating broadly separated
+# eigenvalues as repeated. See the testset "spectral repeated eigenvalue
+# tolerance" for the cases that keep this choice anchored.
+@inline _spectral_repeated_eigenvalue_tol_factor() = 16
+@inline _spectral_repeated_eigenvalue_tol(scale) = _spectral_repeated_eigenvalue_tol_factor() * eps(scale)
+
+@inline _spectral_scale(λ) = max(one(eltype(λ)), maximum(abs, λ))
+
+@inline function _divided_difference(op, dop, x, y, scale)
+    x == y && return dop(x)
+    abs(x - y) ≤ _spectral_repeated_eigenvalue_tol(scale) && return dop((x + y) / 2)
     (op(x) - op(y)) / (x - y)
 end
+
+@inline _divided_difference(::typeof(sqrt), _dop, x, y, _scale) = inv(sqrt(x) + sqrt(y))
+@inline _divided_difference(::typeof(exp), _dop, x, y, _scale) = exp((x + y) / 2) * _sinhc((x - y) / 2)
+@inline _divided_difference(::typeof(log), _dop, x, y, _scale) = _atanhc((x - y) / (x + y)) / ((x + y) / 2)
+
+@inline _scalar_derivative(f) = x -> ∂(f, x)
 
 @inline function _spectral_decomposition(A::AbstractSymmetricSecondOrderTensor)
     F = eigen(A)
@@ -979,8 +995,13 @@ end
     _spectral_value(op, λ, Q)
 end
 
-@inline function _spectral_derivative(op, λ::AbstractVec{dim}, Q::AbstractSecondOrderTensor{dim}) where {dim}
-    G = Mat{dim, dim}((a, b) -> @inbounds _divided_difference(op, λ[a], λ[b]))
+@inline function _spectral_derivative(op, dop, λ::AbstractVec{dim}, Q::AbstractSecondOrderTensor{dim}) where {dim}
+    scale = _spectral_scale(λ)
+    G = Mat{dim, dim}((a, b) -> @inbounds _divided_difference(op, dop, λ[a], λ[b], scale))
+    _spectral_derivative(G, Q)
+end
+
+@inline function _spectral_derivative(G::AbstractSecondOrderTensor{dim}, Q::AbstractSecondOrderTensor{dim}) where {dim}
     SymmetricFourthOrderTensor{dim}(
         @inline function(i, j, k, l)
             sum(
@@ -996,11 +1017,37 @@ end
 @inline _chain_spectral_derivative(dydA, dAdx::Tensor) = dydA ⊡₂ dAdx
 @inline _chain_spectral_derivative(dydA, dAdxs::Tuple) = map(dAdx -> _chain_spectral_derivative(dydA, dAdx), dAdxs)
 
-@inline function _spectral_dual(op, A::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N}
+"""
+    spectral(f, A::AbstractSymmetricSecondOrderTensor)
+    spectral(f, df, A::AbstractSymmetricSecondOrderTensor)
+
+Apply the scalar function `f` to the eigenvalues of a symmetric second-order
+tensor `A`.
+
+For an eigendecomposition,
+
+```math
+\\bm{A} = \\bm{Q} \\operatorname{diag}(\\lambda_i) \\bm{Q}^\\mathsf{T},
+\\quad
+f(\\bm{A}) = \\bm{Q} \\operatorname{diag}(f(\\lambda_i)) \\bm{Q}^\\mathsf{T}.
+```
+
+The result is a `SymmetricSecondOrderTensor`. Automatic differentiation is
+defined as a spectral tensor function. When eigenvalues are repeated,
+`spectral(f, A)` computes the scalar derivative of `f` with Tensorial's
+automatic differentiation. Use `spectral(f, df, A)` to provide the scalar
+derivative explicitly.
+"""
+function spectral end
+
+@inline spectral(f, A::AbstractSymmetricSecondOrderTensor) = _spectral_value(f, A)
+@inline spectral(f, df, A::AbstractSymmetricSecondOrderTensor) = spectral(f, A)
+@inline spectral(f, A::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N} = spectral(f, _scalar_derivative(f), A)
+@inline function spectral(f, df, A::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N}
     A₀ = extract_value(A)
     λ, Q = _spectral_decomposition(A₀)
-    y = _spectral_value(op, λ, Q)
-    dydA = _spectral_derivative(op, λ, Q)
+    y = _spectral_value(f, λ, Q)
+    dydA = _spectral_derivative(f, df, λ, Q)
     dAdx = extract_gradient(A, _zero_primal(V))
     create_dual(Tg(), y, _chain_spectral_derivative(dydA, dAdx))
 end
@@ -1021,7 +1068,7 @@ For an eigendecomposition,
 The result is a `SymmetricSecondOrderTensor`. Automatic differentiation is
 defined as a spectral tensor function, including repeated eigenvalues.
 """
-@inline Base.sqrt(x::AbstractSymmetricSecondOrderTensor) = _spectral_value(sqrt, x)
+@inline Base.sqrt(x::AbstractSymmetricSecondOrderTensor) = spectral(sqrt, x)
 
 """
     exp(A::AbstractSymmetricSecondOrderTensor)
@@ -1039,7 +1086,7 @@ For an eigendecomposition,
 The result is a `SymmetricSecondOrderTensor`. Automatic differentiation is
 defined as a spectral tensor function, including repeated eigenvalues.
 """
-@inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = _spectral_value(exp, x)
+@inline Base.exp(x::AbstractSymmetricSecondOrderTensor) = spectral(exp, x)
 
 """
     log(A::AbstractSymmetricSecondOrderTensor)
@@ -1057,10 +1104,7 @@ For an eigendecomposition,
 The result is a `SymmetricSecondOrderTensor`. Automatic differentiation is
 defined as a spectral tensor function, including repeated eigenvalues.
 """
-@inline Base.log(x::AbstractSymmetricSecondOrderTensor) = _spectral_value(log, x)
-@inline Base.sqrt(x::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N} = _spectral_dual(sqrt, x)
-@inline Base.exp(x::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N} = _spectral_dual(exp, x)
-@inline Base.log(x::AbstractSymmetricSecondOrderTensor{dim, <: Dual{Tg, Tv, N}}) where {dim, F, V, Tg <: Tag{F,V}, Tv <: Real, N} = _spectral_dual(log, x)
+@inline Base.log(x::AbstractSymmetricSecondOrderTensor) = spectral(log, x)
 
 # ----------------------------------------------#
 # operations calling methods in StaticArrays.jl #
