@@ -22,33 +22,27 @@ See also [`quaternion`](@ref).
 """
 struct Quaternion{T} <: Number
     data::NTuple{4, T}
-    function Quaternion{T}(data::NTuple{4, Real}) where {T}
+    function Quaternion{T}(data::NTuple{4, Number}) where {T}
+        T <: Complex && throw(ArgumentError("complex-valued quaternions are not supported"))
         new{T}(convert_ntuple(T, data))
     end
 end
 
 @inline Quaternion(data::NTuple{4, Any}) = Quaternion{promote_ntuple_eltype(data)}(data)
-@inline (::Type{T})(data::Vararg{Any}) where {T <: Quaternion} = T(data)
-
-@inline _quaternion_vec3(v::Vec{2}) = @inbounds Vec(v[1], v[2], zero(eltype(v)))
-@inline _quaternion_vec3(v::Vec{1}) = @inbounds Vec(v[1], zero(eltype(v)), zero(eltype(v)))
+@inline (::Type{T})(a, b, c, d) where {T <: Quaternion} = T((a, b, c, d))
 
 # from scalar and vector
-@inline Quaternion{T}(r::Real, v::Vec{3}) where {T} = @inbounds Quaternion{T}(r, v[1], v[2], v[3])
-@inline Quaternion{T}(r::Real, v::Vec{2}) where {T} = Quaternion{T}(r, _quaternion_vec3(v))
-@inline Quaternion{T}(r::Real, v::Vec{1}) where {T} = Quaternion{T}(r, _quaternion_vec3(v))
-@inline Quaternion(r::Real, v::Vec) = Quaternion{promote_type(typeof(r), eltype(v))}(r, v)
+@inline Quaternion{T}(r::Number, v::Vec{3}) where {T} = @inbounds Quaternion{T}(r, v[1], v[2], v[3])
+@inline Quaternion(r::Number, v::Vec{3}) = Quaternion{promote_type(typeof(r), eltype(v))}(r, v)
 
 # from vector
 @inline Quaternion{T}(v::Vec{4}) where {T} = Quaternion{T}(Tuple(v))
-for dim in 1:3
-    @eval @inline Quaternion{T}(v::Vec{$dim}) where {T} = Quaternion{T}(zero(eltype(v)), v)
-end
+@inline Quaternion{T}(v::Vec{3}) where {T} = Quaternion{T}(zero(eltype(v)), v)
 @inline Quaternion(v::Vec) = Quaternion{eltype(v)}(v)
 
 # from scalar
-@inline Quaternion{T}(r::Real) where {T} = (z = zero(r); Quaternion{T}(r, z, z, z))
-@inline Quaternion(r::Real) = Quaternion{typeof(r)}(r)
+@inline Quaternion{T}(r::Number) where {T} = (z = zero(r); Quaternion{T}(r, z, z, z))
+@inline Quaternion(r::Number) = Quaternion{typeof(r)}(r)
 
 @inline Vec(q::Quaternion) = Vec(Tuple(q))
 
@@ -65,17 +59,26 @@ Base.propertynames(q::Quaternion) = (:scalar, :vector, :data)
 # conversion
 Base.convert(::Type{Quaternion{T}}, x::Quaternion{T}) where {T} = x
 Base.convert(::Type{Quaternion{T}}, x::Quaternion{U}) where {T, U} = Quaternion(map(T, Tuple(x)))
-Base.convert(::Type{Quaternion{T}}, x::Real) where {T} = convert(Quaternion{T}, Quaternion(x))
+Base.convert(::Type{Quaternion{T}}, x::Number) where {T} = convert(Quaternion{T}, Quaternion(x))
 
 # promotion
-Base.promote_rule(::Type{Quaternion{T}}, ::Type{T}) where {T <: Real} = Quaternion{T}
-Base.promote_rule(::Type{Quaternion{T}}, ::Type{U}) where {T <: Real, U <: Real} = Quaternion{promote_type(T, U)}
-Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{T}}) where {T <: Real} = Quaternion{T}
-Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{U}}) where {T <: Real, U <: Real} = Quaternion{promote_type(T, U)}
+Base.promote_rule(::Type{Quaternion{T}}, ::Type{T}) where {T <: Number} = Quaternion{T}
+Base.promote_rule(::Type{Quaternion{T}}, ::Type{U}) where {T <: Number, U <: Number} = Quaternion{promote_type(T, U)}
+Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{T}}) where {T <: Number} = Quaternion{T}
+Base.promote_rule(::Type{Quaternion{T}}, ::Type{Quaternion{U}}) where {T <: Number, U <: Number} = Quaternion{promote_type(T, U)}
 
 # used for `isapprox`
+Base.zero(::Type{Quaternion{T}}) where {T} = (z = zero(T); Quaternion{T}(z, z, z, z))
+Base.zero(q::Quaternion) = zero(typeof(q))
+Base.one(::Type{Quaternion{T}}) where {T} = (z = zero(T); Quaternion{T}(one(T), z, z, z))
+Base.one(q::Quaternion) = one(typeof(q))
+Base.real(::Type{Quaternion{T}}) where {T} = T
 Base.real(q::Quaternion) = q.scalar
 Base.isfinite(q::Quaternion) = all(isfinite, Tuple(q))
+Base.isinf(q::Quaternion) = any(isinf, Tuple(q))
+Base.isnan(q::Quaternion) = any(isnan, Tuple(q))
+Base.isreal(q::Quaternion) = iszero(q[2]) & iszero(q[3]) & iszero(q[4])
+Base.iszero(q::Quaternion) = iszero(q[1]) & iszero(q[2]) & iszero(q[3]) & iszero(q[4])
 
 """
     quaternion(θ, n::Vec)
@@ -108,10 +111,7 @@ function quaternion(::Type{T}, θ::Real, n::Vec{3}) where {T}
     v = n * sin(ϕ)
     @inbounds Quaternion{T}(cos(ϕ), v)
 end
-quaternion(T::Type, θ::Real, n::Vec{2}) =
-    @inbounds quaternion(T, θ, Vec(n[1], n[2], 0))
-quaternion(θ::Real, n::Vec) =
-    quaternion(promote_type(typeof(θ), eltype(n)), θ, n)
+quaternion(θ::Real, n::Vec) = quaternion(promote_type(typeof(θ), eltype(n)), θ, n)
 
 Base.length(::Quaternion) = 4
 Base.size(::Quaternion) = (4,)
@@ -139,6 +139,9 @@ end
 @inline Base.:*(a::Number, q::Quaternion) = Quaternion(a * Vec(q))
 @inline Base.:*(q::Quaternion, a::Number) = Quaternion(Vec(q) * a)
 @inline Base.:/(q::Quaternion, a::Number) = Quaternion(Vec(q) / a)
+Base.:*(a::Complex, q::Quaternion) = throw(MethodError(*, (a, q)))
+Base.:*(q::Quaternion, a::Complex) = throw(MethodError(*, (q, a)))
+Base.:/(q::Quaternion, a::Complex) = throw(MethodError(/, (q, a)))
 
 # quaternion vs vector
 @inline Base.:*(q::Quaternion, v::Vec) = q * Quaternion(v)
@@ -151,8 +154,14 @@ end
 Convert a quaternion to an angle-axis pair `(θ, n)`.
 """
 function angleaxis(q::Quaternion)
+    iszero(q) && throw(DomainError(q, "zero quaternion does not define a rotation"))
+    q = normalize(q)
+    q.scalar < zero(q.scalar) && (q = -q)
     a = norm(q.vector)
     θ = 2atan(a, q.scalar)
+    if iszero(a)
+        return θ, Vec(one(θ), zero(θ), zero(θ))
+    end
     n = q.vector / a
     θ, n
 end
@@ -177,13 +186,20 @@ julia> rotate(v, quaternion(π/4, Vec(0,0,1)))
  0.0
 ```
 """
-@inline rotate(v::Vec, q::Quaternion) = (q * v / q).vector
+@inline rotate(v::Vec{3}, q::Quaternion) = (q * v / q).vector
 
 @inline Base.conj(q::Quaternion) = Quaternion(q.scalar, -q.vector)
 @inline Base.abs2(q::Quaternion) = (v = Vec(q); contract1(v, v))
-@inline Base.abs(q::Quaternion) = sqrt(abs2(q))
+@inline Base.abs(q::Quaternion) = hypot(Tuple(q)...)
 @inline norm(q::Quaternion) = abs(q)
-@inline inv(q::Quaternion) = conj(q) / abs2(q)
+function inv(q::Quaternion)
+    scale = maximum(abs, Tuple(q))
+    if iszero(scale) || isinf(scale) || isnan(scale)
+        return conj(q) / abs2(q)
+    end
+    p = q / scale
+    conj(p) / (scale * abs2(p))
+end
 
 """
     exp(::Quaternion)
@@ -206,19 +222,53 @@ function Base.exp(q::Quaternion)
 end
 
 """
+    sqrt(::Quaternion)
+
+Return the principal square root of a quaternion.
+
+On the negative real axis, the branch uses the first imaginary basis direction.
+"""
+function Base.sqrt(q::Quaternion)
+    q_norm = norm(q)
+    v = q.vector
+    v_norm = norm(v)
+    if iszero(v_norm)
+        if q.scalar < zero(q.scalar)
+            s = sqrt(-q.scalar)
+            return Quaternion(zero(s), Vec(s, zero(s), zero(s)))
+        end
+        return Quaternion(sqrt(q.scalar), zero(v))
+    end
+    if q.scalar ≥ zero(q.scalar)
+        s = sqrt((q_norm + q.scalar) / 2)
+        return Quaternion(s, v / (2s))
+    end
+    s = v_norm / sqrt(2(q_norm - q.scalar))
+    Quaternion(s, v * sqrt((q_norm - q.scalar) / (2v_norm * v_norm)))
+end
+
+"""
     log(::Quaternion)
 
-Compute the logarithm of quaternion as
+Return the principal logarithm of a quaternion:
 
 ```math
 \\ln(q) = \\ln\\| q \\| + \\frac{\\bm{v}}{\\| \\bm{v} \\|} \\arccos\\frac{q_w}{\\| q \\|}
 ```
+
+On the negative real axis, the branch uses the first imaginary basis direction.
 """
 function Base.log(q::Quaternion)
     q_norm = norm(q)
     v = q.vector
-    ϕ = acos(q.scalar/q_norm)
-    Quaternion(log(q_norm), normalize(v) * ϕ)
+    v_norm = norm(v)
+    iszero(q_norm) && return Quaternion(log(q_norm), zero(v))
+    if iszero(v_norm)
+        ϕ = q.scalar < zero(q.scalar) ? oftype(q_norm, π) : zero(q_norm)
+        return Quaternion(log(q_norm), Vec(ϕ, zero(ϕ), zero(ϕ)))
+    end
+    ϕ = atan(v_norm, q.scalar)
+    Quaternion(log(q_norm), v / v_norm * ϕ)
 end
 
 @inline normalize(q::Quaternion) = q / norm(q)
@@ -259,7 +309,17 @@ julia> rotmat(q)
 """
 @inline rotmat(q::Quaternion) = rotmat_normalized(normalize(q))
 
+function _isnegative_for_show(x)
+    try
+        isnegative = x < zero(x)
+        isnegative isa Bool && return isnegative
+        return false
+    catch
+        return false
+    end
+end
+
 function Base.show(io::IO, q::Quaternion)
-    pm(x) = x < 0 ? " - $(-x)" : " + $x"
+    pm(x) = _isnegative_for_show(x) ? " - $(-x)" : " + $x"
     print(io, q[1], pm(q[2]), "𝙞", pm(q[3]), "𝙟", pm(q[4]), "𝙠")
 end
