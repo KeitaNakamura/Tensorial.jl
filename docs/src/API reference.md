@@ -100,6 +100,7 @@ angleaxis
 Quaternion
 quaternion
 Base.exp(::Quaternion)
+Base.sqrt(::Quaternion)
 Base.log(::Quaternion)
 ```
 
