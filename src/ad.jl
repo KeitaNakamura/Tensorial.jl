@@ -33,7 +33,7 @@ end
 @inline dualize(f, x) = _dualize(Tag(f, typeof(x)), x)
 @inline dualize(f, x, ::Val{0}) = x
 @inline dualize(f, x, ::Val{1}) = dualize(f, x)
-@inline dualize(f, x, ::Val{N}) where {N} = dualize(f, dualize(f, x), Val(N-1))
+@inline dualize(f, x, ::Val{N}) where {N} = dualize(f, dualize(f, x, Val(N-1)))
 
 # single argument
 @inline function _dualize(::Tg, x::Number) where {Tg}

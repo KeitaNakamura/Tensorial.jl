@@ -120,6 +120,13 @@
         @test all((@inferred ∂{4}(norm, x, :all)) .≈ (∂⁴f, ∂³f, ∂²f, ∂f, f))
         @test all((@inferred ∂{0}(norm, x, :all)) .≈ (f,))
 
+        y = rand(T)
+        @test all((@inferred ∂{5}(sin, y, :all)) .≈
+                  (cos(y), sin(y), -cos(y), -sin(y), cos(y), sin(y)))
+
+        mixed = @inferred ∂{5}((a, b) -> (a + b)^5, T(1), T(2), :all)
+        @test last(mixed) == T(3)^5
+
         H = @inferred ∂{2}(x -> x ⋅ x, x)
         @test H isa SymmetricSecondOrderTensor{2,T}
         @test Tuple(Tensorial.Space(H)) == (Symmetry(2,2),)
